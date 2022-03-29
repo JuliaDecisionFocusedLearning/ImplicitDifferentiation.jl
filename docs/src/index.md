@@ -2,13 +2,13 @@
 CurrentModule = ImplicitDifferentiation
 ```
 
-# ImplicitDifferentiation
+# ImplicitDifferentiation.jl
 
-Documentation for [ImplicitDifferentiation](https://github.com/gdalle/ImplicitDifferentiation.jl).
+[ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of implicit functions.
 
-```@index
-```
+## Getting started
 
-```@autodocs
-Modules = [ImplicitDifferentiation]
+To install it, open a Julia Pkg REPL and run:
+```julia
+pkg> add "https://github.com/gdalle/ImplicitDifferentiation.jl"
 ```
