@@ -71,7 +71,7 @@ Zygote.jacobian(implicit, x)[1]
 
 Zygote.jacobian(implicit_black_box, x)[1]
 
-# As expected, we recover the identity matrix as our jacobian, since ```hat{y}(x) = x``.
+# As expected, we recover the identity matrix as our jacobian.
 
 # ## Testing  #src
 
@@ -79,10 +79,16 @@ using ChainRulesTestUtils  #src
 using Test  #src
 
 @testset verbose = true "Exact formulae" begin  #src
+    test_frule(implicit, x)  #src
     test_rrule(implicit, x)  #src
-    @test Zygote.jacobian(implicit, x)[1] == I  #src
+    @testset verbose = true "Theoretical jacobian" begin  #src
+        @test Zygote.jacobian(implicit, x)[1] == I  #src
+    end  #src
 end  #src
 @testset verbose = true "Black box" begin  #src
+    test_frule(implicit_black_box, x)  #src
     test_rrule(implicit_black_box, x)  #src
-    @test Zygote.jacobian(implicit_black_box, x)[1] == I  #src
+    @testset verbose = true "Theoretical jacobian" begin  #src
+        @test Zygote.jacobian(implicit_black_box, x)[1] == I  #src
+    end  #src
 end  #src

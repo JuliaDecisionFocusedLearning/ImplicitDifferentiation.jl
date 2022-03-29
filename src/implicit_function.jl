@@ -28,15 +28,27 @@ Make [`ImplicitFunction`](@ref) callable by applying `implicit.forward`.
 (implicit::ImplicitFunction)(x) = implicit.forward(x)
 
 """
-    frule(rc, (_, Δx), implicit, x)
+    frule(rc, (_, dx), implicit, x)
 
 Custom forward rule for [`ImplicitFunction`](@ref).
 """
-function ChainRulesCore.frule(rc::RuleConfig, (_, Δx), implicit::ImplicitFunction, x)
+function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x)
     @unpack forward, conditions, linear_solver = implicit
     y = forward(x)
-    Δy = nothing
-    return y, Δy
+
+    F₁(x̃) = conditions(x̃, y)
+    F₂(ỹ) = -conditions(x, ỹ)
+
+    pushforward_A(dỹ) = last(frule_via_ad(rc, (NoTangent(), dỹ), F₂, y))
+    pushforward_B(dx̃) = last(frule_via_ad(rc, (NoTangent(), dx̃), F₁, x))
+
+    n, m, c = length(x), length(y), length(y)
+    A = LinearMap(pushforward_A, c, m)
+    B = LinearMap(pushforward_B, c, n)
+
+    dy::Vector{Float64} = linear_solver(A, B * unthunk(dx))
+
+    return y, dy
 end
 
 """
@@ -51,15 +63,15 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     F₁(x̃) = conditions(x̃, y)
     F₂(ỹ) = -conditions(x, ỹ)
 
-    _, pullback_Aᵀ = rrule_via_ad(rc, F₂, y)
-    _, pullback_Bᵀ = rrule_via_ad(rc, F₁, x)
+    pullback_Aᵀ = last ∘ rrule_via_ad(rc, F₂, y)[2]
+    pullback_Bᵀ = last ∘ rrule_via_ad(rc, F₁, x)[2]
 
     n, m, c = length(x), length(y), length(y)
-    Aᵀ = LinearMap(last ∘ pullback_Aᵀ, m, c)  # v -> Aᵀv
-    Bᵀ = LinearMap(last ∘ pullback_Bᵀ, n, c)  # u -> Bᵀu
+    Aᵀ = LinearMap(pullback_Aᵀ, m, c)
+    Bᵀ = LinearMap(pullback_Bᵀ, n, c)
 
     function implicit_pullback(dy)
-        u::Vector{Float64} = linear_solver(Aᵀ, unthunk(dy))  # u = At \ v
+        u::Vector{Float64} = linear_solver(Aᵀ, unthunk(dy))
         dx::Vector{Float64} = Bᵀ * u
         return (NoTangent(), dx)
     end
