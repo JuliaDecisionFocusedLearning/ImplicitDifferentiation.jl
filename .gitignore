@@ -4,3 +4,4 @@
 /Manifest.toml
 /docs/build/
 test/profiling.jl
+docs/src/examples/*.md

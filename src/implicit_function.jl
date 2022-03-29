@@ -20,8 +20,30 @@ Base.@kwdef struct ImplicitFunction{F,C,L}
     linear_solver::L
 end
 
+"""
+    implicit(x)
+
+Make [`ImplicitFunction`](@ref) callable by applying `implicit.forward`.
+"""
 (implicit::ImplicitFunction)(x) = implicit.forward(x)
 
+"""
+    frule(rc, (_, Δx), implicit, x)
+
+Custom forward rule for [`ImplicitFunction`](@ref).
+"""
+function ChainRulesCore.frule(rc::RuleConfig, (_, Δx), implicit::ImplicitFunction, x)
+    @unpack forward, conditions, linear_solver = implicit
+    y = forward(x)
+    Δy = nothing
+    return y, Δy
+end
+
+"""
+    rrule(rc, implicit, x)
+
+Custom reverse rule for [`ImplicitFunction`](@ref).
+"""
 function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     @unpack forward, conditions, linear_solver = implicit
     y = forward(x)
@@ -37,7 +59,7 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     Bᵀ = LinearMap(last ∘ pullback_Bᵀ, n, c)  # u -> Bᵀu
 
     function implicit_pullback(dy)
-        u::Vector{Float64} = linear_solver(Aᵀ, dy)  # u = At \ v
+        u::Vector{Float64} = linear_solver(Aᵀ, unthunk(dy))  # u = At \ v
         dx::Vector{Float64} = Bᵀ * u
         return (NoTangent(), dx)
     end
