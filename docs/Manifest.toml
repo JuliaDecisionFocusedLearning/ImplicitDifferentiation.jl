@@ -201,7 +201,7 @@ uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
 
 [[deps.ImplicitDifferentiation]]
-deps = ["ChainRulesCore", "LinearMaps", "UnPack"]
+deps = ["ChainRulesCore", "LinearMaps"]
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.1.0"

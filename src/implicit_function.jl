@@ -7,7 +7,7 @@ We can obtain the Jacobian of `ŷ` with the implicit function theorem:
 ```
 ∂₁F(x,ŷ(x)) + ∂₂F(x,ŷ(x)) * ∂ŷ(x) = 0
 ```
-This amounts to solving the linear system `A * J = B`, where `A ∈ ℝᶜᵐ`, `B ∈ ℝᶜⁿ` and `J ∈ ℝᵐⁿ`.
+If `x ∈ ℝⁿ`, `y ∈ ℝᵐ` and `F(x,y) ∈ ℝᶜ`, this amounts to solving the linear system `A * J = B`, where `A ∈ ℝᶜᵐ`, `B ∈ ℝᶜⁿ` and `J ∈ ℝᵐⁿ`.
 
 # Fields:
 - `forward::F`: callable of the form `x -> ŷ(x)`
@@ -25,15 +25,20 @@ end
 
 Make [`ImplicitFunction`](@ref) callable by applying `implicit.forward`.
 """
-(implicit::ImplicitFunction)(x) = implicit.forward(x)
+(implicit::ImplicitFunction)(x::AbstractVector{<:Real}) = implicit.forward(x)
 
 """
     frule(rc, (_, dx), implicit, x)
 
 Custom forward rule for [`ImplicitFunction`](@ref).
+
+We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
 """
-function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x)
-    @unpack forward, conditions, linear_solver = implicit
+function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractVector{R}) where {R<:Real}
+    forward = implicit.forward
+    conditions = implicit.conditions
+    linear_solver = implicit.linear_solver
+
     y = forward(x)
 
     F₁(x̃) = conditions(x̃, y)
@@ -44,9 +49,9 @@ function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunctio
 
     n, m, c = length(x), length(y), length(y)
     A = LinearMap(pushforward_A, c, m)
-    B = LinearMap(pushforward_B, c, n)
+    b::Vector{R} = pushforward_B(unthunk(dx))
 
-    dy::Vector{Float64} = linear_solver(A, B * unthunk(dx))
+    dy::Vector{R} = linear_solver(A, b)
 
     return y, dy
 end
@@ -55,24 +60,29 @@ end
     rrule(rc, implicit, x)
 
 Custom reverse rule for [`ImplicitFunction`](@ref).
+
+We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
 """
-function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
-    @unpack forward, conditions, linear_solver = implicit
+function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector{R}) where {R<:Real}
+    forward = implicit.forward
+    conditions = implicit.conditions
+    linear_solver = implicit.linear_solver
+
     y = forward(x)
 
     F₁(x̃) = conditions(x̃, y)
     F₂(ỹ) = -conditions(x, ỹ)
 
-    pullback_Aᵀ = last ∘ rrule_via_ad(rc, F₂, y)[2]
-    pullback_Bᵀ = last ∘ rrule_via_ad(rc, F₁, x)[2]
+    pullback_Aᵀ = rrule_via_ad(rc, F₂, y)[2]
+    pullback_Bᵀ = rrule_via_ad(rc, F₁, x)[2]
 
     n, m, c = length(x), length(y), length(y)
-    Aᵀ = LinearMap(pullback_Aᵀ, m, c)
-    Bᵀ = LinearMap(pullback_Bᵀ, n, c)
+    Aᵀ = LinearMap(last ∘ pullback_Aᵀ, m, c)
+    Bᵀ = LinearMap(last ∘ pullback_Bᵀ, n, c)
 
     function implicit_pullback(dy)
-        u::Vector{Float64} = linear_solver(Aᵀ, unthunk(dy))
-        dx::Vector{Float64} = Bᵀ * u
+        u::Vector{R} = linear_solver(Aᵀ, unthunk(dy))
+        dx::Vector{R} = Bᵀ * u
         return (NoTangent(), dx)
     end
 
