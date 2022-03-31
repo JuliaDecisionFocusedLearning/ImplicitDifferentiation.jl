@@ -39,50 +39,50 @@ end;
 conditions(x, y) = simplex_projection(y - 0.1*2(y - x)) - y;
 
 implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);</code></pre><h2 id="Testing"><a class="docs-heading-anchor" href="#Testing">Testing</a><a id="Testing-1"></a><a class="docs-heading-anchor-permalink" href="#Testing" title="Permalink"></a></h2><p>Let us study the behavior of our implicit function.</p><pre><code class="language-julia hljs">x = rand(10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10-element Vector{Float64}:
- 0.27707554579951976
- 0.016883043343118853
- 0.1438488742752605
- 0.26394245045234743
- 0.7166952476882739
- 0.08467233909481076
- 0.6174419845496227
- 0.2028823138580299
- 0.2580592626019733
- 0.2752076526106222</code></pre><p>We can see that the forward pass computes the projection correctly, at least up to numerical precision.</p><pre><code class="language-julia hljs">hcat(simplex_projection(x), implicit(x))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×2 Matrix{Float64}:
- 0.0423385   0.0423385
- 0.0        -7.91353e-9
- 0.0        -4.99884e-9
- 0.0292054   0.0292054
- 0.481958    0.481958
- 0.0        -6.971e-9
- 0.382705    0.382705
- 0.0         4.27041e-9
- 0.0233222   0.0233223
- 0.0404706   0.0404706</code></pre><p>And the same goes for the Jacobian.</p><pre><code class="language-julia hljs">cat(
+ 0.18705554662504376
+ 0.4705416409296823
+ 0.2198840962161812
+ 0.4237602463220549
+ 0.6544086740424628
+ 0.43404852638388325
+ 0.8933357105819606
+ 0.9954921354612103
+ 0.25906026301155394
+ 0.6782792929654614</code></pre><p>We can see that the forward pass computes the projection correctly, at least up to numerical precision.</p><pre><code class="language-julia hljs">hcat(simplex_projection(x), implicit(x))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×2 Matrix{Float64}:
+ 0.0        -8.76591e-9
+ 0.0        -4.64209e-9
+ 0.0        -8.64515e-9
+ 0.0        -6.54649e-9
+ 0.0990297   0.0990297
+ 0.0        -6.25365e-9
+ 0.337957    0.337957
+ 0.440113    0.440113
+ 0.0        -8.46602e-9
+ 0.1229      0.1229</code></pre><p>And the same goes for the Jacobian.</p><pre><code class="language-julia hljs">cat(
     Zygote.jacobian(simplex_projection, x)[1],
     Zygote.jacobian(implicit, x)[1],
     dims=3
 )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×10×2 Array{Float64, 3}:
 [:, :, 1] =
-  0.833333  -0.0  -0.0  -0.166667  -0.166667  …  -0.0  -0.166667  -0.166667
-  0.0        0.0   0.0   0.0        0.0           0.0   0.0        0.0
-  0.0        0.0   0.0   0.0        0.0           0.0   0.0        0.0
- -0.166667  -0.0  -0.0   0.833333  -0.166667     -0.0  -0.166667  -0.166667
- -0.166667  -0.0  -0.0  -0.166667   0.833333     -0.0  -0.166667  -0.166667
-  0.0        0.0   0.0   0.0        0.0       …   0.0   0.0        0.0
- -0.166667  -0.0  -0.0  -0.166667  -0.166667     -0.0  -0.166667  -0.166667
-  0.0        0.0   0.0   0.0        0.0           0.0   0.0        0.0
- -0.166667  -0.0  -0.0  -0.166667  -0.166667     -0.0   0.833333  -0.166667
- -0.166667  -0.0  -0.0  -0.166667  -0.166667     -0.0  -0.166667   0.833333
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+ -0.0  -0.0  -0.0  -0.0   0.75  -0.0  -0.25  -0.25  -0.0  -0.25
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+ -0.0  -0.0  -0.0  -0.0  -0.25  -0.0   0.75  -0.25  -0.0  -0.25
+ -0.0  -0.0  -0.0  -0.0  -0.25  -0.0  -0.25   0.75  -0.0  -0.25
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+ -0.0  -0.0  -0.0  -0.0  -0.25  -0.0  -0.25  -0.25  -0.0   0.75
 
 [:, :, 2] =
-  0.833333  -0.0  -0.0  -0.166667  -0.166667  …  -0.0  -0.166667  -0.166667
-  0.0        0.0   0.0   0.0        0.0           0.0   0.0        0.0
-  0.0        0.0   0.0   0.0        0.0           0.0   0.0        0.0
- -0.166667  -0.0  -0.0   0.833333  -0.166667     -0.0  -0.166667  -0.166667
- -0.166667  -0.0  -0.0  -0.166667   0.833333     -0.0  -0.166667  -0.166667
-  0.0        0.0   0.0   0.0        0.0       …   0.0   0.0        0.0
- -0.166667  -0.0  -0.0  -0.166667  -0.166667     -0.0  -0.166667  -0.166667
-  0.0        0.0   0.0   0.0        0.0           0.0   0.0        0.0
- -0.166667  -0.0  -0.0  -0.166667  -0.166667     -0.0   0.833333  -0.166667
- -0.166667  -0.0  -0.0  -0.166667  -0.166667     -0.0  -0.166667   0.833333</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../1_unconstrained_optimization/">« Unconstrained optimization</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.15 on <span class="colophon-date" title="Thursday 31 March 2022 15:54">Thursday 31 March 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+ -0.0  -0.0  -0.0  -0.0   0.75  -0.0  -0.25  -0.25  -0.0  -0.25
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+ -0.0  -0.0  -0.0  -0.0  -0.25  -0.0   0.75  -0.25  -0.0  -0.25
+ -0.0  -0.0  -0.0  -0.0  -0.25  -0.0  -0.25   0.75  -0.0  -0.25
+  0.0   0.0   0.0   0.0   0.0    0.0   0.0    0.0    0.0   0.0
+ -0.0  -0.0  -0.0  -0.0  -0.25  -0.0  -0.25  -0.25  -0.0   0.75</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../1_unconstrained_optimization/">« Unconstrained optimization</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.15 on <span class="colophon-date" title="Thursday 31 March 2022 16:08">Thursday 31 March 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
