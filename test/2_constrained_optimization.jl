@@ -96,18 +96,6 @@ cat(
 
 # The following tests are not included in the docs.  #src
 
-@testset verbose = true "Sparsemax differentiation rrule" begin  #src
-    test_rrule(simplex_projection, rand(100))  #src
-end  #src
-
-@testset verbose = true "x_pass vs. x_fail" begin  #src
-    test_rrule(implicit, x_pass; atol=1e-3)  #src
-    @test implicit(x_pass) ≈ simplex_projection(x_pass) atol = 1e-5  #src
-    @test implicit(x_fail) ≈ simplex_projection(x_fail) atol = 1e-5  #src
-    @test Zygote.jacobian(implicit, x_pass)[1] ≈  #src
-        Zygote.jacobian(simplex_projection, x_pass)[1]  #src
-    @test !(  #src
-        Zygote.jacobian(implicit, x_fail)[1] ≈  #src
-        Zygote.jacobian(simplex_projection, x_fail)[1]  #src
-    )  #src
-end  #src
+test_rrule(simplex_projection, x)  #src
+@test implicit(x) ≈ simplex_projection(x) atol = 1e-5  #src
+test_rrule(implicit, x; atol=1e-3)  #src
