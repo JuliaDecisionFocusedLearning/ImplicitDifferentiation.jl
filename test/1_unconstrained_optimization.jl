@@ -7,7 +7,7 @@ In this example, we show how to differentiate through the solution of the follow
 ```
 The optimality conditions are given by gradient stationarity:
 ```math
-\nabla_x f(x, \hat{y}(x)) = 0
+F(x, \hat{y}(x)) = \nabla_1 f(x, \hat{y}(x)) = 0
 ```
 
 =#
@@ -20,7 +20,10 @@ using Optim
 using Statistics
 using Zygote
 
-# ## Exact formulae
+using ChainRulesTestUtils  #src
+using Test  #src
+
+# ## White box
 
 #=
 To make verification easy, we minimize a quadratic objective
@@ -30,10 +33,10 @@ f(x, y) = \lVert x - y \rVert^2
 In this case, the optimization algorithm and optimality conditions have very simple expressions.
 =#
 
-forward(x) = x
-conditions(x, y) = 2(x - y)
+forward_white_box(x) = x
+conditions_white_box(x, y) = 2(x - y)
 
-implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres)
+implicit_white_box = ImplicitFunction(; forward=forward_white_box, conditions=conditions_white_box, linear_solver=gmres)
 
 # ## Black box
 
@@ -46,7 +49,7 @@ square_distance(x, y) = sum(abs2, x - y)
 function forward_black_box(x)
     fun = OptimizationFunction(square_distance, GalacticOptim.AutoForwardDiff())
     prob = OptimizationProblem(fun, zero(x), x)
-    sol = solve(prob, LBFGS())
+    sol = GalacticOptim.solve(prob, LBFGS())
     return sol.u
 end
 
@@ -63,32 +66,24 @@ implicit_black_box = ImplicitFunction(;
 
 x = rand(5)
 
-# We now check whether the forward and reverse rules we defined are coherent with the theoretical derivatives.
+# We now check whether the behavior of our `ImplicitFunction` wrapper is coherent with the theoretical derivatives.
 
-Zygote.jacobian(implicit, x)[1]
+Zygote.jacobian(implicit_white_box, x)[1]
 
 #
 
 Zygote.jacobian(implicit_black_box, x)[1]
 
-# As expected, we recover the identity matrix as our jacobian.
+# As expected, we recover the identity matrix as Jacobian.
 
-# ## Testing  #src
+# The following tests are not included in the docs.  #src
 
-using ChainRulesTestUtils  #src
-using Test  #src
-
-@testset verbose = true "Exact formulae" begin  #src
-    test_frule(implicit, x)  #src
-    test_rrule(implicit, x)  #src
-    @testset verbose = true "Theoretical jacobian" begin  #src
-        @test Zygote.jacobian(implicit, x)[1] == I  #src
-    end  #src
+@testset verbose = true "White box" begin  #src
+    test_frule(implicit_white_box, x)  #src
+    test_rrule(implicit_white_box, x)  #src
 end  #src
+
 @testset verbose = true "Black box" begin  #src
     test_frule(implicit_black_box, x)  #src
     test_rrule(implicit_black_box, x)  #src
-    @testset verbose = true "Theoretical jacobian" begin  #src
-        @test Zygote.jacobian(implicit_black_box, x)[1] == I  #src
-    end  #src
 end  #src
