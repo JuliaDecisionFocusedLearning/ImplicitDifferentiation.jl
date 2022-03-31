@@ -50,7 +50,7 @@ implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_sol
 
 # ## Testing
 
-x = rand(10)
+x = rand(5)
 
 # Let's start by taking a look at the forward pass, which should be the identity function.
 

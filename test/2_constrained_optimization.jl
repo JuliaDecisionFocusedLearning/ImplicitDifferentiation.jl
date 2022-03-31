@@ -80,7 +80,7 @@ implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_sol
 
 # Let us study the behavior of our implicit function.
 
-x = rand(10)
+x = rand(5)
 
 # We can see that the forward pass computes the projection correctly, at least up to numerical precision.
 
@@ -98,4 +98,4 @@ cat(
 
 test_rrule(simplex_projection, x)  #src
 @test implicit(x) ≈ simplex_projection(x) atol = 1e-5  #src
-test_rrule(implicit, x; atol=1e-3)  #src
+test_rrule(implicit, x; atol=1e-2)  #src
