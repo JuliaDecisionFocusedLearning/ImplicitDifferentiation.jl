@@ -8,7 +8,7 @@ In this example, we show how to differentiate through the solution of the follow
 where ``\mathcal{C}`` is a closed convex set.
 The optimal solution can be found as the fixed point of the projected gradient algorithm for any step size ``\eta``. This insight yields the following optimality conditions:
 ```math
-F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \mathrm{proj}_{\mathcal{C}}(y - \eta \nabla_1 f(x, y)) - y
+F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \mathrm{proj}_{\mathcal{C}}(y - \eta \nabla_2 f(x, y)) - y
 ```
 =#
 
@@ -25,7 +25,7 @@ using Test  #src
 # ## Projecting onto the simplex
 
 #=
-We focus on minimizing ``f(x,y) = \lVert x - y \rVert_2^2``.
+We focus on minimizing ``f(x,y) = \lVert y - x \rVert_2^2``.
 We also assume that ``\mathcal{C} = \Delta^n`` is the ``n``-dimensional probability simplex, because we know exact procedures to compute the projection *and* its Jacobian.
 See <https://arxiv.org/abs/1602.02068> for details.
 =#
@@ -67,52 +67,32 @@ function forward(x)
     model = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
     @variable(model, y[1:n] >= 0)
     @constraint(model, sum(y) == 1)
-    @objective(model, Min, sum((x .- y) .^ 2))
+    @objective(model, Min, sum((y .- x) .^ 2))
     optimize!(model)
     return value.(y)
 end;
 
-conditions(x, y) = simplex_projection(y - 0.1(x - y)) - y;
+conditions(x, y) = simplex_projection(y - 0.1*2(y - x)) - y;
 
 implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
 
 # ## Testing
 
-# Let us compare the behavior of our implicit function on two different vectors.
+# Let us study the behavior of our implicit function.
 
-x_pass, x_fail = ones(5), rand(5)
+x = rand(10)
 
-# We can see that the forward pass correctly computes the projection, at least up to numerical precision.
+# We can see that the forward pass computes the projection correctly, at least up to numerical precision.
 
-hcat(simplex_projection(x_pass), implicit(x_pass))
+hcat(simplex_projection(x), implicit(x))
 
-#
-
-hcat(simplex_projection(x_fail), implicit(x_fail))
-
-# However, the Jacobian behaves differently, and it is incorrect for `x_fail`.
+# And the same goes for the Jacobian.
 
 cat(
-    Zygote.jacobian(simplex_projection, x_pass)[1],
-    Zygote.jacobian(implicit, x_pass)[1],
+    Zygote.jacobian(simplex_projection, x)[1],
+    Zygote.jacobian(implicit, x)[1],
     dims=3
 )
-
-#
-
-cat(
-    Zygote.jacobian(simplex_projection, x_fail)[1],
-    Zygote.jacobian(implicit, x_fail)[1],
-    dims=3
-)
-
-#=
-So what happened?
-Well, when the partial Jacobian ``\partial_2 F(x, \hat{y}(x))`` is not invertible, the implicit function theorem no longer holds because the implicit mapping is not uniquely defined.
-Unfortunately, in our case, this happens as soon as the projection is sparse, since some coordinates of ``x`` won't play any role in the value of ``\hat{y}(x)``.
-
-Hopefully, the invalid result obtained through implicit differentiation can still be used as a heuristic.
-=#
 
 # The following tests are not included in the docs.  #src
 
