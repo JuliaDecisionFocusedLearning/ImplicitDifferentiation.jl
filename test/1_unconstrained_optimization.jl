@@ -7,83 +7,64 @@ In this example, we show how to differentiate through the solution of the follow
 ```
 The optimality conditions are given by gradient stationarity:
 ```math
-F(x, \hat{y}(x)) = \nabla_1 f(x, \hat{y}(x)) = 0
+F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \nabla_1 f(x, y) = 0
 ```
 
 =#
 
-using GalacticOptim
 using ImplicitDifferentiation
-using IterativeSolvers
-using LinearAlgebra
-using Optim
-using Statistics
+using Krylov: gmres
+using Optim: optimize, minimizer, LBFGS
 using Zygote
 
 using ChainRulesTestUtils  #src
 using Test  #src
 
-# ## White box
+# ## Implicit function wrapper
 
 #=
 To make verification easy, we minimize a quadratic objective
 ```math
 f(x, y) = \lVert x - y \rVert^2
 ```
-In this case, the optimization algorithm and optimality conditions have very simple expressions.
+In this case, the optimization algorithm is very simple, but still we can implement it as a black box to show that it doesn't change the result.
 =#
 
-forward_white_box(x) = x
-conditions_white_box(x, y) = 2(x - y)
-
-implicit_white_box = ImplicitFunction(; forward=forward_white_box, conditions=conditions_white_box, linear_solver=gmres)
-
-# ## Black box
+function forward(x)
+    f(y) = sum(abs2, x-y)
+    y0 = zero(x)
+    res = optimize(f, y0, LBFGS(); autodiff=:forward)
+    y = minimizer(res)
+    return y
+end;
 
 #=
-However, we can also handle the case where no formulae are known, and the user must resort to black box optimization and differentiation algorithms.
+On the other hand, optimality conditions should be provided explicitly whenever possible, so as to avoid nesting automatic differentiation calls.
 =#
 
-square_distance(x, y) = sum(abs2, x - y)
+conditions(x, y) = 2(x - y);
 
-function forward_black_box(x)
-    fun = OptimizationFunction(square_distance, GalacticOptim.AutoForwardDiff())
-    prob = OptimizationProblem(fun, zero(x), x)
-    sol = GalacticOptim.solve(prob, LBFGS())
-    return sol.u
-end
+# We now have all the ingredients to construct our implicit function.
 
-function conditions_black_box(x, y)
-    gs = Zygote.gradient(ỹ -> square_distance(ỹ, x), y)
-    return gs[1]
-end
-
-implicit_black_box = ImplicitFunction(;
-    forward=forward_black_box, conditions=conditions_black_box, linear_solver=gmres
-)
+implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
 
 # ## Testing
 
 x = rand(5)
 
+# Let's start by taking a look at the forward pass, which should be the identity function.
+
+implicit(x)
+
 # We now check whether the behavior of our `ImplicitFunction` wrapper is coherent with the theoretical derivatives.
 
-Zygote.jacobian(implicit_white_box, x)[1]
-
-#
-
-Zygote.jacobian(implicit_black_box, x)[1]
+Zygote.jacobian(implicit, x)[1]
 
 # As expected, we recover the identity matrix as Jacobian.
 
 # The following tests are not included in the docs.  #src
 
-@testset verbose = true "White box" begin  #src
-    test_frule(implicit_white_box, x)  #src
-    test_rrule(implicit_white_box, x)  #src
-end  #src
-
-@testset verbose = true "Black box" begin  #src
-    test_frule(implicit_black_box, x)  #src
-    test_rrule(implicit_black_box, x)  #src
+@testset verbose = true "ChainRules" begin  #src
+    test_frule(implicit, x)  #src
+    test_rrule(implicit, x)  #src
 end  #src

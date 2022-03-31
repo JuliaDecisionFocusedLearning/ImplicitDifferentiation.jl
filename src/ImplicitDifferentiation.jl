@@ -1,7 +1,7 @@
 module ImplicitDifferentiation
 
 using ChainRulesCore
-using LinearMaps
+using LinearOperators
 
 include("implicit_function.jl")
 

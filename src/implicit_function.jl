@@ -44,14 +44,18 @@ function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunctio
     F₁(x̃) = conditions(x̃, y)
     F₂(ỹ) = -conditions(x, ỹ)
 
-    pushforward_A(dỹ) = last(frule_via_ad(rc, (NoTangent(), dỹ), F₂, y))
-    pushforward_B(dx̃) = last(frule_via_ad(rc, (NoTangent(), dx̃), F₁, x))
+    pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), F₂, y)[2]
+    pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), F₁, x)[2]
 
     n, m, c = length(x), length(y), length(y)
-    A = LinearMap(pushforward_A, c, m)
-    b::Vector{R} = pushforward_B(unthunk(dx))
+    mul_A!(res, v) = res .= pushforward_A(v)
+    mul_B!(res, v) = res .= pushforward_B(v)
 
-    dy::Vector{R} = linear_solver(A, b)
+    A = LinearOperator(R, c, m, false, false, mul_A!)
+    B = LinearOperator(R, c, m, false, false, mul_B!)
+
+    b = B * unthunk(dx)
+    dy, stats = linear_solver(A, b)
 
     return y, dy
 end
@@ -73,16 +77,19 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::Abs
     F₁(x̃) = conditions(x̃, y)
     F₂(ỹ) = -conditions(x, ỹ)
 
-    pullback_Aᵀ = rrule_via_ad(rc, F₂, y)[2]
-    pullback_Bᵀ = rrule_via_ad(rc, F₁, x)[2]
+    pullback_Aᵀ = last ∘ rrule_via_ad(rc, F₂, y)[2]
+    pullback_Bᵀ = last ∘ rrule_via_ad(rc, F₁, x)[2]
 
     n, m, c = length(x), length(y), length(y)
-    Aᵀ = LinearMap(last ∘ pullback_Aᵀ, m, c)
-    Bᵀ = LinearMap(last ∘ pullback_Bᵀ, n, c)
+    mul_Aᵀ!(res, v) = res .= pullback_Aᵀ(v)
+    mul_Bᵀ!(res, v) = res .= pullback_Bᵀ(v)
+
+    Aᵀ = LinearOperator(R, m, c, false, false, mul_Aᵀ!)
+    Bᵀ = LinearOperator(R, n, c, false, false, mul_Bᵀ!)
 
     function implicit_pullback(dy)
-        u::Vector{R} = linear_solver(Aᵀ, unthunk(dy))
-        dx::Vector{R} = Bᵀ * u
+        u, stats = linear_solver(Aᵀ, unthunk(dy))
+        dx = Bᵀ * u
         return (NoTangent(), dx)
     end
 

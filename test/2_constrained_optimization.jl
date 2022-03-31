@@ -13,14 +13,10 @@ F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \mathrm{proj}_{\mathcal{C}
 =#
 
 using ChainRulesCore
-using GalacticOptim
 using ImplicitDifferentiation
 using Ipopt
-using IterativeSolvers
 using JuMP
-using LinearAlgebra
-using Optim
-using Statistics
+using Krylov: gmres
 using Zygote
 
 using ChainRulesTestUtils  #src
@@ -61,8 +57,6 @@ function ChainRulesCore.rrule(::typeof(simplex_projection), z::AbstractVector{<:
     end
     return p, simplex_projection_pullback
 end;
-
-test_rrule(simplex_projection, rand(100))  #src
 
 # ## Implicit function wrapper
 
@@ -114,15 +108,20 @@ cat(
 
 #=
 So what happened?
-Well, when the Jacobian ``\partial_2 F(x, \hat{y}(x))`` is not invertible, the implicit function theorem no longer holds.
-Unfortunately, this happens as soon as the projection is sparse, since some coordinates of ``x`` won't play any role in the value of ``\hat{y}(x)``.
+Well, when the partial Jacobian ``\partial_2 F(x, \hat{y}(x))`` is not invertible, the implicit function theorem no longer holds because the implicit mapping is not uniquely defined.
+Unfortunately, in our case, this happens as soon as the projection is sparse, since some coordinates of ``x`` won't play any role in the value of ``\hat{y}(x)``.
 
-Hopefully, in this case, the invalid result obtained through implicit differentiation can still be used as a heuristic.
+Hopefully, the invalid result obtained through implicit differentiation can still be used as a heuristic.
 =#
 
 # The following tests are not included in the docs.  #src
 
+@testset verbose = true "Sparsemax differentiation rrule" begin  #src
+    test_rrule(simplex_projection, rand(100))  #src
+end  #src
+
 @testset verbose = true "x_pass vs. x_fail" begin  #src
+    test_rrule(implicit, x_pass; atol=1e-3)  #src
     @test implicit(x_pass) ≈ simplex_projection(x_pass) atol = 1e-5  #src
     @test implicit(x_fail) ≈ simplex_projection(x_fail) atol = 1e-5  #src
     @test Zygote.jacobian(implicit, x_pass)[1] ≈  #src
@@ -132,5 +131,3 @@ Hopefully, in this case, the invalid result obtained through implicit differenti
         Zygote.jacobian(simplex_projection, x_fail)[1]  #src
     )  #src
 end  #src
-
-test_rrule(implicit, x_pass; atol=1e-3)  #src
