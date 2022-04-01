@@ -60,8 +60,8 @@ function ChainRulesCore.frule(
     mul_A!(res, v) = res .= flatten(pushforward_A(v))[1]
     mul_B!(res, v) = res .= flatten(pushforward_B(v))[1]
 
-    A = LinearOperator(R, m, m, false, false, mul_A!)
-    B = LinearOperator(R, m, n, false, false, mul_B!)
+    A = LinearOperator(Float64, m, m, false, false, mul_A!)
+    B = LinearOperator(Float64, m, n, false, false, mul_B!)
 
     dx_vec = flatten(unthunk(dx))[1]
     b = B * dx_vec
