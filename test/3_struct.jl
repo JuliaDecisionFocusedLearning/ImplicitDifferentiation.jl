@@ -38,6 +38,7 @@ end;
 # ## Testing
 
 z = rand(5)
+a = (x=z[1:2], y=z[3:5])  #src
 
 # Let us first check that `mynorm` returns the correct result.
 
@@ -51,3 +52,14 @@ Zygote.gradient(mynorm, z)[1] ≈ 2z
 
 @test mynorm(z) ≈ sum(abs2, z)  #src
 @test Zygote.gradient(mynorm, z)[1] ≈ 2z  #src
+
+@testset verbose = true "ChainRules" begin  #src
+    test_frule(implicit, a; check_inferred=false)  #src
+    test_rrule(implicit, a; check_inferred=false)  #src
+end  #src
+
+using ChainRulesCore
+
+_, pullback = rrule_via_ad(Zygote.ZygoteRuleConfig(), (b -> sum(b.v)) ∘ implicit, a)
+
+pullback(2)

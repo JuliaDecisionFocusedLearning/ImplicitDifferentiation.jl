@@ -56,7 +56,6 @@ function ChainRulesCore.frule(
     pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), F₂, y)[2]
     pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), F₁, x)[2]
 
-    n, m = length(x), length(y)
     mul_A!(res, v) = res .= flatten(pushforward_A(v))[1]
     mul_B!(res, v) = res .= flatten(pushforward_B(v))[1]
 

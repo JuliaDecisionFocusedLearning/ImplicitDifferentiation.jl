@@ -2,7 +2,10 @@
 
 using Aqua
 using ImplicitDifferentiation
+using Random
 using Test
+
+Random.seed!(63)
 
 ## Test sets
 
