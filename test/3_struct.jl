@@ -8,18 +8,21 @@ using ImplicitDifferentiation
 using Krylov: gmres
 using Zygote
 
+using ChainRulesCore  #src
 using ChainRulesTestUtils  #src
 using Test  #src
 
 # ## Implicit function wrapper
 
 #=
-We replicate a componentwise square function with `NamedTuple`s:
+We replicate a componentwise square function with `NamedTuple`s, taking `a=(x,y)` as input and returning `b=(u,v)`.
 =#
 
 forward(a) = (u=a.x .^ 2, v=a.y .^ 2);
 
-conditions(a, b) = vcat(b.u .- a.x .^ 2, b.v .- a.y .^ 2);
+function conditions(a, b)
+    return vcat(b.u .- a.x .^ 2, b.v .- a.y .^ 2)
+end
 
 implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
 
@@ -29,37 +32,33 @@ In order to be able to call `Zygote.gradient`, we use `implicit` to define a con
 
 function mynorm(z::AbstractVector)
     n = length(z)
-    x, y = z[1:(n ÷ 2)], z[(n ÷ 2 + 1):end]
-    a = (x=x, y=y)
+    a = (x=z[1:n÷2], y=z[n÷2+1:end])
     b = implicit(a)
     return sum(b.u) + sum(b.v)
 end;
 
+function mynorm_broken(x::AbstractVector)  #src
+    a = (x=x, y=rand(2))  #src
+    b = implicit(a)  #src
+    return sum(b.u)  #src
+end;  #src
+
 # ## Testing
 
-z = rand(5)
-a = (x=z[1:2], y=z[3:5])  #src
+x = rand(5)
 
-# Let us first check that `mynorm` returns the correct result.
+# Let us first check that our weird squared norm returns the correct result.
 
-mynorm(z) ≈ sum(abs2, z)
+mynorm(x) ≈ sum(abs2, x)
 
 # Now we go one step further and compute its gradient, which involves the reverse rule for `implicit`.
 
-Zygote.gradient(mynorm, z)[1] ≈ 2z
+Zygote.gradient(mynorm, x)[1] ≈ 2x
 
 # The following tests are not included in the docs.  #src
 
-@test mynorm(z) ≈ sum(abs2, z)  #src
-@test Zygote.gradient(mynorm, z)[1] ≈ 2z  #src
+@test mynorm(x) ≈ sum(abs2, x)  #src
+@test mynorm_broken(x) ≈ sum(abs2, x)  #src
 
-@testset verbose = true "ChainRules" begin  #src
-    test_frule(implicit, a; check_inferred=false)  #src
-    test_rrule(implicit, a; check_inferred=false)  #src
-end  #src
-
-using ChainRulesCore
-
-_, pullback = rrule_via_ad(Zygote.ZygoteRuleConfig(), (b -> sum(b.v)) ∘ implicit, a)
-
-pullback(2)
+@test Zygote.gradient(mynorm, x)[1] ≈ 2x  #src
+@test_broken Zygote.gradient(mynorm_broken, x)[1] ≈ 2x  #src

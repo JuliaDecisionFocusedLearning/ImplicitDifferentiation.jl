@@ -38,8 +38,7 @@ Custom forward rule for [`ImplicitFunction`](@ref).
 
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
 """
-function ChainRulesCore.frule(
-    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x)
+function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x)
     forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
@@ -50,11 +49,11 @@ function ChainRulesCore.frule(
     y_vec, unflatten_y = flatten(y)
     n, m = length(x_vec), length(y_vec)
 
-    F₁(x̃) = conditions(x̃, y)
-    F₂(ỹ) = -conditions(x, ỹ)
+    conditions_x(x̃) = conditions(x̃, y)
+    conditions_y(ỹ) = -conditions(x, ỹ)
 
-    pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), F₂, y)[2]
-    pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), F₁, x)[2]
+    pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y)[2]
+    pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x)[2]
 
     mul_A!(res, v) = res .= flatten(pushforward_A(v))[1]
     mul_B!(res, v) = res .= flatten(pushforward_B(v))[1]
@@ -80,8 +79,7 @@ Custom reverse rule for [`ImplicitFunction`](@ref).
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
 """
-function ChainRulesCore.rrule(
-    rc::RuleConfig, implicit::ImplicitFunction, x)
+function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
@@ -90,17 +88,17 @@ function ChainRulesCore.rrule(
 
     x_vec, unflatten_x = flatten(x)
     y_vec, _ = flatten(y)
-    n, m = length(x_vec), length(y_vec)
 
-    F₁(x̃) = conditions(x̃, y)
-    F₂(ỹ) = -conditions(x, ỹ)
+    conditions_x(x̃) = conditions(x̃, y)
+    conditions_y(ỹ) = -conditions(x, ỹ)
 
-    pullback_Aᵀ = last ∘ rrule_via_ad(rc, F₂, y)[2]
-    pullback_Bᵀ = last ∘ rrule_via_ad(rc, F₁, x)[2]
+    pullback_Aᵀ = last ∘ rrule_via_ad(rc, conditions_y, y)[2]
+    pullback_Bᵀ = last ∘ rrule_via_ad(rc, conditions_x, x)[2]
 
     mul_Aᵀ!(res, v) = res .= flatten(pullback_Aᵀ(v))[1]
     mul_Bᵀ!(res, v) = res .= flatten(pullback_Bᵀ(v))[1]
 
+    n, m = length(x_vec), length(y_vec)
     Aᵀ = LinearOperator(Float64, m, m, false, false, mul_Aᵀ!)
     Bᵀ = LinearOperator(Float64, n, m, false, false, mul_Bᵀ!)
 

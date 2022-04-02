@@ -29,18 +29,6 @@ version = "1.1.0"
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
-[[deps.Arpack]]
-deps = ["Arpack_jll", "Libdl", "LinearAlgebra", "Logging"]
-git-tree-sha1 = "288d58589d4249a63095f3f41ece91bf34c32c19"
-uuid = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
-version = "0.5.0"
-
-[[deps.Arpack_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "OpenBLAS_jll", "Pkg"]
-git-tree-sha1 = "4c31b0101997beb213a9e6c39116b052e73ca38c"
-uuid = "68821587-b530-5797-8361-c406ea357684"
-version = "3.8.0+0"
-
 [[deps.ArrayInterface]]
 deps = ["Compat", "IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
 git-tree-sha1 = "6e8fada11bb015ecf9263f64b156f98b546918c7"
@@ -208,26 +196,6 @@ git-tree-sha1 = "1bd6fc0c344fc0cbee1f42f8d2e7ec8253dda2d2"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.25"
 
-[[deps.FrankWolfe]]
-deps = ["Arpack", "GenericSchur", "Hungarian", "LinearAlgebra", "MathOptInterface", "Printf", "ProgressMeter", "Random", "SparseArrays", "TimerOutputs"]
-git-tree-sha1 = "fb00dd0376ef7f22c5100985a2f6d8eba51135df"
-repo-rev = "breaking-02"
-repo-url = "https://github.com/ZIB-IOL/FrankWolfe.jl.git"
-uuid = "f55ce6ea-fdc5-4628-88c5-0087fe54bd30"
-version = "0.1.20"
-
-[[deps.GenericSchur]]
-deps = ["LinearAlgebra", "Printf"]
-git-tree-sha1 = "9f4933bbb357fd52d77ecf3bb1c4dc39d3710c80"
-uuid = "c145ed77-6b09-5dd9-b285-bf645a82121e"
-version = "0.5.2"
-
-[[deps.Hungarian]]
-deps = ["LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "371a7df7a6cce5909d6c576f234a2da2e3fa0c98"
-uuid = "e91730f6-4275-51fb-a7a0-7064cfbd3b39"
-version = "0.6.0"
-
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
 git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
@@ -246,7 +214,7 @@ uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
 
 [[deps.ImplicitDifferentiation]]
-deps = ["ChainRulesCore", "LinearOperators", "NamedTupleTools", "ParameterHandling", "SparseArrays"]
+deps = ["ChainRulesCore", "LinearOperators", "NamedTupleTools", "ParameterHandling"]
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.1.0"
@@ -504,12 +472,6 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 [[deps.Profile]]
 deps = ["Printf"]
 uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
-
-[[deps.ProgressMeter]]
-deps = ["Distributed", "Printf"]
-git-tree-sha1 = "d7a7aef8f8f2d537104f170139553b14dfe39fe9"
-uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
-version = "1.7.2"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
