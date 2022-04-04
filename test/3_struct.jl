@@ -8,6 +8,7 @@ using ImplicitDifferentiation
 using Krylov: gmres
 using Zygote
 
+using Diffractor  #src
 using ChainRulesCore  #src
 using ChainRulesTestUtils  #src
 using Test  #src
@@ -62,3 +63,16 @@ Zygote.gradient(mynorm, x)[1] ≈ 2x
 
 @test Zygote.gradient(mynorm, x)[1] ≈ 2x  #src
 @test_broken Zygote.gradient(mynorm_broken, x)[1] ≈ 2x  #src
+
+# EXPERIMENTAL  #src
+
+drc = Diffractor.DiffractorRuleConfig()  #src
+zrc = Zygote.ZygoteRuleConfig()  #src
+
+_, dn = frule_via_ad(drc, (NoTangent(), x), mynorm, x)  #src
+
+_, pullback = rrule_via_ad(zrc, mynorm, x)  #src
+_, pullback_broken = rrule_via_ad(zrc, mynorm_broken, x)  #src
+
+pullback(1)  #src
+pullback_broken(1)  #src

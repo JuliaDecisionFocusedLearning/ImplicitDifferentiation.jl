@@ -3,9 +3,12 @@ module ImplicitDifferentiation
 using ChainRulesCore
 using LinearOperators
 using NamedTupleTools
-using ParameterHandling
+using SparseArrays
 
-include("flatten.jl")
+# using ParameterHandling
+# include("flatten.jl")
+
+include("flatten_nonconvexcore.jl")
 include("implicit_function.jl")
 include("simplex.jl")
 
