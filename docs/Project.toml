@@ -14,3 +14,6 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 OptimalTransport = "7e02d93a-ae51-4f58-b602-d97af76e3b33"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[compat]
+OptimalTransport = "0.3.9"
