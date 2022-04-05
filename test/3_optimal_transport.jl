@@ -27,6 +27,7 @@ using OptimalTransport
 using Distances
 using Krylov: gmres
 using Zygote
+using FiniteDiff
 using ChainRulesTestUtils
 
 # ## Implicit function wrapper
@@ -49,7 +50,7 @@ function forward(vC)
 end
 function conditions(vC, u)
     C = reshape(vC, n, m)
-    M = exp.(-C ./ ϵ)
+    M = exp.(.-C ./ ϵ)
     v = c ./ (M' * u)
     return u .- r ./ (M * v)
 end
@@ -71,7 +72,8 @@ function plan(vC)
     vec(u .* M .* v')
 end
 Zygote.jacobian(plan, vC)[1]
+FiniteDiff.finite_difference_jacobian(plan, vC)
 
 # The following tests are not included in the docs.  #src
 
-test_rrule(implicit, vC)  #src
+Zygote.jacobian(plan, vC)[1] ≈ FiniteDiff.finite_difference_jacobian(plan, vC)  #src
