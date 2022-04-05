@@ -27,6 +27,7 @@ using OptimalTransport
 using Distances
 using Krylov: gmres
 using Zygote
+using ChainRulesTestUtils
 
 # ## Implicit function wrapper
 
@@ -35,23 +36,22 @@ using Zygote
 n, m = 3, 3
 X = rand(10, n)
 Y = rand(10, m)
-C = pairwise(SqEuclidean(), X, Y);
-vC = vec(C)
+vC = vec(pairwise(SqEuclidean(), X, Y))
 r = fill(1 / n, n)
 c = fill(1 / m, m)
-ϵ = 0.1
+ϵ = 1.0
 function forward(vC)
-    local C = reshape(vC, n, m)
+    C = reshape(vC, n, m)
     solver = OptimalTransport.build_solver(r, c, C, ϵ, SinkhornGibbs())
     OptimalTransport.solve!(solver)
-    u, v = solver.cache.u, solver.cache.v
-    return [u; v]
+    u = solver.cache.u
+    return u
 end
-function conditions(vC, uv)
-    local C = reshape(vC, n, m)
-    u, v = uv[1:n], uv[n+1:n+m]
+function conditions(vC, u)
+    C = reshape(vC, n, m)
     M = exp.(-C ./ ϵ)
-    return [u .- r ./ (M * v); v .- c ./ (M' * u)]
+    v = c ./ (M' * u)
+    return u .- r ./ (M * v)
 end
 
 implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
@@ -64,10 +64,11 @@ conditions(vC, uv)
 # Let us find the Jacobian `d(vec(P)) / d(vec(C))` using the implicit function defined above and the formula for the optimal transport plan given ``u``, ``v`` and ``C``.
 
 function plan(vC)
-    uv = implicit(vC)
+    u = implicit(vC)
     C = reshape(vC, n, m)
-    u, v = uv[1:n], uv[n+1:n+m]
-    vec(u .* exp.(.-C ./ ϵ) .* v')
+    M = exp.(.-C ./ ϵ)
+    v = c ./ (M' * u)
+    vec(u .* M .* v')
 end
 Zygote.jacobian(plan, vC)[1]
 
