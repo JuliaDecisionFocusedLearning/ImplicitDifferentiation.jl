@@ -37,7 +37,7 @@ using ChainRulesTestUtils
 n, m = 3, 3
 X = rand(10, n)
 Y = rand(10, m)
-vC = vec(pairwise(SqEuclidean(), X, Y))
+vC = vec(pairwise(SqEuclidean(), X, Y, dims=2))
 r = fill(1 / n, n)
 c = fill(1 / m, m)
 ϵ = 1.0
