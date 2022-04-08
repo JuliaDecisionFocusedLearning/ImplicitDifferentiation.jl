@@ -21,14 +21,13 @@ v = c ./ (M^\top \times u))
 The implicit function theorem can be used to differentiate ``u`` and ``v`` wrt ``C``, ``r`` and/or ``c``. This can be combined with automatic differentiation to find the Jacobian ``d(vec(p))/d(vec(C))`` for instance using the explicit function that maps ``u``, ``v`` and ``C`` to ``p``, where ``vec(p)`` is the vectorized optimal transport plan ``p`` and ``vec(C)`` is the vectorized distance matrix.
 =#
 
-using ChainRulesCore
 using ImplicitDifferentiation
 using OptimalTransport
 using Distances
 using Krylov: gmres
 using Zygote
 using FiniteDiff
-using ChainRulesTestUtils
+using Test, LinearAlgebra #src
 
 # ## Implicit function wrapper
 
@@ -76,4 +75,4 @@ FiniteDiff.finite_difference_jacobian(plan, vC)
 
 # The following tests are not included in the docs.  #src
 
-Zygote.jacobian(plan, vC)[1] ≈ FiniteDiff.finite_difference_jacobian(plan, vC)  #src
+@test norm(Zygote.jacobian(plan, vC)[1] ≈ FiniteDiff.finite_difference_jacobian(plan, vC)) < 1e-9  #src
