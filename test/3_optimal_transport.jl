@@ -75,4 +75,4 @@ FiniteDiff.finite_difference_jacobian(plan, vC)
 
 # The following tests are not included in the docs.  #src
 
-@test norm(Zygote.jacobian(plan, vC)[1] ≈ FiniteDiff.finite_difference_jacobian(plan, vC)) < 1e-9  #src
+@test norm(Zygote.jacobian(plan, vC)[1] - FiniteDiff.finite_difference_jacobian(plan, vC)) < 1e-9  #src
