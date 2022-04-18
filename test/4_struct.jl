@@ -66,13 +66,8 @@ Zygote.gradient(mynorm, x)[1] ≈ 2x
 
 # EXPERIMENTAL  #src
 
-drc = Diffractor.DiffractorRuleConfig()  #src
 zrc = Zygote.ZygoteRuleConfig()  #src
-
-_, dn = frule_via_ad(drc, (NoTangent(), x), mynorm, x)  #src
-
 _, pullback = rrule_via_ad(zrc, mynorm, x)  #src
 _, pullback_broken = rrule_via_ad(zrc, mynorm_broken, x)  #src
-
 pullback(1)  #src
 pullback_broken(1)  #src

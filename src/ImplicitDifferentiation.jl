@@ -5,7 +5,7 @@ using LinearOperators
 using NamedTupleTools
 using SparseArrays
 
-# using ParameterHandling
+import ParameterHandling
 # include("flatten.jl")
 
 include("flatten_nonconvexcore.jl")

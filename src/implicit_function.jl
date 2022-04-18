@@ -103,7 +103,7 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     Bᵀ = LinearOperator(Float64, n, m, false, false, mul_Bᵀ!)
 
     function implicit_pullback(dy)
-        dy_vec = flatten(unthunk(dy))[1]
+        dy_vec = zygote_flatten(y_vec, unthunk(dy))[1]
         u, stats = linear_solver(Aᵀ, dy_vec)
         if !stats.solved
             throw(SolverFailureException("The linear solver failed to converge"))
