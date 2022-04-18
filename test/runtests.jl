@@ -18,6 +18,10 @@ Random.seed!(63)
         include("2_constrained_optimization.jl")
     end
 
+    @testset verbose = true "Entropy regularized optimal transport" begin
+        include("3_optimal_transport.jl")
+    end
+
     @testset verbose = true "Code quality" begin
         Aqua.test_all(ImplicitDifferentiation)
     end
