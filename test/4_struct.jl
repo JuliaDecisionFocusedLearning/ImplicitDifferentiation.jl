@@ -8,7 +8,6 @@ using ImplicitDifferentiation
 using Krylov: gmres
 using Zygote
 
-using Diffractor  #src
 using ChainRulesCore  #src
 using ChainRulesTestUtils  #src
 using Test  #src
