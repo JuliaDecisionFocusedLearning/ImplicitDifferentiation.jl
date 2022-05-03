@@ -45,8 +45,8 @@ function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunctio
 
     y = forward(x)
 
-    x_vec, _ = flatten(x)
-    y_vec, unflatten_y = flatten(y)
+    x_vec = Vector(x)
+    y_vec = Vector(y)
     n, m = length(x_vec), length(y_vec)
 
     conditions_x(x̃) = conditions(x̃, y)
@@ -55,23 +55,19 @@ function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunctio
     pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y)[2]
     pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x)[2]
 
-    mul_A!(res, v) = res .= flatten(pushforward_A(v))[1]
-    mul_B!(res, v) = res .= flatten(pushforward_B(v))[1]
+    mul_A!(res, v) = res .= pushforward_A(v)
+    mul_B!(res, v) = res .= pushforward_B(v)
 
     A = LinearOperator(Float64, m, m, false, false, mul_A!)
     B = LinearOperator(Float64, m, n, false, false, mul_B!)
 
-    # dx_vec = unthunk(dx)
-    # dx_vec = flatten(unthunk(dx))[1]
-    dx_vec = flatten_similar(unthunk(dx), x_vec)[1]
+    dx_vec = Vector(unthunk(dx))
     b = B * dx_vec
     dy_vec, stats = linear_solver(A, b)
     if !stats.solved
         throw(SolverFailureException("The linear solver failed to converge"))
     end
-    dy = unflatten_y(dy_vec)
-
-    return y, dy
+    return y, dy_vec
 end
 
 """
@@ -88,8 +84,8 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
 
     y = forward(x)
 
-    x_vec, unflatten_x = flatten(x)
-    y_vec, _ = flatten(y)
+    x_vec = Vector(x)
+    y_vec = Vector(y)
 
     conditions_x(x̃) = conditions(x̃, y)
     conditions_y(ỹ) = -conditions(x, ỹ)
@@ -97,24 +93,21 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     pullback_Aᵀ = last ∘ rrule_via_ad(rc, conditions_y, y)[2]
     pullback_Bᵀ = last ∘ rrule_via_ad(rc, conditions_x, x)[2]
 
-    mul_Aᵀ!(res, v) = res .= flatten(pullback_Aᵀ(v))[1]
-    mul_Bᵀ!(res, v) = res .= flatten(pullback_Bᵀ(v))[1]
+    mul_Aᵀ!(res, v) = res .= pullback_Aᵀ(v)
+    mul_Bᵀ!(res, v) = res .= pullback_Bᵀ(v)
 
     n, m = length(x_vec), length(y_vec)
     Aᵀ = LinearOperator(Float64, m, m, false, false, mul_Aᵀ!)
     Bᵀ = LinearOperator(Float64, n, m, false, false, mul_Bᵀ!)
 
     function implicit_pullback(dy)
-        # dy_vec = unthunk(dy)
-        # dy_vec = flatten(unthunk(dy))[1]
-        dy_vec = flatten_similar(unthunk(dy), y_vec)[1]
+        dy_vec = Vector(unthunk(dy))
         u, stats = linear_solver(Aᵀ, dy_vec)
         if !stats.solved
             throw(SolverFailureException("The linear solver failed to converge"))
         end
         dx_vec = Bᵀ * u
-        dx = unflatten_x(dx_vec)
-        return (NoTangent(), dx)
+        return (NoTangent(), dx_vec)
     end
 
     return y, implicit_pullback
