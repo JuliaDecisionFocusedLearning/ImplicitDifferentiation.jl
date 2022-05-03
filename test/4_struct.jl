@@ -18,9 +18,9 @@ using Test  #src
 We replicate a componentwise square function with `NamedTuple`s, taking `a=(x,y)` as input and returning `b=(u,v)`.
 =#
 
-forward(a::ComponentVector) = (u=a.x .^ 2, v=a.y .^ 2);
+forward(a) = (u=a.x .^ 2, v=a.y .^ 2);
 
-function conditions(a::ComponentVector, b::ComponentVector)
+function conditions(a, b)
     return vcat(b.u .- a.x .^ 2, b.v .- a.y .^ 2)
 end
 
@@ -32,7 +32,7 @@ In order to be able to call `Zygote.gradient`, we use `implicit` to define a con
 
 function mynorm(z::AbstractVector)
     n = length(z)
-    a = ComponentVector(x=z[1:n÷2], y=z[n÷2+1:end])
+    a = (x=z[1:n÷2], y=z[n÷2+1:end])
     b = implicit(a)
     return sum(b.u) + sum(b.v)
 end;
