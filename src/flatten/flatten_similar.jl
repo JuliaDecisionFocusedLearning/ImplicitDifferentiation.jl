@@ -1,110 +1,116 @@
 
-function flatten_similar(::Real, x::Real)
+function flatten_similar(x::Real, y::Real)
     v = [x]
     unflatten_to_Real(v) = only(v)
     return v, unflatten_to_Real
 end
 
-flatten_similar(::Vector{<:Real}, x::Vector{<:Real}) = (identity.(x), identity)
+flatten_similar(x::Vector{<:Real}, y::Vector{<:Real}) = (identity.(x), identity)
 
-function flatten_similar(x1::AbstractVector, x2::AbstractVector)
-    x_vecs_and_backs = map((val) -> flatten_similar(val[1], val[2]), zip(identity.(x1), identity.(x2)))
-    x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
-    function Vector_from_vec(x_vec)
-        sz = _cumsum(map(_length, x_vecs))
-        x_Vec = [backs[n](x_vec[sz[n] - _length(x_vecs[n]) + 1:sz[n]]) for n in eachindex(x2)]
-        return x_Vec
-    end
-    return reduce(vcat, x_vecs), Vector_from_vec
-end
-
-function flatten_similar(x1::AbstractArray, x2::AbstractArray)
-    x_vec, from_vec = flatten_similar(vec(identity.(x1)), vec(identity.(x2)))
-    Array_from_vec(x_vec) = reshape(from_vec(x_vec), size(x2))
-    return identity.(x_vec), Array_from_vec
-end
-
-# Zygote can return a sparse vector co-tangent
-# even if the input is a vector. This is causing
-# issues in the rrule definition of Unflatten
-flatten_similar(x1::SparseVector, x2::SparseVector) = flatten_similar(Array(x1), Array(x2))
-
-# function flatten_similar(x1::JuMP.Containers.DenseAxisArray, x2::NamedTuple)
-#     x_vec, from_vec = flatten_similar(vec(identity.(x1.data)), vec(identity.(x2.data)))
-#     Array_from_vec(x_vec) = JuMP.Containers.DenseAxisArray(reshape(from_vec(x_vec), size(x2)), axes(x2)...)
-#     return identity.(x_vec), Array_from_vec
-# end
-
-# function flatten_similar(x1::JuMP.Containers.DenseAxisArray, x2::JuMP.Containers.DenseAxisArray)
-#     x_vec, from_vec = flatten_similar(vec(identity.(x1.data)), vec(identity.(x2.data)))
-#     Array_from_vec(x_vec) = JuMP.Containers.DenseAxisArray(reshape(from_vec(x_vec), size(x2)), axes(x2)...)
-#     return identity.(x_vec), Array_from_vec
-# end
-
-function flatten_similar(x1::SparseMatrixCSC, x2::SparseMatrixCSC)
-    x_vec, from_vec = flatten_similar(x1.nzval, x2.nzval)
-    Array_from_vec(x_vec) = SparseMatrixCSC(x.m, x.n, x.colptr, x.rowval, from_vec(x_vec))
-    return identity.(x_vec), Array_from_vec
-end
-
-function flatten_similar(x1::Tuple, x2::Tuple)
-    x_vecs_and_backs = map(val -> flatten_similar(val[1], val[2]), zip(x1, x2))
-    x_vecs, x_backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
+function flatten_similar(x::Tuple, y::Tuple)
+    @info "Flatten similar tup-tup" x y
+    x_vecs_and_unflattens = map((xᵢ, yᵢ) -> flatten_similar(xᵢ, yᵢ), zip(x, y))
+    x_vecs, unflattens = first.(x_vecs_and_unflattens), last.(x_vecs_and_unflattens)
     lengths = map(_length, x_vecs)
-    sz = _cumsum(lengths)
+    sizes = _cumsum(lengths)
     function unflatten_to_Tuple(v)
-        map(x_backs, lengths, sz) do x_back, l, s
-            return x_back(v[s - l + 1:s])
+        map(unflattens, lengths, sizes) do un, l, s
+            return un(v[(s - l + 1):s])
         end
     end
     return reduce(vcat, x_vecs), unflatten_to_Tuple
 end
 
-function flatten_similar(x1, x2::Tangent)
-    flatten_similar(x1, ntfromstruct(x2).backing)
-end
-function flatten_similar(x1, x2::NamedTuple)
-    flatten_similar(ntfromstruct(x1), x2)
+function flatten_similar(x::AbstractVector, y::AbstractVector)
+    @info "Flatten similar vec-vec" x y
+    x_vecs_and_unflattens = map(
+        (xᵢ, yᵢ) -> flatten_similar(xᵢ, yᵢ), zip(identity.(x), identity.(y))
+    )
+    x_vecs, unflattens = first.(x_vecs_and_unflattens), last.(x_vecs_and_unflattens)
+    sizes = _cumsum(map(_length, x_vecs))
+    function unflatten_to_AbstractVector(v)
+        return map(unflattens, lengths, sizes) do un, l, s
+            return un(v[(s - l + 1):s])
+        end
+    end
+    return reduce(vcat, x_vecs), unflatten_to_AbstractVector
 end
 
-function flatten_similar(x1::NamedTuple, x2::NamedTuple)
-    x_vec, unflatten = flatten_similar(values(x1), values(x2))
+function flatten_similar(x::AbstractArray, y::AbstractArray)
+    @info "Flatten similar arr-arr" x y
+    x_vec, unflatten = flatten_similar(vec(identity.(x)), vec(identity.(y)))
+    unflatten_to_AbstractArray(v) = reshape(unflatten(v), size(x))
+    return identity.(x_vec), unflatten_to_AbstractArray
+end
+
+# Zygote can return a sparse vector co-tangent
+# even if the input is a vector. This is causing
+# issues in the rrule definition of Unflatten
+flatten_similar(x::SparseVector, y::SparseVector) = flatten_similar(Array(x), Array(y))
+
+function flatten_similar(x::SparseMatrixCSC, y::SparseMatrixCSC)
+    x_vec, unflatten = flatten_similar(x.nzval, y.nzval)
+    function unflatten_to_SparseMatrixSCS(v)
+        return SparseMatrixCSC(x.m, x.n, x.colptr, x.rowval, unflatten(v))
+    end
+    return identity.(x_vec), unflatten_to_SparseMatrixSCS
+end
+
+function flatten_similar(x::Tangent, y)
+    @info "Flatten similar tan-any" x y
+    return flatten_similar(ntfromstruct(x).backing, y)
+end
+
+function flatten_similar(x::NamedTuple, y)
+    @info "Flatten similar nt-any" x y
+    return flatten_similar(x, ntfromstruct(y))
+end
+
+function flatten_similar(x::NamedTuple, y::NamedTuple)
+    @info "Flatten similar nt-nt" x y
+    x_vec, unflatten = flatten_similar(values(x), values(y))
     function unflatten_to_NamedTuple(v)
-        v_vec_vec = unflatten(v)
-        return NamedTuple{keys(x1)}(v_vec_vec)
+        x_values = unflatten(v)
+        return NamedTuple{keys(x)}(x_values)
     end
     return identity.(x_vec), unflatten_to_NamedTuple
 end
 
-function flatten_similar(d1::AbstractDict, d2::AbstractDict, ks = collect(keys(d2)))
-    _d1 = OrderedDict(k => d1[k] for k in ks)
-    _d2 = OrderedDict(k => d2[k] for k in ks)
-    d_vec, unflatten = flatten_similar(identity.(collect(values(_d1))), identity.(collect(values(_d2))))
+function flatten_similar(x::AbstractDict, y::AbstractDict, ks=collect(keys(x)))
+    @info "Flatten similar dict-dict" x y
+    x_ordered = OrderedDict(k => x[k] for k in ks)
+    y_ordered = OrderedDict(k => y[k] for k in ks)
+    x_vec, unflatten = flatten_similar(
+        identity.(collect(values(x_ordered))), identity.(collect(values(y_ordered)))
+    )
     function unflatten_to_Dict(v)
-        v_vec_vec = unflatten(v)
-        return OrderedDict(key => v_vec_vec[n] for (n, key) in enumerate(ks))
+        x_values = unflatten(v)
+        return OrderedDict(key => x_values[n] for (n, key) in enumerate(ks))
     end
-    return identity.(d_vec), unflatten_to_Dict
+    return identity.(x_vec), unflatten_to_Dict
 end
 
-function flatten_similar(x1, x2)
-    v, un = flatten_similar(ntfromstruct(x1), ntfromstruct(x2))
-    return identity.(v), Unflatten(x1, y -> structfromnt(typeof(x2), un(y)))
+function flatten_similar(x, y)
+    @info "Flatten similar any-any" x y
+    v, un = flatten_similar(ntfromstruct(x), ntfromstruct(y))
+    return identity.(v), Unflatten(y, z -> structfromnt(typeof(x), un(z)))
 end
 
+function flatten_similar(::Nothing, y)
+    y_vec, unflatten = flatten(y)
+    return zero(y_vec), unflatten
+end
 
-function flatten_similar(x, ::Nothing)
-    t = flatten(x)
-    return zero(t[1]), Base.tail(t)
+function flatten_similar(::NoTangent, y)
+    y_vec, unflatten = flatten(y)
+    return zero(y_vec), unflatten
 end
-function flatten_similar(x, ::NoTangent)
-    t = flatten(x)
-    return zero(t[1]), Base.tail(t)
+
+function flatten_similar(::ZeroTangent, y)
+    y_vec, unflatten = flatten(y)
+    return zero(y_vec), unflatten
 end
-function flatten_similar(x, ::ZeroTangent)
-    t = flatten(x)
-    return zero(t[1]), Base.tail(t)
-end
-function flatten_similar(::Any, ::Tuple{})
+
+function flatten_similar(::Tuple{}, ::Any)
     return Float64[], _ -> ()
 end

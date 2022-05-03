@@ -307,7 +307,11 @@ flatten_expr(T, C) = quote
     NonconvexCore._zero(x::$(esc(T))) = structfromnt($(esc(C)), _zero(ntfromstruct(x)))
 end
 
-_cumsum(x) = cumsum(x)
+function _cumsum(x)
+    @info "Cumsum $x"
+    return cumsum(x)
+end
+
 if VERSION < v"1.5"
     _cumsum(x::Tuple) = (_cumsum(collect(x))..., )
 end
