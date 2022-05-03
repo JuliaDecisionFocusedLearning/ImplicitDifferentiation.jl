@@ -5,11 +5,16 @@ using LinearOperators
 using NamedTupleTools
 using SparseArrays
 
-import ParameterHandling
-# include("flatten.jl")
 
-include("flatten_nonconvexcore.jl")
+# include("flatten/utils.jl")
+# include("flatten/unflatten.jl")
+# include("flatten/flatten.jl")
+# include("flatten/flatten_similar.jl")
+# include("flatten/unclear.jl")
+include("flatten/flatten_nonconvexcore.jl")
+
 include("implicit_function.jl")
+
 include("simplex.jl")
 
 export ImplicitFunction

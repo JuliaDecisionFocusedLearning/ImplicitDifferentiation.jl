@@ -54,6 +54,7 @@ mynorm(x) ≈ sum(abs2, x)
 # Now we go one step further and compute its gradient, which involves the reverse rule for `implicit`.
 
 Zygote.gradient(mynorm, x)[1] ≈ 2x
+Zygote.gradient(mynorm_broken, x)[1] ≈ 2x
 
 # The following tests are not included in the docs.  #src
 

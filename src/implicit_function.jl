@@ -61,7 +61,7 @@ function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunctio
     A = LinearOperator(Float64, m, m, false, false, mul_A!)
     B = LinearOperator(Float64, m, n, false, false, mul_B!)
 
-    dx_vec = flatten(unthunk(dx))[1]
+    dx_vec = zygote_flatten(x_vec, unthunk(dx))[1]
     b = B * dx_vec
     dy_vec, stats = linear_solver(A, b)
     if !stats.solved
