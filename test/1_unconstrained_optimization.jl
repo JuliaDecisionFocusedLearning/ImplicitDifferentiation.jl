@@ -35,14 +35,14 @@ function forward(x)
     y0 = zero(x)
     res = optimize(f, y0, LBFGS(); autodiff=:forward)
     y = minimizer(res)
-    return y
+    return y, nothing
 end;
 
 #=
 On the other hand, optimality conditions should be provided explicitly whenever possible, so as to avoid nesting automatic differentiation calls.
 =#
 
-conditions(x, y) = 2(y - x);
+conditions(x, y, useful_info=nothing) = 2(y - x);
 
 # We now have all the ingredients to construct our implicit function.
 

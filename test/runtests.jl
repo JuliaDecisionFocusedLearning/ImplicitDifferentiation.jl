@@ -5,8 +5,6 @@ using ImplicitDifferentiation
 using Random
 using Test
 
-Random.seed!(63)
-
 ## Test sets
 
 @testset verbose = true "ImplicitDifferentiation.jl" begin

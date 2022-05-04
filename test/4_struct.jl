@@ -19,9 +19,9 @@ using Test  #src
 We replicate a componentwise square function with `NamedTuple`s, taking `a=(x,y)` as input and returning `b=(u,v)`.
 =#
 
-forward(a::ComponentVector) = ComponentVector(u=a.x .^ 2, v=a.y .^ 2);
+forward(a::ComponentVector) = ComponentVector(u=a.x .^ 2, v=a.y .^ 2), nothing;
 
-function conditions(a::ComponentVector, b::ComponentVector)
+function conditions(a::ComponentVector, b::ComponentVector, useful_info=nothing)
     return vcat(b.u .- a.x .^ 2, b.v .- a.y .^ 2)
 end
 

@@ -84,10 +84,10 @@ function forward(C_vec)
     solver = OptimalTransport.build_solver(μ, ν, C, ε, SinkhornGibbs())
     OptimalTransport.solve!(solver)
     û = solver.cache.u
-    return û
+    return û, nothing
 end
 
-function conditions(C_vec, û)
+function conditions(C_vec, û, useful_info=nothing)
     C = reshape(C_vec, n, m)
     K = exp.(.-C ./ ε)
     v̂ = ν ./ (K' * û)
@@ -100,7 +100,7 @@ implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_sol
 
 # First, let us check that the forward pass works correctly
 
-û = forward(C_vec)
+û, _ = forward(C_vec)
 
 maximum(abs, conditions(C_vec, û))
 

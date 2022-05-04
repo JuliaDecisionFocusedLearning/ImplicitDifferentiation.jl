@@ -44,10 +44,10 @@ function forward(x)
     @constraint(model, sum(y) == 1)
     @objective(model, Min, sum((y .- x) .^ 2))
     optimize!(model)
-    return value.(y)
+    return value.(y), nothing
 end;
 
-conditions(x, y) = simplex_projection(y - 0.1 * 2(y - x)) - y;
+conditions(x, y, useful_info=nothing) = simplex_projection(y - 0.1 * 2(y - x)) - y;
 
 implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
 

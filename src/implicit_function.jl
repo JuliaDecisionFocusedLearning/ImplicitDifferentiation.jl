@@ -29,7 +29,7 @@ end
 
 Make [`ImplicitFunction`](@ref) callable by applying `implicit.forward`.
 """
-(implicit::ImplicitFunction)(x) = implicit.forward(x)
+(implicit::ImplicitFunction)(x) = first(implicit.forward(x))
 
 """
     frule(rc, (_, dx), implicit, x)
@@ -43,14 +43,14 @@ function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunctio
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = forward(x)
+    y, useful_info = forward(x)
 
     x_vec = Vector(x)
     y_vec = Vector(y)
     n, m = length(x_vec), length(y_vec)
 
-    conditions_x(x̃) = conditions(x̃, y)
-    conditions_y(ỹ) = -conditions(x, ỹ)
+    conditions_x(x̃) = conditions(x̃, y, useful_info)
+    conditions_y(ỹ) = -conditions(x, ỹ, useful_info)
 
     pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y)[2]
     pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x)[2]
@@ -82,13 +82,13 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = forward(x)
+    y, useful_info = forward(x)
 
     x_vec = Vector(x)
     y_vec = Vector(y)
 
-    conditions_x(x̃) = conditions(x̃, y)
-    conditions_y(ỹ) = -conditions(x, ỹ)
+    conditions_x(x̃) = conditions(x̃, y, useful_info)
+    conditions_y(ỹ) = -conditions(x, ỹ, useful_info)
 
     pullback_Aᵀ = last ∘ rrule_via_ad(rc, conditions_y, y)[2]
     pullback_Bᵀ = last ∘ rrule_via_ad(rc, conditions_x, x)[2]
