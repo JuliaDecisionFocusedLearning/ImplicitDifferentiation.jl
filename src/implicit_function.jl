@@ -38,16 +38,13 @@ Custom forward rule for [`ImplicitFunction`](@ref).
 
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
 """
-function ChainRulesCore.frule(rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x)
-    forward = implicit.forward
-    conditions = implicit.conditions
-    linear_solver = implicit.linear_solver
+function ChainRulesCore.frule(
+    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractVector
+)
+    (; forward, conditions, linear_solver) = implicit
 
     y, useful_info = forward(x)
-
-    x_vec = Vector(x)
-    y_vec = Vector(y)
-    n, m = length(x_vec), length(y_vec)
+    n, m = length(x), length(y)
 
     conditions_x(x̃) = conditions(x̃, y, useful_info)
     conditions_y(ỹ) = -conditions(x, ỹ, useful_info)
@@ -77,15 +74,11 @@ Custom reverse rule for [`ImplicitFunction`](@ref).
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
 """
-function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
-    forward = implicit.forward
-    conditions = implicit.conditions
-    linear_solver = implicit.linear_solver
+function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector)
+    (; forward, conditions, linear_solver) = implicit
 
     y, useful_info = forward(x)
-
-    x_vec = Vector(x)
-    y_vec = Vector(y)
+    n, m = length(x), length(y)
 
     conditions_x(x̃) = conditions(x̃, y, useful_info)
     conditions_y(ỹ) = -conditions(x, ỹ, useful_info)
@@ -96,7 +89,6 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x)
     mul_Aᵀ!(res, v) = res .= pullback_Aᵀ(v)
     mul_Bᵀ!(res, v) = res .= pullback_Bᵀ(v)
 
-    n, m = length(x_vec), length(y_vec)
     Aᵀ = LinearOperator(Float64, m, m, false, false, mul_Aᵀ!)
     Bᵀ = LinearOperator(Float64, n, m, false, false, mul_Bᵀ!)
 
