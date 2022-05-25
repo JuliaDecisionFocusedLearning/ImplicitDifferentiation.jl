@@ -9,18 +9,18 @@ using Zygote</code></pre><h2 id="Implicit-function-wrapper"><a class="docs-headi
     y = minimizer(res)
     return y
 end;</code></pre><p>On the other hand, optimality conditions should be provided explicitly whenever possible, so as to avoid nesting automatic differentiation calls.</p><pre><code class="language-julia hljs">conditions(x, y) = 2(y - x);</code></pre><p>We now have all the ingredients to construct our implicit function.</p><pre><code class="language-julia hljs">implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);</code></pre><h2 id="Testing"><a class="docs-heading-anchor" href="#Testing">Testing</a><a id="Testing-1"></a><a class="docs-heading-anchor-permalink" href="#Testing" title="Permalink"></a></h2><pre><code class="language-julia hljs">x = rand(5)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Float64}:
- 0.8323269243031483
- 0.763228754205419
- 0.5911957431471025
- 0.29732355862037907
- 0.0884959481696348</code></pre><p>Let&#39;s start by taking a look at the forward pass, which should be the identity function.</p><pre><code class="language-julia hljs">implicit(x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Float64}:
- 0.8323269243031483
- 0.763228754205419
- 0.5911957431471025
- 0.29732355862037907
- 0.0884959481696348</code></pre><p>We now check whether the behavior of our <code>ImplicitFunction</code> wrapper is coherent with the theoretical derivatives.</p><pre><code class="language-julia hljs">Zygote.jacobian(implicit, x)[1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5×5 Matrix{Float64}:
+ 0.9207796459259864
+ 0.1048289846546343
+ 0.4225757662867582
+ 0.7629070901158419
+ 0.12627223793193876</code></pre><p>Let&#39;s start by taking a look at the forward pass, which should be the identity function.</p><pre><code class="language-julia hljs">implicit(x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Float64}:
+ 0.9207796459259864
+ 0.1048289846546343
+ 0.4225757662867582
+ 0.7629070901158419
+ 0.12627223793193876</code></pre><p>We now check whether the behavior of our <code>ImplicitFunction</code> wrapper is coherent with the theoretical derivatives.</p><pre><code class="language-julia hljs">Zygote.jacobian(implicit, x)[1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5×5 Matrix{Float64}:
   1.0  -0.0  -0.0  -0.0  -0.0
  -0.0   1.0  -0.0  -0.0  -0.0
  -0.0  -0.0   1.0  -0.0  -0.0
  -0.0  -0.0  -0.0   1.0  -0.0
- -0.0  -0.0  -0.0  -0.0   1.0</code></pre><p>As expected, we recover the identity matrix as Jacobian.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../api/">« API reference</a><a class="docs-footer-nextpage" href="../2_constrained_optimization/">Constrained optimization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.15 on <span class="colophon-date" title="Monday 18 April 2022 18:21">Monday 18 April 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ -0.0  -0.0  -0.0  -0.0   1.0</code></pre><p>As expected, we recover the identity matrix as Jacobian.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../api/">« API reference</a><a class="docs-footer-nextpage" href="../2_constrained_optimization/">Constrained optimization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.15 on <span class="colophon-date" title="Wednesday 25 May 2022 06:35">Wednesday 25 May 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
