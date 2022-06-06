@@ -4,12 +4,11 @@
 In this example, we show how to differentiate through the solution of the entropy-regularized optimal transport problem.
 =#
 
+using Distances
+using FiniteDiff
 using ImplicitDifferentiation
 using OptimalTransport
-using Distances
-using Krylov: gmres
 using Zygote
-using FiniteDiff
 using Test, LinearAlgebra #src
 
 #=
@@ -94,13 +93,13 @@ function conditions(C_vec, û)
     return û .- μ ./ (K * v̂)
 end
 
-implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
+implicit = ImplicitFunction(forward, conditions);
 
 # ## Testing
 
 # First, let us check that the forward pass works correctly
 
-û = forward(C_vec)
+û, _ = forward(C_vec)
 
 maximum(abs, conditions(C_vec, û))
 

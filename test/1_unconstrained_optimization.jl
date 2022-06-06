@@ -13,7 +13,6 @@ F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \nabla_2 f(x, y) = 0
 =#
 
 using ImplicitDifferentiation
-using Krylov: gmres
 using Optim: optimize, minimizer, LBFGS
 using Zygote
 
@@ -46,7 +45,7 @@ conditions(x, y) = 2(y - x);
 
 # We now have all the ingredients to construct our implicit function.
 
-implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
+implicit = ImplicitFunction(forward, conditions);
 
 # ## Testing
 
@@ -65,6 +64,6 @@ Zygote.jacobian(implicit, x)[1]
 # The following tests are not included in the docs.  #src
 
 @testset verbose = true "ChainRules" begin  #src
-    test_frule(implicit, x)  #src
-    test_rrule(implicit, x)  #src
+    test_frule(implicit, x; check_inferred=false)  #src
+    test_rrule(implicit, x; check_inferred=false)  #src
 end  #src

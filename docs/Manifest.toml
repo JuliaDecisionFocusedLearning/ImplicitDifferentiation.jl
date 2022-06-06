@@ -123,6 +123,12 @@ version = "3.43.0"
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
+[[deps.ComponentArrays]]
+deps = ["ArrayInterface", "ChainRulesCore", "LinearAlgebra", "Requires"]
+git-tree-sha1 = "243d8b8afc829a6707bbb1cd00da868703c2ef42"
+uuid = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
+version = "0.11.15"
+
 [[deps.DataAPI]]
 git-tree-sha1 = "cc70b17275652eb47bc9e5f81635981f13cea5c8"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
@@ -192,12 +198,6 @@ version = "0.27.15"
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 
-[[deps.ExactOptimalTransport]]
-deps = ["Distances", "Distributions", "LinearAlgebra", "MathOptInterface", "PDMats", "QuadGK", "SparseArrays", "StatsBase"]
-git-tree-sha1 = "fb24e2b311008117679935b4e3d43cf285359153"
-uuid = "24df6009-d856-477c-ac5c-91f668376b31"
-version = "0.1.1"
-
 [[deps.ExprTools]]
 git-tree-sha1 = "56559bbef6ca5ea0c0818fa5c90320398a6fbf8d"
 uuid = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
@@ -256,7 +256,7 @@ uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
 
 [[deps.ImplicitDifferentiation]]
-deps = ["ChainRulesCore", "LinearOperators"]
+deps = ["ChainRulesCore", "LinearOperators", "SparseArrays"]
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.1.0"
@@ -455,9 +455,9 @@ version = "7.8.2"
 
 [[deps.NNlib]]
 deps = ["Adapt", "ChainRulesCore", "Compat", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
-git-tree-sha1 = "a59a614b8b4ea6dc1dcec8c6514e251f13ccbe10"
+git-tree-sha1 = "3a8dfd0cfb5bb3b82d09949e14423409b9334acb"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.8.4"
+version = "0.7.34"
 
 [[deps.NaNMath]]
 git-tree-sha1 = "b086b7ea07f8e38cf122f5016af580881ac914fe"
@@ -494,10 +494,10 @@ uuid = "429524aa-4258-5aef-a3af-852621145aeb"
 version = "1.6.2"
 
 [[deps.OptimalTransport]]
-deps = ["ExactOptimalTransport", "IterativeSolvers", "LinearAlgebra", "LogExpFunctions", "NNlib", "Reexport"]
-git-tree-sha1 = "79ba1dab46dfc7b677278ebe892a431788da86a9"
+deps = ["Distances", "Distributions", "IterativeSolvers", "LinearAlgebra", "LogExpFunctions", "MathOptInterface", "NNlib", "PDMats", "QuadGK", "SparseArrays", "StatsBase"]
+git-tree-sha1 = "d85a74ab73bb0f4ccec7f713a352ba4c11daf750"
 uuid = "7e02d93a-ae51-4f58-b602-d97af76e3b33"
-version = "0.3.19"
+version = "0.3.15"
 
 [[deps.OrderedCollections]]
 git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
