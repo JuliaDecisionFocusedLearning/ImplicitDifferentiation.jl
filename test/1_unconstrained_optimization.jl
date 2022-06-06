@@ -13,7 +13,6 @@ F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \nabla_2 f(x, y) = 0
 =#
 
 using ImplicitDifferentiation
-using Krylov: gmres
 using Optim: optimize, minimizer, LBFGS
 using Zygote
 
@@ -35,18 +34,18 @@ function forward(x)
     y0 = zero(x)
     res = optimize(f, y0, LBFGS(); autodiff=:forward)
     y = minimizer(res)
-    return y, nothing
+    return y
 end;
 
 #=
 On the other hand, optimality conditions should be provided explicitly whenever possible, so as to avoid nesting automatic differentiation calls.
 =#
 
-conditions(x, y, useful_info=nothing) = 2(y - x);
+conditions(x, y) = 2(y - x);
 
 # We now have all the ingredients to construct our implicit function.
 
-implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
+implicit = ImplicitFunction(forward, conditions);
 
 # ## Testing
 

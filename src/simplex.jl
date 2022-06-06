@@ -5,14 +5,18 @@ Compute the Euclidean projection onto the probability simplex and the set of ind
 
 See <https://arxiv.org/abs/1602.02068> for details.
 """
-function simplex_projection_and_support(z::AbstractVector{<:Real})
+function simplex_projection_and_support(z::AbstractVector{R}) where {R<:Real}
     d = length(z)
     z_sorted = sort(z; rev=true)
     z_sorted_cumsum = cumsum(z_sorted)
     k = maximum(j for j in 1:d if (1 + j * z_sorted[j]) > z_sorted_cumsum[j])
     τ = (z_sorted_cumsum[k] - 1) / k
-    p = max.(z .- τ, 0)
-    s = [Int(p[i] > eps()) for i in 1:d]
+    p = Vector{R}(undef, d)
+    s = Vector{Int}(undef, d)
+    for i in 1:d
+        p[i] = max(z[i] - τ, zero(R))
+        s[i] = Int(!iszero(p[i]))
+    end
     return p, s
 end;
 

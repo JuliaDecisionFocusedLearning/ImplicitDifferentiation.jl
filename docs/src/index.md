@@ -12,3 +12,7 @@ To install it, open a Julia Pkg REPL and run:
 ```julia
 pkg> add "https://github.com/gdalle/ImplicitDifferentiation.jl"
 ```
+
+## Related packages
+
+- [DiffOpt.jl](https://github.com/jump-dev/DiffOpt.jl): differentiation of convex optimization problems

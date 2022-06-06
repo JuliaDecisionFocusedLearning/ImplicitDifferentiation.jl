@@ -14,10 +14,22 @@ If `x ∈ ℝⁿ`, `y ∈ ℝᵐ` and `F(x,y) ∈ ℝᶜ`, this amounts to solvi
 - `conditions::C`: callable of the form `(x,y) -> F(x,y)`
 - `linear_solver::L`: callable of the form `(A,b) -> u` such that `A * u = b`
 """
-Base.@kwdef struct ImplicitFunction{F,C,L}
+struct ImplicitFunction{F,C,L}
     forward::F
     conditions::C
     linear_solver::L
+end
+
+"""
+    ImplicitFunction(forward, conditions)
+
+Construct an `ImplicitFunction` with `Krylov.gmres` as the default linear solver.
+
+# See also
+- [`ImplicitFunction{F,C,L}`](@ref)
+"""
+function ImplicitFunction(forward::F, conditions::C) where {F,C}
+    return ImplicitFunction(forward, conditions, Krylov.gmres)
 end
 
 struct SolverFailureException <: Exception
@@ -29,7 +41,7 @@ end
 
 Make [`ImplicitFunction`](@ref) callable by applying `implicit.forward`.
 """
-(implicit::ImplicitFunction)(x) = first(implicit.forward(x))
+(implicit::ImplicitFunction)(x) = implicit.forward(x)
 
 """
     frule(rc, (_, dx), implicit, x)
@@ -43,11 +55,11 @@ function ChainRulesCore.frule(
 )
     (; forward, conditions, linear_solver) = implicit
 
-    y, useful_info = forward(x)
+    y = forward(x)
     n, m = length(x), length(y)
 
-    conditions_x(x̃) = conditions(x̃, y, useful_info)
-    conditions_y(ỹ) = -conditions(x, ỹ, useful_info)
+    conditions_x(x̃) = conditions(x̃, y)
+    conditions_y(ỹ) = -conditions(x, ỹ)
 
     pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y)[2]
     pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x)[2]
@@ -77,11 +89,11 @@ We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and settin
 function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector)
     (; forward, conditions, linear_solver) = implicit
 
-    y, useful_info = forward(x)
+    y = forward(x)
     n, m = length(x), length(y)
 
-    conditions_x(x̃) = conditions(x̃, y, useful_info)
-    conditions_y(ỹ) = -conditions(x, ỹ, useful_info)
+    conditions_x(x̃) = conditions(x̃, y)
+    conditions_y(ỹ) = -conditions(x, ỹ)
 
     pullback_Aᵀ = last ∘ rrule_via_ad(rc, conditions_y, y)[2]
     pullback_Bᵀ = last ∘ rrule_via_ad(rc, conditions_x, x)[2]

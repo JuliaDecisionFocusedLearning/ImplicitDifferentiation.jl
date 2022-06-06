@@ -15,7 +15,6 @@ F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \mathrm{proj}_{\mathcal{C}
 using ImplicitDifferentiation
 using Ipopt
 using JuMP
-using Krylov: gmres
 using Zygote
 
 using ChainRulesTestUtils  #src
@@ -44,12 +43,12 @@ function forward(x)
     @constraint(model, sum(y) == 1)
     @objective(model, Min, sum((y .- x) .^ 2))
     optimize!(model)
-    return value.(y), nothing
+    return value.(y)
 end;
 
-conditions(x, y, useful_info=nothing) = simplex_projection(y - 0.1 * 2(y - x)) - y;
+conditions(x, y) = simplex_projection(y - 0.1 * 2(y - x)) - y;
 
-implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
+implicit = ImplicitFunction(forward, conditions);
 
 # ## Testing
 

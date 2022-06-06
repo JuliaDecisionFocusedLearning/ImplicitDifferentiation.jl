@@ -7,6 +7,7 @@
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Automatic differentiation of implicit functions. See the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details.
+Automatic differentiation of implicit functions.
+See the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details.
 
 > This package is in a very early development stage, so use it at your own risk!

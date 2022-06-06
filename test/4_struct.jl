@@ -6,7 +6,6 @@ In this example, we demonstrate implicit differentiation through functions that 
 
 using ComponentArrays
 using ImplicitDifferentiation
-using Krylov: gmres
 using Zygote
 
 using ChainRulesCore  #src
@@ -19,13 +18,13 @@ using Test  #src
 We replicate a componentwise square function with `NamedTuple`s, taking `a=(x,y)` as input and returning `b=(u,v)`.
 =#
 
-forward(a::ComponentVector) = ComponentVector(u=a.x .^ 2, v=a.y .^ 2), nothing;
+forward(a::ComponentVector) = ComponentVector(u=a.x .^ 2, v=a.y .^ 2)
 
-function conditions(a::ComponentVector, b::ComponentVector, useful_info=nothing)
+function conditions(a::ComponentVector, b::ComponentVector)
     return vcat(b.u .- a.x .^ 2, b.v .- a.y .^ 2)
 end
 
-implicit = ImplicitFunction(; forward=forward, conditions=conditions, linear_solver=gmres);
+implicit = ImplicitFunction(forward, conditions);
 
 #=
 In order to be able to call `Zygote.gradient`, we use `implicit` to define a convoluted version of the squared Euclidean norm, which takes a `ComponentVector` as input and returns a real number.

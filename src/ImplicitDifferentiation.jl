@@ -1,6 +1,7 @@
 module ImplicitDifferentiation
 
 using ChainRulesCore
+using Krylov
 using LinearOperators
 using SparseArrays
 
