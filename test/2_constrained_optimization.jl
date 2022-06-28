@@ -69,6 +69,6 @@ cat(Zygote.jacobian(simplex_projection, x)[1], Zygote.jacobian(implicit, x)[1]; 
 @test implicit(x) ≈ simplex_projection(x) atol = 1e-5  #src
 
 @testset verbose = true "ChainRules" begin  #src
-    test_rrule(simplex_projection, x; check_inferred=false)  #src
-    test_rrule(implicit, x; atol=1e-2, check_inferred=false)  #src
+    test_rrule(simplex_projection, x; check_inferred=true)  #src
+    test_rrule(implicit, x; atol=1e-2, check_inferred=true)  #src
 end  #src

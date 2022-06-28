@@ -29,7 +29,7 @@ Construct an `ImplicitFunction` with `Krylov.gmres` as the default linear solver
 - [`ImplicitFunction{F,C,L}`](@ref)
 """
 function ImplicitFunction(forward::F, conditions::C) where {F,C}
-    return ImplicitFunction(forward, conditions, Krylov.gmres)
+    return ImplicitFunction(forward, conditions, gmres)
 end
 
 struct SolverFailureException <: Exception
@@ -51,8 +51,8 @@ Custom forward rule for [`ImplicitFunction`](@ref).
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
 """
 function ChainRulesCore.frule(
-    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractVector
-)
+    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractVector{R}
+) where {R<:Real}
     (; forward, conditions, linear_solver) = implicit
 
     y = forward(x)
@@ -67,10 +67,10 @@ function ChainRulesCore.frule(
     mul_A!(res, v) = res .= pushforward_A(v)
     mul_B!(res, v) = res .= pushforward_B(v)
 
-    A = LinearOperator(Float64, m, m, false, false, mul_A!)
-    B = LinearOperator(Float64, m, n, false, false, mul_B!)
+    A = LinearOperator(R, m, m, false, false, mul_A!)
+    B = LinearOperator(R, m, n, false, false, mul_B!)
 
-    dx_vec = Vector(unthunk(dx))
+    dx_vec = convert(Vector{R}, unthunk(dx))
     b = B * dx_vec
     dy_vec, stats = linear_solver(A, b)
     if !stats.solved
@@ -86,7 +86,9 @@ Custom reverse rule for [`ImplicitFunction`](@ref).
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
 """
-function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector)
+function ChainRulesCore.rrule(
+    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector{R}
+) where {R<:Real}
     (; forward, conditions, linear_solver) = implicit
 
     y = forward(x)
@@ -101,11 +103,11 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::Abs
     mul_Aᵀ!(res, v) = res .= pullback_Aᵀ(v)
     mul_Bᵀ!(res, v) = res .= pullback_Bᵀ(v)
 
-    Aᵀ = LinearOperator(Float64, m, m, false, false, mul_Aᵀ!)
-    Bᵀ = LinearOperator(Float64, n, m, false, false, mul_Bᵀ!)
+    Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)
+    Bᵀ = LinearOperator(R, n, m, false, false, mul_Bᵀ!)
 
     function implicit_pullback(dy)
-        dy_vec = Vector(unthunk(dy))
+        dy_vec = convert(Vector{R}, unthunk(dy))
         u, stats = linear_solver(Aᵀ, dy_vec)
         if !stats.solved
             throw(SolverFailureException("The linear solver failed to converge"))

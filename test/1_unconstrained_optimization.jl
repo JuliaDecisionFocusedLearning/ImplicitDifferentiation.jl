@@ -64,6 +64,6 @@ Zygote.jacobian(implicit, x)[1]
 # The following tests are not included in the docs.  #src
 
 @testset verbose = true "ChainRules" begin  #src
-    test_frule(implicit, x; check_inferred=false)  #src
-    test_rrule(implicit, x; check_inferred=false)  #src
+    test_frule(implicit, x; check_inferred=true)  #src
+    test_rrule(implicit, x; check_inferred=true)  #src
 end  #src
