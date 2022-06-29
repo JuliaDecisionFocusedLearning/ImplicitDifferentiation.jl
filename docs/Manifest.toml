@@ -243,7 +243,7 @@ version = "0.1.1"
 deps = ["ChainRulesCore", "Krylov", "LinearOperators"]
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
-version = "0.1.0"
+version = "0.2.0"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]

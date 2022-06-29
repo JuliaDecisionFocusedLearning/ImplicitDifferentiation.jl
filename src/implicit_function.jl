@@ -23,10 +23,7 @@ end
 """
     ImplicitFunction(forward, conditions)
 
-Construct an `ImplicitFunction` with `Krylov.gmres` as the default linear solver.
-
-# See also
-- [`ImplicitFunction{F,C,L}`](@ref)
+Construct an [`ImplicitFunction{F,C,L}`](@ref) with `Krylov.gmres` as the default linear solver.
 """
 function ImplicitFunction(forward::F, conditions::C) where {F,C}
     return ImplicitFunction(forward, conditions, gmres)
@@ -39,14 +36,14 @@ end
 """
     implicit(x)
 
-Make [`ImplicitFunction`](@ref) callable by applying `implicit.forward`.
+Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 """
 (implicit::ImplicitFunction)(x) = implicit.forward(x)
 
 """
     frule(rc, (_, dx), implicit, x)
 
-Custom forward rule for [`ImplicitFunction`](@ref).
+Custom forward rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
 """
@@ -82,7 +79,7 @@ end
 """
     rrule(rc, implicit, x)
 
-Custom reverse rule for [`ImplicitFunction`](@ref).
+Custom reverse rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
 """
