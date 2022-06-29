@@ -5,11 +5,15 @@ In this example, we show how to differentiate through the solution of the entrop
 =#
 
 using Distances
-using FiniteDiff
+using FiniteDifferences
 using ImplicitDifferentiation
-using OptimalTransport
+using Random
 using Zygote
-using Test, LinearAlgebra #src
+
+using LinearAlgebra #src
+using Test  #src
+
+Random.seed!(63)
 
 #=
 ## Introduction
@@ -18,22 +22,22 @@ Here we give a brief introduction to optimal transport, see the [book by Gabriel
 
 ### Problem description
 
-Suppose we have a distribution of mass ``\mu \in \Delta^{n}`` over points ``x_1, ..., x_{n} \in \mathbb{R}^d`` (where ``\Delta`` denotes the probability simplex).
-We want to transport it to a distribution ``\nu \in \Delta^{m}`` over points ``y_1, ..., y_{m} \in \mathbb{R}^d``.
+Suppose we have a distribution of mass ``a \in \Delta^{n}`` over points ``x_1, ..., x_{n} \in \mathbb{R}^d`` (where ``\Delta`` denotes the probability simplex).
+We want to transport it to a distribution ``b \in \Delta^{m}`` over points ``y_1, ..., y_{m} \in \mathbb{R}^d``.
 The unit moving cost from ``x`` to ``y`` is proportional to the squared Euclidean distance ``c(x, y) = \lVert x - y \rVert_2^2``.
 
-A transportation plan can be described by a coupling ``p = \Pi(\mu, \nu)``, i.e. a probability distribution on the product space with the right marginals:
+A transportation plan can be described by a coupling ``p = \Pi(a, b)``, i.e. a probability distribution on the product space with the right marginals:
 ```math
-\Pi(\mu, \nu) = \{p \in \Delta^{n \times m}: p \mathbf{1} = \mu, p^\top \mathbf{1} = \nu\}
+\Pi(a, b) = \{p \in \Delta^{n \times m}: p \mathbf{1} = a, p^\top \mathbf{1} = b\}
 ```
 Let ``C \in \mathbb{R}^{n \times m}`` be the moving cost matrix, with ``C_{ij} = c(x_i, y_j)``.
 The basic optimization problem we want to solve is a linear program:
 ```math
-\hat{p}(C) = \min_{p \in \Pi(\mu, \nu)} \sum_{i,j} p_{ij} C_{ij}
+\hat{p}(C) = \min_{p \in \Pi(a, b)} \sum_{i,j} p_{ij} C_{ij}
 ```
 In order to make it smoother, we add an entropic regularization term:
  ```math
-\hat{p}_{\varepsilon}(C) = \min_{p \in \Pi(\mu, \nu)} \sum_{i,j} \left(p_{ij} C_{ij} + \varepsilon p_{ij} \log \frac{p_{ij}}{\mu_i \nu_j} \right)
+\hat{p}_{\varepsilon}(C) = \min_{p \in \Pi(a, b)} \sum_{i,j} \left(p_{ij} C_{ij} + \varepsilon p_{ij} \log \frac{p_{ij}}{a_i b_j} \right)
 ```
 
 ### Sinkhorn algorithm
@@ -44,21 +48,17 @@ Then the optimal coupling ``\hat{p}_{\varepsilon}(C)`` can be written as:
 ```math
 \hat{p}_{\varepsilon}(C) = \mathrm{diag}(\hat{u}) ~ K ~ \mathrm{diag}(\hat{v}) \tag{1}
 ```
-where ``\hat{u}`` and ``\hat{v}`` are the fixed points of the following Sinkhorn fixed point iteration:
+where ``\hat{u}`` and ``\hat{v}`` are the fixed points of the following Sinkhorn iteration:
 ```math
-u^{t+1} = \frac{\mu}{Kv^t} \qquad \text{and} \qquad v^{t+1} = \frac{\nu}{K^\top u^t}
+u^{t+1} = \frac{a}{Kv^t} \qquad \text{and} \qquad v^{t+1} = \frac{b}{K^\top u^t} \tag{S}
 ```
 
-The implicit function theorem can be used to differentiate ``\hat{u}`` and ``\hat{v}`` with respect to ``C``, ``\mu`` and/or ``\nu``.
+The implicit function theorem can be used to differentiate ``\hat{u}`` and ``\hat{v}`` with respect to ``C``, ``a`` and/or ``b``.
 This can be combined with automatic differentiation of Equation (1) to find the Jacobian
 ```math
 J = \frac{\partial ~ \mathrm{vec}(\hat{p}_{\varepsilon}(C))}{\partial ~ \mathrm{vec}(C)}
 ```
 =#
-
-# ## Implicit function wrapper
-
-# For now, `ImplicitFunction` objects do not take multiple arguments, so we use non-constant global variables instead (even though we shouldn't)
 
 d = 10
 n = 3
@@ -67,59 +67,67 @@ m = 4
 X = rand(d, n)
 Y = rand(d, m)
 
-μ = fill(1 / n, n)
-ν = fill(1 / m, m)
-C_vec = vec(pairwise(SqEuclidean(), X, Y, dims=2))
+a = fill(1 / n, n)
+b = fill(1 / m, m)
+C = pairwise(SqEuclidean(), X, Y, dims=2)
 
-ε = 1.0;
+ε = 1.;
 
-#=
-We now embed the Sinkhorn algorithm and optimality conditions inside an `ImplicitFunction` struct.
-For technical reasons related to optimality checking, our forward procedure returns ``\hat{u}`` instead of ``\hat{p}_\varepsilon``.
-=#
+# ## Forward solver
 
-function forward(C_vec)
-    C = reshape(C_vec, n, m)
-    solver = OptimalTransport.build_solver(μ, ν, C, ε, SinkhornGibbs())
-    OptimalTransport.solve!(solver)
-    û = solver.cache.u
-    return û
-end
+# For technical reasons related to optimality checking, our Sinkhorn solver returns ``\hat{u}`` instead of ``\hat{p}_\varepsilon``.
 
-function conditions(C_vec, û)
-    C = reshape(C_vec, n, m)
+function sinkhorn(C; a=a, b=b, ε=ε)
     K = exp.(.-C ./ ε)
-    v̂ = ν ./ (K' * û)
-    return û .- μ ./ (K * v̂)
+    u = copy(a)
+    v = copy(b)
+    for t in 1:100
+        u .= a ./ (K * v)
+        v .= b ./ (K' * u)
+    end
+    return u
 end
 
-implicit = ImplicitFunction(forward, conditions);
+# ## Optimality conditions
+
+# We simply used the fixed point equation $(\text{S})$.
+
+function sinkhorn_fixed_point(C, u; a=a, b=b, ε=ε)
+    K = exp.(.-C ./ ε)
+    v = b ./ (K' * u)
+    return u .- a ./ (K * v)
+end
+
+# We have all we need to build a differentiable Sinkhorn that doesn't require unrolling the fixed point iterations.
+
+implicit = ImplicitFunction(sinkhorn, sinkhorn_fixed_point);
 
 # ## Testing
 
-# First, let us check that the forward pass works correctly
+u = sinkhorn(C)
 
-û, _ = forward(C_vec)
+# First, let us check that the forward pass works correctly and returns a fixed point.
 
-maximum(abs, conditions(C_vec, û))
+maximum(abs, sinkhorn_fixed_point(C, u))
 
 # Using the implicit function defined above, we can build an autodiff-compatible implementation of `transportation_plan` which does not require backpropagating through the Sinkhorn iterations:
 
-function transportation_plan(C_vec)
-    C = reshape(C_vec, n, m)
+function transportation_plan(C; a=a, b=b, ε=ε)
     K = exp.(.-C ./ ε)
-    û = implicit(C_vec)
-    v̂ = ν ./ (K' * û)
-    p̂_vec = vec(û .* K .* v̂')
-    return p̂_vec
+    u = implicit(C)
+    v = b ./ (K' * u)
+    p_vec = vec(u .* K .* v')
+    return p_vec
 end;
 
-# Let us compare with the result obtained using finite differences:
+# Let us compare its Jacobian with the one obtained using finite differences.
 
-J_autodiff = Zygote.jacobian(transportation_plan, C_vec)[1]
-J_finitediff = FiniteDiff.finite_difference_jacobian(transportation_plan, C_vec)
-maximum(abs, J_autodiff - J_finitediff)
+J = Zygote.jacobian(transportation_plan, C)[1]
+J_ref = FiniteDifferences.jacobian(central_fdm(5, 1), transportation_plan, C)[1]
+sum(abs, J - J_ref) / prod(size(J))
 
 # The following tests are not included in the docs.  #src
 
-@test maximum(abs, J_autodiff - J_finitediff) < 1e-7  #src
+@testset verbose = true "FiniteDifferences" begin  #src
+    @test sum(abs, J - J_ref) / prod(size(J)) < 1e-5  #src
+end  #src

@@ -23,13 +23,10 @@ end
 """
     ImplicitFunction(forward, conditions)
 
-Construct an `ImplicitFunction` with `Krylov.gmres` as the default linear solver.
-
-# See also
-- [`ImplicitFunction{F,C,L}`](@ref)
+Construct an [`ImplicitFunction{F,C,L}`](@ref) with `Krylov.gmres` as the default linear solver.
 """
 function ImplicitFunction(forward::F, conditions::C) where {F,C}
-    return ImplicitFunction(forward, conditions, Krylov.gmres)
+    return ImplicitFunction(forward, conditions, gmres)
 end
 
 struct SolverFailureException <: Exception
@@ -39,24 +36,23 @@ end
 """
     implicit(x)
 
-Make [`ImplicitFunction`](@ref) callable by applying `implicit.forward`.
+Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 """
 (implicit::ImplicitFunction)(x) = implicit.forward(x)
 
 """
     frule(rc, (_, dx), implicit, x)
 
-Custom forward rule for [`ImplicitFunction`](@ref).
+Custom forward rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
 """
 function ChainRulesCore.frule(
-    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractVector
-)
+    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}
+) where {R<:Real}
     (; forward, conditions, linear_solver) = implicit
 
     y = forward(x)
-    n, m = length(x), length(y)
 
     conditions_x(x̃) = conditions(x̃, y)
     conditions_y(ỹ) = -conditions(x, ỹ)
@@ -64,33 +60,35 @@ function ChainRulesCore.frule(
     pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y)[2]
     pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x)[2]
 
-    mul_A!(res, v) = res .= pushforward_A(v)
-    mul_B!(res, v) = res .= pushforward_B(v)
+    mul_A!(res, u::AbstractVector) = res .= vec(pushforward_A(reshape(u, size(y))))
+    mul_B!(res, v::AbstractVector) = res .= vec(pushforward_B(reshape(v, size(x))))
 
-    A = LinearOperator(Float64, m, m, false, false, mul_A!)
-    B = LinearOperator(Float64, m, n, false, false, mul_B!)
+    n, m = length(x), length(y)
+    A = LinearOperator(R, m, m, false, false, mul_A!)
+    B = LinearOperator(R, m, n, false, false, mul_B!)
 
-    dx_vec = Vector(unthunk(dx))
+    dx_vec = convert(Vector{R}, vec(unthunk(dx)))
     b = B * dx_vec
     dy_vec, stats = linear_solver(A, b)
-    if !stats.solved
-        throw(SolverFailureException("The linear solver failed to converge"))
-    end
-    return y, dy_vec
+    stats.solved || throw(SolverFailureException("Linear solver failed to converge"))
+    dy = reshape(dy_vec, size(y))
+
+    return y, dy
 end
 
 """
     rrule(rc, implicit, x)
 
-Custom reverse rule for [`ImplicitFunction`](@ref).
+Custom reverse rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
 """
-function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector)
+function ChainRulesCore.rrule(
+    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}
+) where {R<:Real}
     (; forward, conditions, linear_solver) = implicit
 
     y = forward(x)
-    n, m = length(x), length(y)
 
     conditions_x(x̃) = conditions(x̃, y)
     conditions_y(ỹ) = -conditions(x, ỹ)
@@ -98,20 +96,20 @@ function ChainRulesCore.rrule(rc::RuleConfig, implicit::ImplicitFunction, x::Abs
     pullback_Aᵀ = last ∘ rrule_via_ad(rc, conditions_y, y)[2]
     pullback_Bᵀ = last ∘ rrule_via_ad(rc, conditions_x, x)[2]
 
-    mul_Aᵀ!(res, v) = res .= pullback_Aᵀ(v)
-    mul_Bᵀ!(res, v) = res .= pullback_Bᵀ(v)
+    mul_Aᵀ!(res, u::AbstractVector) = res .= vec(pullback_Aᵀ(reshape(u, size(y))))
+    mul_Bᵀ!(res, v::AbstractVector) = res .= vec(pullback_Bᵀ(reshape(v, size(y))))
 
-    Aᵀ = LinearOperator(Float64, m, m, false, false, mul_Aᵀ!)
-    Bᵀ = LinearOperator(Float64, n, m, false, false, mul_Bᵀ!)
+    n, m = length(x), length(y)
+    Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)
+    Bᵀ = LinearOperator(R, n, m, false, false, mul_Bᵀ!)
 
     function implicit_pullback(dy)
-        dy_vec = Vector(unthunk(dy))
+        dy_vec = convert(Vector{R}, vec(unthunk(dy)))
         u, stats = linear_solver(Aᵀ, dy_vec)
-        if !stats.solved
-            throw(SolverFailureException("The linear solver failed to converge"))
-        end
+        stats.solved || throw(SolverFailureException("Linear solver failed to converge"))
         dx_vec = Bᵀ * u
-        return (NoTangent(), dx_vec)
+        dx = reshape(dx_vec, size(x))
+        return (NoTangent(), dx)
     end
 
     return y, implicit_pullback
