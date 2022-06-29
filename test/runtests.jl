@@ -21,13 +21,10 @@ using Test
     @testset verbose = true "Unconstrained optimization" begin
         include("1_unconstrained_optimization.jl")
     end
-    @testset verbose = true "Constrained optimization" begin
-        include("2_constrained_optimization.jl")
+    @testset verbose = true "Sparse linear regression" begin
+        include("2_sparse_linear_regression.jl")
     end
-    @testset verbose = true "Entropy regularized optimal transport" begin
+    @testset verbose = true "Optimal transport" begin
         include("3_optimal_transport.jl")
-    end
-    @testset verbose = true "Custom structs" begin
-        include("4_struct.jl")
     end
 end
