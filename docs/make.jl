@@ -62,6 +62,7 @@ makedocs(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://gdalle.github.io/ImplicitDifferentiation.jl",
         assets=String[],
+        edit_branch="main",
     ),
     pages=pages,
 )
