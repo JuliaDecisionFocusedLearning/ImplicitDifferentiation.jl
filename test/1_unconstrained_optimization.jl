@@ -14,10 +14,13 @@ F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \nabla_2 f(x, y) = 0
 
 using ImplicitDifferentiation
 using Optim
+using Random
 using Zygote
 
 using ChainRulesTestUtils  #src
 using Test  #src
+
+Random.seed!(63)
 
 # ## Implicit function wrapper
 

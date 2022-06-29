@@ -18,11 +18,14 @@ using FiniteDifferences
 using ImplicitDifferentiation
 using MathOptInterface
 using MathOptSetDistances
+using Random
 using SCS
 using Zygote
 
 using ChainRulesTestUtils  #src
 using Test  #src
+
+Random.seed!(63)
 
 # ## Introduction
 
@@ -103,10 +106,10 @@ prod(size(X)) + prod(size(y))
 # We can validate the result using finite differences.
 
 J_ref = FiniteDifferences.jacobian(central_fdm(5, 1), lasso, data)[1]
-isapprox(J, J_ref, atol=1e-2)
+sum(abs, J - J_ref) / prod(size(J))
 
 # The following tests are not included in the docs.  #src
 
 @testset verbose = true "FiniteDifferences" begin  #src
-    @test isapprox(J, J_ref, atol=1e-2)  #src
+    @test sum(abs, J - J_ref) / prod(size(J)) <= 1e-2  #src
 end  #src
