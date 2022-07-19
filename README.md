@@ -8,6 +8,5 @@
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 Automatic differentiation of implicit functions.
-See the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details.
 
-> This package is in a very early development stage, so use it at your own risk!
+See the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details, and our [JuliaCon 2022 talk](https://github.com/gdalle/ImplicitDifferentiation-JuliaCon2022) for an interactive presentation!
