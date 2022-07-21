@@ -13,6 +13,7 @@ F(x, \hat{y}(x)) = 0 \quad \text{with} \quad F(x,y) = \nabla_2 f(x, y) = 0
 =#
 
 using ImplicitDifferentiation
+using Krylov: gmres
 using Optim
 using Random
 using Zygote
@@ -48,7 +49,7 @@ zero_gradient(x, y) = 2(y - x);
 
 # We now have all the ingredients to construct our implicit function.
 
-implicit = ImplicitFunction(dumb_identity, zero_gradient);
+implicit = ImplicitFunction(dumb_identity, zero_gradient, gmres);
 
 # ## Testing
 
@@ -66,7 +67,11 @@ Zygote.jacobian(implicit, x)[1]
 
 # Note that implicit differentiation was necessary here, since our solver alone doesn't support autodiff with `Zygote.jl`.
 
-try; Zygote.jacobian(dumb_identity, x)[1]; catch e; @error e; end
+try
+    Zygote.jacobian(dumb_identity, x)[1]
+catch e
+    e
+end
 
 # The following tests are not included in the docs.  #src
 

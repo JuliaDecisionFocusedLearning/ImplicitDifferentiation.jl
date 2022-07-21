@@ -21,15 +21,6 @@ struct ImplicitFunction{F,C,L}
     linear_solver::L
 end
 
-"""
-    ImplicitFunction(forward, conditions)
-
-Construct an [`ImplicitFunction{F,C,L}`](@ref) with `Krylov.gmres` as the default linear solver.
-"""
-function ImplicitFunction(forward::F, conditions::C) where {F,C}
-    return ImplicitFunction(forward, conditions, gmres)
-end
-
 struct SolverFailureException <: Exception
     msg::String
 end
@@ -61,8 +52,8 @@ function ChainRulesCore.frule(
     pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y)[2]
     pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x)[2]
 
-    mul_A!(res, u::AbstractVector) = res .= vec(pushforward_A(reshape(u, size(y))))
-    mul_B!(res, v::AbstractVector) = res .= vec(pushforward_B(reshape(v, size(x))))
+    mul_A!(res::Vector, u::Vector) = res .= vec(pushforward_A(reshape(u, size(y))))
+    mul_B!(res::Vector, v::Vector) = res .= vec(pushforward_B(reshape(v, size(x))))
 
     n, m = length(x), length(y)
     A = LinearOperator(R, m, m, false, false, mul_A!)
@@ -97,8 +88,8 @@ function ChainRulesCore.rrule(
     pullback_Aᵀ = last ∘ rrule_via_ad(rc, conditions_y, y)[2]
     pullback_Bᵀ = last ∘ rrule_via_ad(rc, conditions_x, x)[2]
 
-    mul_Aᵀ!(res, u::AbstractVector) = res .= vec(pullback_Aᵀ(reshape(u, size(y))))
-    mul_Bᵀ!(res, v::AbstractVector) = res .= vec(pullback_Bᵀ(reshape(v, size(y))))
+    mul_Aᵀ!(res::Vector, u::Vector) = res .= vec(pullback_Aᵀ(reshape(u, size(y))))
+    mul_Bᵀ!(res::Vector, v::Vector) = res .= vec(pullback_Bᵀ(reshape(v, size(y))))
 
     n, m = length(x), length(y)
     Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)

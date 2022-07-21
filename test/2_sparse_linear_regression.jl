@@ -16,6 +16,7 @@ using ComponentArrays
 using Convex
 using FiniteDifferences
 using ImplicitDifferentiation
+using Krylov: gmres
 using MathOptInterface
 using MathOptSetDistances
 using Random
@@ -79,7 +80,7 @@ end
 
 # This is the last ingredient we needed to build a differentiable sparse linear regression.
 
-implicit = ImplicitFunction(lasso, proj_grad_fixed_point);
+implicit = ImplicitFunction(lasso, proj_grad_fixed_point, gmres);
 
 # ## Testing
 
@@ -93,7 +94,11 @@ round.(implicit(data); digits=4)
 
 # Note that implicit differentiation is necessary here because the convex solver breaks autodiff.
 
-try; Zygote.jacobian(lasso, data); catch e; @error e; end
+try
+    Zygote.jacobian(lasso, data)
+catch e
+    e
+end
 
 # Meanwhile, our implicit wrapper makes autodiff work seamlessly.
 

@@ -7,6 +7,7 @@ In this example, we show how to differentiate through the solution of the entrop
 using Distances
 using FiniteDifferences
 using ImplicitDifferentiation
+using Krylov: gmres
 using Random
 using Zygote
 
@@ -100,7 +101,7 @@ end
 
 # We have all we need to build a differentiable Sinkhorn that doesn't require unrolling the fixed point iterations.
 
-implicit = ImplicitFunction(sinkhorn, sinkhorn_fixed_point);
+implicit = ImplicitFunction(sinkhorn, sinkhorn_fixed_point, gmres);
 
 # ## Testing
 
