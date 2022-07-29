@@ -9,4 +9,5 @@
 
 Automatic differentiation of implicit functions.
 
-See the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details, and our [JuliaCon 2022 talk](https://github.com/gdalle/ImplicitDifferentiation-JuliaCon2022) for an interactive presentation!
+If you just need a quick introduction, check out our [JuliaCon 2022 talk](https://youtu.be/TkVDcujVNJ4) and the associated [Pluto notebook](https://gdalle.github.io/ImplicitDifferentiation-JuliaCon2022/).
+If you plan to use our package, see the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details.
