@@ -35,18 +35,19 @@ struct SolverFailureException <: Exception
 end
 
 """
-    implicit(x)
+    implicit(x[; kwargs...])
 
 Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 """
 (implicit::ImplicitFunction)(x; kwargs...) = implicit.forward(x; kwargs...)
 
 """
-    frule(rc, (_, dx), implicit, x)
+    frule(rc, (_, dx), implicit, x[; kwargs...])
 
 Custom forward rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
+Keyword arguments are given to `implicit.forward`, not to `implicit.conditions`.
 """
 function ChainRulesCore.frule(
     rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
@@ -80,11 +81,12 @@ function ChainRulesCore.frule(
 end
 
 """
-    rrule(rc, implicit, x)
+    rrule(rc, implicit, x[; kwargs...])
 
 Custom reverse rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
+Keyword arguments are given to `implicit.forward`, not to `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
