@@ -39,7 +39,7 @@ end
 
 Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 """
-(implicit::ImplicitFunction)(x) = implicit.forward(x)
+(implicit::ImplicitFunction)(x; kwargs...) = implicit.forward(x; kwargs...)
 
 """
     frule(rc, (_, dx), implicit, x)
@@ -49,13 +49,13 @@ Custom forward rule for [`ImplicitFunction{F,C,L}`](@ref).
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
 """
 function ChainRulesCore.frule(
-    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}
+    rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
     forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = forward(x)
+    y = forward(x; kwargs...)
 
     conditions_x(x̃) = conditions(x̃, y)
     conditions_y(ỹ) = -conditions(x, ỹ)
@@ -87,13 +87,13 @@ Custom reverse rule for [`ImplicitFunction{F,C,L}`](@ref).
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
 """
 function ChainRulesCore.rrule(
-    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}
+    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
     forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = forward(x)
+    y = forward(x; kwargs...)
 
     conditions_x(x̃) = conditions(x̃, y)
     conditions_y(ỹ) = -conditions(x, ỹ)
