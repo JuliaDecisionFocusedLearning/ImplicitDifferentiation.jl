@@ -120,7 +120,7 @@ function ChainRulesCore.rrule(
     function implicit_pullback(dy)
         dy_vec = convert(Vector{R}, vec(unthunk(dy)))
         u, stats = linear_solver(Aᵀ, dy_vec)
-        if !stats.solved | true
+        if !stats.solved
             throw(SolverFailureException("Linear solver failed to converge", stats))
         end
         dx_vec = Bᵀ * u
