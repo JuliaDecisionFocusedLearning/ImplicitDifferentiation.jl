@@ -30,8 +30,13 @@ function ImplicitFunction(forward::F, conditions::C) where {F,C}
     return ImplicitFunction(forward, conditions, gmres)
 end
 
-struct SolverFailureException <: Exception
+struct SolverFailureException{S} <: Exception
     msg::String
+    stats::S
+end
+
+function Base.show(io::IO, sfe::SolverFailureException)
+    println(io, "SolverFailureException: $(sfe.msg) \n Solver stats: $(sfe.stats)")
 end
 
 """
@@ -74,7 +79,9 @@ function ChainRulesCore.frule(
     dx_vec = convert(Vector{R}, vec(unthunk(dx)))
     b = B * dx_vec
     dy_vec, stats = linear_solver(A, b)
-    stats.solved || throw(SolverFailureException("Linear solver failed to converge"))
+    if !stats.solved
+        throw(SolverFailureException("Linear solver failed to converge", stats))
+    end
     dy = reshape(dy_vec, size(y))
 
     return y, dy
@@ -113,7 +120,9 @@ function ChainRulesCore.rrule(
     function implicit_pullback(dy)
         dy_vec = convert(Vector{R}, vec(unthunk(dy)))
         u, stats = linear_solver(Aᵀ, dy_vec)
-        stats.solved || throw(SolverFailureException("Linear solver failed to converge"))
+        if !stats.solved | true
+            throw(SolverFailureException("Linear solver failed to converge", stats))
+        end
         dx_vec = Bᵀ * u
         dx = reshape(dx_vec, size(x))
         return (NoTangent(), dx)
