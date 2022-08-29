@@ -93,7 +93,11 @@ round.(implicit(data); digits=4)
 
 # Note that implicit differentiation is necessary here because the convex solver breaks autodiff.
 
-try; Zygote.jacobian(lasso, data); catch e; @error e; end
+try
+    Zygote.jacobian(lasso, data)
+catch e
+    e
+end
 
 # Meanwhile, our implicit wrapper makes autodiff work seamlessly.
 

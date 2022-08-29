@@ -51,7 +51,9 @@ We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv
 function ChainRulesCore.frule(
     rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}
 ) where {R<:Real}
-    (; forward, conditions, linear_solver) = implicit
+    forward = implicit.forward
+    conditions = implicit.conditions
+    linear_solver = implicit.linear_solver
 
     y = forward(x)
 
@@ -61,8 +63,8 @@ function ChainRulesCore.frule(
     pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y)[2]
     pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x)[2]
 
-    mul_A!(res, u::AbstractVector) = res .= vec(pushforward_A(reshape(u, size(y))))
-    mul_B!(res, v::AbstractVector) = res .= vec(pushforward_B(reshape(v, size(x))))
+    mul_A!(res::Vector, u::Vector) = res .= vec(pushforward_A(reshape(u, size(y))))
+    mul_B!(res::Vector, v::Vector) = res .= vec(pushforward_B(reshape(v, size(x))))
 
     n, m = length(x), length(y)
     A = LinearOperator(R, m, m, false, false, mul_A!)
@@ -87,7 +89,9 @@ We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and settin
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}
 ) where {R<:Real}
-    (; forward, conditions, linear_solver) = implicit
+    forward = implicit.forward
+    conditions = implicit.conditions
+    linear_solver = implicit.linear_solver
 
     y = forward(x)
 
@@ -97,8 +101,8 @@ function ChainRulesCore.rrule(
     pullback_Aᵀ = last ∘ rrule_via_ad(rc, conditions_y, y)[2]
     pullback_Bᵀ = last ∘ rrule_via_ad(rc, conditions_x, x)[2]
 
-    mul_Aᵀ!(res, u::AbstractVector) = res .= vec(pullback_Aᵀ(reshape(u, size(y))))
-    mul_Bᵀ!(res, v::AbstractVector) = res .= vec(pullback_Bᵀ(reshape(v, size(y))))
+    mul_Aᵀ!(res::Vector, u::Vector) = res .= vec(pullback_Aᵀ(reshape(u, size(y))))
+    mul_Bᵀ!(res::Vector, v::Vector) = res .= vec(pullback_Bᵀ(reshape(v, size(y))))
 
     n, m = length(x), length(y)
     Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)
