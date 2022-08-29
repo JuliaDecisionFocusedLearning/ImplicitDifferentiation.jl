@@ -52,7 +52,7 @@ Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 Custom forward rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
-Keyword arguments are given to `implicit.forward`, not to `implicit.conditions`.
+Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.frule(
     rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
@@ -93,7 +93,7 @@ end
 Custom reverse rule for [`ImplicitFunction{F,C,L}`](@ref).
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
-Keyword arguments are given to `implicit.forward`, not to `implicit.conditions`.
+Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
