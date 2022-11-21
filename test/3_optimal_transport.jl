@@ -69,21 +69,35 @@ Y = rand(d, m)
 
 a = fill(1 / n, n)
 b = fill(1 / m, m)
-C = pairwise(SqEuclidean(), X, Y, dims=2)
+C = pairwise(SqEuclidean(), X, Y; dims=2)
 
-ε = 1.;
+ε = 1.0;
+T = 100;
 
 # ## Forward solver
 
 # For technical reasons related to optimality checking, our Sinkhorn solver returns ``\hat{u}`` instead of ``\hat{p}_\varepsilon``.
 
-function sinkhorn(C; a=a, b=b, ε=ε)
+function sinkhorn(C; a, b, ε, T)
     K = exp.(.-C ./ ε)
     u = copy(a)
     v = copy(b)
-    for t in 1:100
-        u .= a ./ (K * v)
-        v .= b ./ (K' * u)
+    for t in 1:T
+        u = a ./ (K * v)
+        v = b ./ (K' * u)
+    end
+    return u
+end
+
+function sinkhorn_efficient(C; a, b, ε, T)
+    K = exp.(.-C ./ ε)
+    u = copy(a)
+    v = copy(b)
+    for t in 1:T
+        mul!(u, K, v)
+        u .= a ./ u
+        mul!(v, K', u)
+        v .= b ./ v
     end
     return u
 end
@@ -92,7 +106,7 @@ end
 
 # We simply used the fixed point equation $(\text{S})$.
 
-function sinkhorn_fixed_point(C, u; a=a, b=b, ε=ε)
+function sinkhorn_fixed_point(C, u; a, b, ε, T=nothing)
     K = exp.(.-C ./ ε)
     v = b ./ (K' * u)
     return u .- a ./ (K * v)
@@ -100,34 +114,58 @@ end
 
 # We have all we need to build a differentiable Sinkhorn that doesn't require unrolling the fixed point iterations.
 
-implicit = ImplicitFunction(sinkhorn, sinkhorn_fixed_point);
+implicit = ImplicitFunction(sinkhorn_efficient, sinkhorn_fixed_point);
 
 # ## Testing
 
-u = sinkhorn(C)
+u1 = sinkhorn(C; a=a, b=b, ε=ε, T=T)
+u2 = implicit(C; a=a, b=b, ε=ε, T=T)
+u1 == u2
 
 # First, let us check that the forward pass works correctly and returns a fixed point.
 
-maximum(abs, sinkhorn_fixed_point(C, u))
+all(iszero, sinkhorn_fixed_point(C, u1; a=a, b=b, ε=ε, T=T))
 
-# Using the implicit function defined above, we can build an autodiff-compatible implementation of `transportation_plan` which does not require backpropagating through the Sinkhorn iterations:
+# Using the implicit function defined above, we can build an autodiff-compatible Sinkhorn which does not require backpropagating through the fixed point iterations:
 
-function transportation_plan(C; a=a, b=b, ε=ε)
+function transportation_plan_slow(C; a, b, ε, T)
     K = exp.(.-C ./ ε)
-    u = implicit(C)
+    u = sinkhorn(C; a=a, b=b, ε=ε, T=T)
     v = b ./ (K' * u)
-    p_vec = vec(u .* K .* v')
-    return p_vec
+    p = u .* K .* v'
+    return p
 end;
+
+function transportation_plan_fast(C; a, b, ε, T)
+    K = exp.(.-C ./ ε)
+    u = implicit(C; a=a, b=b, ε=ε, T=T)
+    v = b ./ (K' * u)
+    p = u .* K .* v'
+    return p
+end;
+
+# What does the transportation plan look like?
+
+p1 = transportation_plan_slow(C; a=a, b=b, ε=ε, T=T)
+p2 = transportation_plan_fast(C; a=a, b=b, ε=ε, T=T)
+p1 == p2
 
 # Let us compare its Jacobian with the one obtained using finite differences.
 
-J = Zygote.jacobian(transportation_plan, C)[1]
-J_ref = FiniteDifferences.jacobian(central_fdm(5, 1), transportation_plan, C)[1]
-sum(abs, J - J_ref) / prod(size(J))
+J1 = Zygote.jacobian(C -> transportation_plan_slow(C; a=a, b=b, ε=ε, T=T), C)[1]
+J2 = Zygote.jacobian(C -> transportation_plan_fast(C; a=a, b=b, ε=ε, T=T), C)[1]
+J_ref = FiniteDifferences.jacobian(
+    central_fdm(5, 1), C -> transportation_plan_slow(C; a=a, b=b, ε=ε, T=T), C
+)[1]
+
+sum(abs, J2 - J_ref) / prod(size(J_ref))
 
 # The following tests are not included in the docs.  #src
 
 @testset verbose = true "FiniteDifferences" begin  #src
-    @test sum(abs, J - J_ref) / prod(size(J)) < 1e-5  #src
+    @test u1 == u2  #src
+    @test all(iszero, sinkhorn_fixed_point(C, u1; a=a, b=b, ε=ε, T=T))  #src
+    @test p1 == p2  #src
+    @test sum(abs, J1 - J_ref) / prod(size(J_ref)) < 1e-5  #src
+    @test sum(abs, J2 - J_ref) / prod(size(J_ref)) < 1e-5  #src
 end  #src

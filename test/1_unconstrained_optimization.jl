@@ -66,7 +66,11 @@ Zygote.jacobian(implicit, x)[1]
 
 # Note that implicit differentiation was necessary here, since our solver alone doesn't support autodiff with `Zygote.jl`.
 
-try; Zygote.jacobian(dumb_identity, x)[1]; catch e; @error e; end
+try
+    Zygote.jacobian(dumb_identity, x)[1]
+catch e
+    e
+end
 
 # The following tests are not included in the docs.  #src
 
