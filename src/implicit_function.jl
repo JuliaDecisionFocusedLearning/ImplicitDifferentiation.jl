@@ -36,7 +36,7 @@ struct SolverFailureException{S} <: Exception
 end
 
 function Base.show(io::IO, sfe::SolverFailureException)
-    println(io, "SolverFailureException: $(sfe.msg) \n Solver stats: $(sfe.stats)")
+    return println(io, "SolverFailureException: $(sfe.msg) \n Solver stats: $(sfe.stats)")
 end
 
 """

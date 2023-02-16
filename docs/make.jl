@@ -45,12 +45,11 @@ end
 
 pages = [
     "Home" => "index.md",
-    "Mathematical background" => "background.md",
-    "API reference" => "api.md",
     "Examples" => [
         markdown_title(joinpath(EXAMPLES_DIR_MD, file)) => joinpath("examples", file)
         for file in sort(readdir(EXAMPLES_DIR_MD)) if endswith(file, ".md")
     ],
+    "API reference" => "api.md",
 ]
 
 makedocs(;
