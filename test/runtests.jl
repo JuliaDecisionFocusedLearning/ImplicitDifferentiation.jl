@@ -15,7 +15,7 @@ DocMeta.setdocmeta!(
 
 @testset verbose = true "ImplicitDifferentiation.jl" begin
     @testset verbose = true "Code quality (Aqua.jl)" begin
-        Aqua.test_all(ImplicitDifferentiation; ambiguities=false)
+        Aqua.test_all(ImplicitDifferentiation)
     end
     @testset verbose = true "Code formatting (JuliaFormatter.jl)" begin
         @test format(ImplicitDifferentiation; verbose=true, overwrite=false)
