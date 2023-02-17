@@ -291,9 +291,9 @@ version = "0.1.1"
 
 [[deps.ImplicitDifferentiation]]
 deps = ["ChainRulesCore", "Krylov", "LinearOperators"]
-git-tree-sha1 = "e54c2a0e6b11b0891c1f75d880312c5e037126fa"
+path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
-version = "0.2.0"
+version = "0.3.0"
 
 [[deps.IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -335,9 +335,9 @@ version = "0.21.3"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
-git-tree-sha1 = "92256444f81fb094ff5aa742ed10835a621aef75"
+git-tree-sha1 = "dd90aacbfb622f898a97c2a4411ac49101ebab8a"
 uuid = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
-version = "0.8.4"
+version = "0.9.0"
 
 [[deps.LDLFactorizations]]
 deps = ["AMD", "LinearAlgebra", "SparseArrays", "Test"]
