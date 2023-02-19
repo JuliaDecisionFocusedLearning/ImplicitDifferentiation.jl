@@ -17,6 +17,10 @@ For the latest version, run this instead:
 julia> using Pkg; Pkg.add(url="https://github.com/gdalle/ImplicitDifferentiation.jl")
 ```
 
+## Mathematical background
+
+Please refer to [_Efficient and modular implicit differentiation_](https://arxiv.org/abs/2105.15183) for an introduction to the methods implemented here.
+
 ## Related packages
 
 - [DiffOpt.jl](https://github.com/jump-dev/DiffOpt.jl): differentiation of convex optimization problems

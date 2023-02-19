@@ -7,13 +7,11 @@ In this example, we show how to differentiate through the solution of the entrop
 using Distances
 using FiniteDifferences
 using ImplicitDifferentiation
+using LinearAlgebra
 using Random
 using Zygote
 
-using LinearAlgebra #src
-using Test  #src
-
-Random.seed!(63)
+Random.seed!(63);
 
 #=
 ## Introduction
@@ -33,11 +31,11 @@ A transportation plan can be described by a coupling ``p = \Pi(a, b)``, i.e. a p
 Let ``C \in \mathbb{R}^{n \times m}`` be the moving cost matrix, with ``C_{ij} = c(x_i, y_j)``.
 The basic optimization problem we want to solve is a linear program:
 ```math
-\hat{p}(C) = \min_{p \in \Pi(a, b)} \sum_{i,j} p_{ij} C_{ij}
+\hat{p}(C) = \underset{p \in \Pi(a, b)}{\mathrm{argmin}} ~ \sum_{i,j} p_{ij} C_{ij}
 ```
 In order to make it smoother, we add an entropic regularization term:
  ```math
-\hat{p}_{\varepsilon}(C) = \min_{p \in \Pi(a, b)} \sum_{i,j} \left(p_{ij} C_{ij} + \varepsilon p_{ij} \log \frac{p_{ij}}{a_i b_j} \right)
+\hat{p}_{\varepsilon}(C) = \underset{p \in \Pi(a, b)}{\mathrm{argmin}} ~ \sum_{i,j} \left(p_{ij} C_{ij} + \varepsilon p_{ij} \log \frac{p_{ij}}{a_i b_j} \right)
 ```
 
 ### Sinkhorn algorithm
@@ -162,7 +160,9 @@ sum(abs, J2 - J_ref) / prod(size(J_ref))
 
 # The following tests are not included in the docs.  #src
 
-@testset verbose = true "FiniteDifferences" begin  #src
+using Test  #src
+
+@testset verbose = true "FiniteDifferences.jl" begin  #src
     @test u1 == u2  #src
     @test all(iszero, sinkhorn_fixed_point(C, u1; a=a, b=b, ε=ε, T=T))  #src
     @test p1 == p2  #src
