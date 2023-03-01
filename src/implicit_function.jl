@@ -57,11 +57,10 @@ Keyword arguments are given to both `implicit.forward` and `implicit.conditions`
 function ChainRulesCore.frule(
     rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
-    forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = forward(x; kwargs...)
+    y = implicit(x; kwargs...)
 
     conditions_x(x̃; kwargs...) = conditions(x̃, y; kwargs...)
     conditions_y(ỹ; kwargs...) = -conditions(x, ỹ; kwargs...)
@@ -98,11 +97,10 @@ Keyword arguments are given to both `implicit.forward` and `implicit.conditions`
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
-    forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = forward(x; kwargs...)
+    y = implicit(x; kwargs...)
 
     conditions_x(x̃; kwargs...) = conditions(x̃, y; kwargs...)
     conditions_y(ỹ; kwargs...) = -conditions(x, ỹ; kwargs...)
