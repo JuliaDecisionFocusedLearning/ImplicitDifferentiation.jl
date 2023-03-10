@@ -9,6 +9,7 @@ using FiniteDifferences
 using ImplicitDifferentiation
 using LinearAlgebra
 using Random
+using Test  #src
 using Zygote
 
 Random.seed!(63);
@@ -159,8 +160,6 @@ J_ref = FiniteDifferences.jacobian(
 sum(abs, J2 - J_ref) / prod(size(J_ref))
 
 # The following tests are not included in the docs.  #src
-
-using Test  #src
 
 @testset verbose = true "FiniteDifferences.jl" begin  #src
     @test u1 == u2  #src
