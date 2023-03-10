@@ -20,6 +20,7 @@ using MathOptInterface
 using MathOptSetDistances
 using Random
 using SCS
+using Test  #src
 using Zygote
 
 Random.seed!(63);
@@ -110,8 +111,6 @@ J_ref = FiniteDifferences.jacobian(central_fdm(5, 1), lasso, data)[1]
 sum(abs, J - J_ref) / prod(size(J))
 
 # The following tests are not included in the docs.  #src
-
-using Test  #src
 
 @testset verbose = true "FiniteDifferences.jl" begin  #src
     @test sum(abs, J - J_ref) / prod(size(J)) <= 1e-2  #src
