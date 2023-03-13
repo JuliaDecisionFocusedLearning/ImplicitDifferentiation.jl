@@ -7,7 +7,7 @@
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Automatic differentiation of implicit functions.
+Automatic differentiation of functions $\hat{y}(x)$ defined implicitly by a condition $F(x, \hat{y}(x)) = 0$.
 
 If you just need a quick introduction, check out our [JuliaCon 2022 talk](https://youtu.be/TkVDcujVNJ4) and the associated [Pluto notebook](https://gdalle.github.io/ImplicitDifferentiation-JuliaCon2022/).
 If you plan to use our package, see the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details.

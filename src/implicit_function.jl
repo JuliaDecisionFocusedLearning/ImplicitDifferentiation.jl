@@ -6,14 +6,14 @@ Differentiable wrapper for an implicit function `x -> ŷ(x)` whose output is de
 If `x ∈ ℝⁿ` and `y ∈ ℝᵈ`, then we need as many conditions as output dimensions: `F(x,y) ∈ ℝᵈ`.
 Thanks to these conditions, we can compute the Jacobian of `ŷ(⋅)` using the implicit function theorem:
 ```
-∂₂F(x,ŷ(x)) * ∂ŷ(x) = -∂₁F(x,ŷ(x))
+-∂₂F(x,ŷ(x)) * ∂ŷ(x) = ∂₁F(x,ŷ(x))
 ```
-This requires solving a linear system `A * J = B`, where `A ∈ ℝᵈˣᵈ`, `B ∈ ℝᵈˣⁿ` and `J ∈ ℝᵈˣⁿ`.
+This requires solving a linear system `-A * J = B`, where `A ∈ ℝᵈˣᵈ`, `B ∈ ℝᵈˣⁿ` and `J ∈ ℝᵈˣⁿ`.
 
 # Fields:
 - `forward::F`: callable of the form `x -> ŷ(x)`
 - `conditions::C`: callable of the form `(x,y) -> F(x,y)`
-- `linear_solver::L`: callable of the form `(A,b) -> u` such that `A * u = b`
+- `linear_solver::L`: callable of the form `(C,D) -> U` such that `C * U = D`
 """
 struct ImplicitFunction{F,C,L}
     forward::F
@@ -62,14 +62,19 @@ function ChainRulesCore.frule(
 
     y = implicit(x; kwargs...)
 
-    conditions_x(x̃; kwargs...) = conditions(x̃, y; kwargs...)
-    conditions_y(ỹ; kwargs...) = -conditions(x, ỹ; kwargs...)
+    function mul_A!(res::Vector, u::Vector)
+        dy = reshape(u, size(y))
+        dargs = (NoTangent(), ZeroTangent(), dy)
+        dcond = frule_via_ad(rc, dargs, conditions, x, y; kwargs...)[2]
+        return res .= vec(dcond)
+    end
 
-    pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y; kwargs...)[2]
-    pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x; kwargs...)[2]
-
-    mul_A!(res::Vector, u::Vector) = res .= vec(pushforward_A(reshape(u, size(y))))
-    mul_B!(res::Vector, v::Vector) = res .= vec(pushforward_B(reshape(v, size(x))))
+    function mul_B!(res::Vector, v::Vector)
+        dx = reshape(v, size(x))
+        dargs = (NoTangent(), dx, ZeroTangent())
+        dcond = frule_via_ad(rc, dargs, conditions, x, y; kwargs...)[2]
+        return res .= vec(dcond)
+    end
 
     n, m = length(x), length(y)
     A = LinearOperator(R, m, m, false, false, mul_A!)
@@ -77,7 +82,7 @@ function ChainRulesCore.frule(
 
     dx_vec = convert(Vector{R}, vec(unthunk(dx)))
     b = B * dx_vec
-    dy_vec, stats = linear_solver(A, b)
+    dy_vec, stats = linear_solver(-A, b)
     if !stats.solved
         throw(SolverFailureException("Linear solver failed to converge", stats))
     end
@@ -102,14 +107,10 @@ function ChainRulesCore.rrule(
 
     y = implicit(x; kwargs...)
 
-    conditions_x(x̃; kwargs...) = conditions(x̃, y; kwargs...)
-    conditions_y(ỹ; kwargs...) = -conditions(x, ỹ; kwargs...)
+    pullback = rrule_via_ad(rc, conditions, x, y; kwargs...)[2]
 
-    pullback_Aᵀ = rrule_via_ad(rc, conditions_y, y; kwargs...)[2]
-    pullback_Bᵀ = rrule_via_ad(rc, conditions_x, x; kwargs...)[2]
-
-    mul_Aᵀ!(res::Vector, u::Vector) = res .= vec(pullback_Aᵀ(reshape(u, size(y)))[2])
-    mul_Bᵀ!(res::Vector, v::Vector) = res .= vec(pullback_Bᵀ(reshape(v, size(y)))[2])
+    mul_Aᵀ!(res::Vector, u::Vector) = res .= vec(pullback(reshape(u, size(y)))[3])
+    mul_Bᵀ!(res::Vector, v::Vector) = res .= vec(pullback(reshape(v, size(y)))[2])
 
     n, m = length(x), length(y)
     Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)
@@ -117,7 +118,7 @@ function ChainRulesCore.rrule(
 
     function implicit_pullback(dy)
         dy_vec = convert(Vector{R}, vec(unthunk(dy)))
-        u, stats = linear_solver(Aᵀ, dy_vec)
+        u, stats = linear_solver(-Aᵀ, dy_vec)
         if !stats.solved
             throw(SolverFailureException("Linear solver failed to converge", stats))
         end
