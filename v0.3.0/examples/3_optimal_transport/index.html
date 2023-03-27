@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Optimal transport · ImplicitDifferentiation.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://gdalle.github.io/ImplicitDifferentiation.jl/examples/3_optimal_transport/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ImplicitDifferentiation.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../1_unconstrained_optimization/">Unconstrained optimization</a></li><li><a class="tocitem" href="../2_sparse_linear_regression/">Sparse linear regression</a></li><li class="is-active"><a class="tocitem" href>Optimal transport</a><ul class="internal"><li><a class="tocitem" href="#Introduction"><span>Introduction</span></a></li><li><a class="tocitem" href="#Forward-solver"><span>Forward solver</span></a></li><li><a class="tocitem" href="#Optimality-conditions"><span>Optimality conditions</span></a></li><li><a class="tocitem" href="#Testing"><span>Testing</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Optimal transport</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Optimal transport</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/gdalle/ImplicitDifferentiation.jl/blob/main/test/3_optimal_transport.jl" title="View on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">View on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Optimal-transport"><a class="docs-heading-anchor" href="#Optimal-transport">Optimal transport</a><a id="Optimal-transport-1"></a><a class="docs-heading-anchor-permalink" href="#Optimal-transport" title="Permalink"></a></h1><p>In this example, we show how to differentiate through the solution of the entropy-regularized optimal transport problem.</p><pre><code class="language-julia hljs">using Distances
+using FiniteDifferences
+using ImplicitDifferentiation
+using LinearAlgebra
+using Random
+using Zygote
+
+Random.seed!(63);</code></pre><h2 id="Introduction"><a class="docs-heading-anchor" href="#Introduction">Introduction</a><a id="Introduction-1"></a><a class="docs-heading-anchor-permalink" href="#Introduction" title="Permalink"></a></h2><p>Here we give a brief introduction to optimal transport, see the <a href="https://optimaltransport.github.io/book/">book by Gabriel Peyré and Marco Cuturi</a> for more details.</p><h3 id="Problem-description"><a class="docs-heading-anchor" href="#Problem-description">Problem description</a><a id="Problem-description-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-description" title="Permalink"></a></h3><p>Suppose we have a distribution of mass <span>$a \in \Delta^{n}$</span> over points <span>$x_1, ..., x_{n} \in \mathbb{R}^d$</span> (where <span>$\Delta$</span> denotes the probability simplex). We want to transport it to a distribution <span>$b \in \Delta^{m}$</span> over points <span>$y_1, ..., y_{m} \in \mathbb{R}^d$</span>. The unit moving cost from <span>$x$</span> to <span>$y$</span> is proportional to the squared Euclidean distance <span>$c(x, y) = \lVert x - y \rVert_2^2$</span>.</p><p>A transportation plan can be described by a coupling <span>$p = \Pi(a, b)$</span>, i.e. a probability distribution on the product space with the right marginals:</p><p class="math-container">\[\Pi(a, b) = \{p \in \Delta^{n \times m}: p \mathbf{1} = a, p^\top \mathbf{1} = b\}\]</p><p>Let <span>$C \in \mathbb{R}^{n \times m}$</span> be the moving cost matrix, with <span>$C_{ij} = c(x_i, y_j)$</span>. The basic optimization problem we want to solve is a linear program:</p><p class="math-container">\[\hat{p}(C) = \underset{p \in \Pi(a, b)}{\mathrm{argmin}} ~ \sum_{i,j} p_{ij} C_{ij}\]</p><p>In order to make it smoother, we add an entropic regularization term:</p><p class="math-container">\[\hat{p}_{\varepsilon}(C) = \underset{p \in \Pi(a, b)}{\mathrm{argmin}} ~ \sum_{i,j} \left(p_{ij} C_{ij} + \varepsilon p_{ij} \log \frac{p_{ij}}{a_i b_j} \right)\]</p><h3 id="Sinkhorn-algorithm"><a class="docs-heading-anchor" href="#Sinkhorn-algorithm">Sinkhorn algorithm</a><a id="Sinkhorn-algorithm-1"></a><a class="docs-heading-anchor-permalink" href="#Sinkhorn-algorithm" title="Permalink"></a></h3><p>To solve the regularized problem, we can use the Sinkhorn fixed point algorithm. Let <span>$K \in \mathbb{R}^{n \times m}$</span> be the matrix defined by <span>$K_{ij} = \exp(-C_{ij} / \varepsilon)$</span>. Then the optimal coupling <span>$\hat{p}_{\varepsilon}(C)$</span> can be written as:</p><p class="math-container">\[\hat{p}_{\varepsilon}(C) = \mathrm{diag}(\hat{u}) ~ K ~ \mathrm{diag}(\hat{v}) \tag{1}\]</p><p>where <span>$\hat{u}$</span> and <span>$\hat{v}$</span> are the fixed points of the following Sinkhorn iteration:</p><p class="math-container">\[u^{t+1} = \frac{a}{Kv^t} \qquad \text{and} \qquad v^{t+1} = \frac{b}{K^\top u^t} \tag{S}\]</p><p>The implicit function theorem can be used to differentiate <span>$\hat{u}$</span> and <span>$\hat{v}$</span> with respect to <span>$C$</span>, <span>$a$</span> and/or <span>$b$</span>. This can be combined with automatic differentiation of Equation (1) to find the Jacobian</p><p class="math-container">\[J = \frac{\partial ~ \mathrm{vec}(\hat{p}_{\varepsilon}(C))}{\partial ~ \mathrm{vec}(C)}\]</p><pre><code class="language-julia hljs">d = 10
+n = 3
+m = 4
+
+X = rand(d, n)
+Y = rand(d, m)
+
+a = fill(1 / n, n)
+b = fill(1 / m, m)
+C = pairwise(SqEuclidean(), X, Y; dims=2)
+
+ε = 1.0;
+T = 100;</code></pre><h2 id="Forward-solver"><a class="docs-heading-anchor" href="#Forward-solver">Forward solver</a><a id="Forward-solver-1"></a><a class="docs-heading-anchor-permalink" href="#Forward-solver" title="Permalink"></a></h2><p>For technical reasons related to optimality checking, our Sinkhorn solver returns <span>$\hat{u}$</span> instead of <span>$\hat{p}_\varepsilon$</span>.</p><pre><code class="language-julia hljs">function sinkhorn(C; a, b, ε, T)
+    K = exp.(.-C ./ ε)
+    u = copy(a)
+    v = copy(b)
+    for t in 1:T
+        u = a ./ (K * v)
+        v = b ./ (K&#39; * u)
+    end
+    return u
+end
+
+function sinkhorn_efficient(C; a, b, ε, T)
+    K = exp.(.-C ./ ε)
+    u = copy(a)
+    v = copy(b)
+    for t in 1:T
+        mul!(u, K, v)
+        u .= a ./ u
+        mul!(v, K&#39;, u)
+        v .= b ./ v
+    end
+    return u
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">sinkhorn_efficient (generic function with 1 method)</code></pre><h2 id="Optimality-conditions"><a class="docs-heading-anchor" href="#Optimality-conditions">Optimality conditions</a><a id="Optimality-conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Optimality-conditions" title="Permalink"></a></h2><p>We simply used the fixed point equation <span>$(\text{S})$</span>.</p><pre><code class="language-julia hljs">function sinkhorn_fixed_point(C, u; a, b, ε, T=nothing)
+    K = exp.(.-C ./ ε)
+    v = b ./ (K&#39; * u)
+    return u .- a ./ (K * v)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">sinkhorn_fixed_point (generic function with 1 method)</code></pre><p>We have all we need to build a differentiable Sinkhorn that doesn&#39;t require unrolling the fixed point iterations.</p><pre><code class="language-julia hljs">implicit = ImplicitFunction(sinkhorn_efficient, sinkhorn_fixed_point);</code></pre><h2 id="Testing"><a class="docs-heading-anchor" href="#Testing">Testing</a><a id="Testing-1"></a><a class="docs-heading-anchor-permalink" href="#Testing" title="Permalink"></a></h2><pre><code class="language-julia hljs">u1 = sinkhorn(C; a=a, b=b, ε=ε, T=T)
+u2 = implicit(C; a=a, b=b, ε=ε, T=T)
+u1 == u2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>First, let us check that the forward pass works correctly and returns a fixed point.</p><pre><code class="language-julia hljs">all(iszero, sinkhorn_fixed_point(C, u1; a=a, b=b, ε=ε, T=T))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Using the implicit function defined above, we can build an autodiff-compatible Sinkhorn which does not require backpropagating through the fixed point iterations:</p><pre><code class="language-julia hljs">function transportation_plan_slow(C; a, b, ε, T)
+    K = exp.(.-C ./ ε)
+    u = sinkhorn(C; a=a, b=b, ε=ε, T=T)
+    v = b ./ (K&#39; * u)
+    p = u .* K .* v&#39;
+    return p
+end;
+
+function transportation_plan_fast(C; a, b, ε, T)
+    K = exp.(.-C ./ ε)
+    u = implicit(C; a=a, b=b, ε=ε, T=T)
+    v = b ./ (K&#39; * u)
+    p = u .* K .* v&#39;
+    return p
+end;</code></pre><p>What does the transportation plan look like?</p><pre><code class="language-julia hljs">p1 = transportation_plan_slow(C; a=a, b=b, ε=ε, T=T)
+p2 = transportation_plan_fast(C; a=a, b=b, ε=ε, T=T)
+p1 == p2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Let us compare its Jacobian with the one obtained using finite differences.</p><pre><code class="language-julia hljs">J1 = Zygote.jacobian(C -&gt; transportation_plan_slow(C; a=a, b=b, ε=ε, T=T), C)[1]
+J2 = Zygote.jacobian(C -&gt; transportation_plan_fast(C; a=a, b=b, ε=ε, T=T), C)[1]
+J_ref = FiniteDifferences.jacobian(
+    central_fdm(5, 1), C -&gt; transportation_plan_slow(C; a=a, b=b, ε=ε, T=T), C
+)[1]
+
+sum(abs, J2 - J_ref) / prod(size(J_ref))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3.994574250851566e-15</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../2_sparse_linear_regression/">« Sparse linear regression</a><a class="docs-footer-nextpage" href="../../api/">API reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 27 March 2023 15:32">Monday 27 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
