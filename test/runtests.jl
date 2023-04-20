@@ -2,10 +2,13 @@
 
 using Aqua
 using Documenter
+using ForwardDiffChainRules
 using ImplicitDifferentiation
+using JET
 using JuliaFormatter
 using Random
 using Test
+using Zygote
 
 DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
@@ -19,6 +22,9 @@ DocMeta.setdocmeta!(
     end
     @testset verbose = true "Code formatting (JuliaFormatter.jl)" begin
         @test format(ImplicitDifferentiation; verbose=true, overwrite=false)
+    end
+    @testset verbose = true "Code correctness (JET.jl)" begin
+        JET.test_package("ImplicitDifferentiation"; toplevel_logger=nothing)
     end
     @testset verbose = true "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
