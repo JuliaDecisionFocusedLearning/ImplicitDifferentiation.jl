@@ -33,6 +33,7 @@ LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 MathOptSetDistances = "3b969827-a86c-476c-9527-bb6f1a8fbad5"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
@@ -40,4 +41,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "Convex", "Distances", "Documenter", "FiniteDifferences", "ForwardDiff", "ForwardDiffChainRules", "JET", "JuliaFormatter", "LinearAlgebra", "LinearOperators", "MathOptInterface", "MathOptSetDistances", "Optim", "Random", "SCS", "SparseArrays", "Test", "Zygote"]
+test = ["Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "Convex", "Distances", "Documenter", "FiniteDifferences", "ForwardDiff", "ForwardDiffChainRules", "JET", "JuliaFormatter", "LinearAlgebra", "LinearOperators", "MathOptInterface", "MathOptSetDistances", "Optim", "Pkg", "Random", "SCS", "SparseArrays", "Test", "Zygote"]
