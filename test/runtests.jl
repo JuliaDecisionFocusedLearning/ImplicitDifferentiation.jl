@@ -26,7 +26,11 @@ DocMeta.setdocmeta!(
     end
     @testset verbose = true "Code correctness (JET.jl)" begin
         if VERSION >= v"1.8"
-            JET.test_package(ImplicitDifferentiation; toplevel_logger=nothing)
+            JET.test_package(
+                ImplicitDifferentiation;
+                toplevel_logger=nothing,
+                ignored_modules=(ForwardDiffChainRules,),  # TODO: remove once typo fixed
+            )
         end
     end
     @testset verbose = true "Doctests (Documenter.jl)" begin
