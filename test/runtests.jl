@@ -15,12 +15,6 @@ DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
 )
 
-function get_pkg_version(name::AbstractString)
-    deps = Pkg.dependencies()
-    p = only(x for x in values(deps) if x.name == name)
-    return p.version
-end
-
 ## Test sets
 
 @testset verbose = true "ImplicitDifferentiation.jl" begin
@@ -31,10 +25,8 @@ end
         @test format(ImplicitDifferentiation; verbose=true, overwrite=false)
     end
     @testset verbose = true "Code correctness (JET.jl)" begin
-        if get_pkg_version("JET") >= v"0.7.11"
-            JET.test_package("InferOpt"; toplevel_logger=nothing)
-        else
-            @test string(JET.report_package(InferOpt)) == "No errors detected\n"
+        if VERSION >= v"1.8"
+            JET.test_package(ImplicitDifferentiation; toplevel_logger=nothing)
         end
     end
     @testset verbose = true "Doctests (Documenter.jl)" begin
