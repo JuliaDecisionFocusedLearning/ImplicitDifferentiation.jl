@@ -26,7 +26,7 @@ DocMeta.setdocmeta!(
     end
     @testset verbose = true "Code correctness (JET.jl)" begin
         if VERSION >= v"1.8"
-            @test_broken JET.test_package(ImplicitDifferentiation; toplevel_logger=nothing)
+            JET.test_package(ImplicitDifferentiation; toplevel_logger=nothing)
         end
     end
     @testset verbose = true "Doctests (Documenter.jl)" begin
