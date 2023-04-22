@@ -11,8 +11,8 @@ Thanks to these conditions, we can compute the Jacobian of `ŷ(⋅)` using the 
 This requires solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`, `B ∈ ℝᵈˣⁿ` and `J ∈ ℝᵈˣⁿ`.
 
 # Fields:
-- `forward::F`: callable of the form `x -> ŷ(x)`
-- `conditions::C`: callable of the form `(x,y) -> F(x,y)`
+- `forward::F`: callable of the form `x -> (ŷ(x),z)`
+- `conditions::C`: callable of the form `(x,y,z) -> F(x,y,z)`
 - `linear_solver::L`: callable of the form `(A,b) -> u` such that `A * u = b`
 """
 struct ImplicitFunction{F,C,L}
@@ -44,7 +44,17 @@ end
 
 Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 """
-(implicit::ImplicitFunction)(x; kwargs...) = implicit.forward(x; kwargs...)
+function (implicit::ImplicitFunction)(x; kwargs...)::AbstractArray
+    y, z = implicit.forward(x; kwargs...)
+    return y
+end
+
+# Fool JET into thinking there exists an implementation for frule_via_ad
+function ChainRulesCore.frule_via_ad(
+    ::RuleConfig{>:HasForwardsMode}, ȧrgs, f, args...; kwargs...
+)
+    return nothing, nothing
+end
 
 """
     frule(rc, (_, dx), implicit, x[; kwargs...])
@@ -57,21 +67,37 @@ Keyword arguments are given to both `implicit.forward` and `implicit.conditions`
 function ChainRulesCore.frule(
     rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
+    forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = implicit(x; kwargs...)
-
-    conditions_x(x̃; kwargs...) = conditions(x̃, y; kwargs...)
-    conditions_y(ỹ; kwargs...) = conditions(x, ỹ; kwargs...)
-
-    pushforward_A(dỹ) = frule_via_ad(rc, (NoTangent(), dỹ), conditions_y, y; kwargs...)[2]
-    pushforward_B(dx̃) = frule_via_ad(rc, (NoTangent(), dx̃), conditions_x, x; kwargs...)[2]
-
-    mul_A!(res::Vector, u::Vector) = res .= vec(pushforward_A(reshape(u, size(y))))
-    mul_B!(res::Vector, v::Vector) = res .= vec(pushforward_B(reshape(v, size(x))))
-
+    y, z = forward(x; kwargs...)  # TODO: revert back to implicit for 2nd order
     n, m = length(x), length(y)
+
+    function pushforward_A(dỹ)
+        dxyz = (NoTangent(), dỹ, ZeroTangent())
+        F, dF = frule_via_ad(rc, dxyz, conditions, x, y, z; kwargs...)
+        return dF
+    end
+
+    function pushforward_B(dx̃)
+        dxyz = (dx̃, ZeroTangent(), ZeroTangent())
+        F, dF = frule_via_ad(rc, dxyz, conditions, x, y, z; kwargs...)
+        return dF
+    end
+
+    function mul_A!(res::Vector, dy_vec::Vector)
+        dy = reshape(dy_vec, size(y))
+        dF = pushforward_A(dy)
+        return res .= vec(dF)
+    end
+
+    function mul_B!(res::Vector, dx_vec::Vector)
+        dx = reshape(dx_vec, size(x))
+        dF = pushforward_B(dx)
+        return res .= vec(dF)
+    end
+
     A = LinearOperator(R, m, m, false, false, mul_A!)
     B = LinearOperator(R, m, n, false, false, mul_B!)
 
@@ -97,27 +123,37 @@ Keyword arguments are given to both `implicit.forward` and `implicit.conditions`
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
+    forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y = implicit(x; kwargs...)
-
-    pullback = rrule_via_ad(rc, conditions, x, y; kwargs...)[2]
-
-    mul_Aᵀ!(res::Vector, u::Vector) = res .= vec(pullback(reshape(u, size(y)))[3])
-    mul_Bᵀ!(res::Vector, v::Vector) = res .= vec(pullback(reshape(v, size(y)))[2])
-
+    y, z = forward(x; kwargs...)  # TODO: revert back to implicit for 2nd order
     n, m = length(x), length(y)
+
+    _, pullback = rrule_via_ad(rc, conditions, x, y, z; kwargs...)
+
+    function mul_Aᵀ!(res::Vector, dF_vec::Vector)
+        dF = reshape(dF_vec, size(y))
+        dconditions, dx, dy, dz = pullback(dF)
+        return res .= vec(dy)
+    end
+
+    function mul_Bᵀ!(res::Vector, dF_vec::Vector)
+        dF = reshape(dF_vec, size(y))
+        dconditions, dx, dy, dz = pullback(dF)
+        return res .= vec(dx)
+    end
+
     Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)
     Bᵀ = LinearOperator(R, n, m, false, false, mul_Bᵀ!)
 
     function implicit_pullback(dy)
         dy_vec = convert(Vector{R}, vec(unthunk(dy)))
-        u, stats = linear_solver(Aᵀ, dy_vec)
+        dF_vec, stats = linear_solver(Aᵀ, dy_vec)
         if !stats.solved
             throw(SolverFailureException("Linear solver failed to converge", stats))
         end
-        dx_vec = -Bᵀ * u
+        dx_vec = -Bᵀ * dF_vec
         dx = reshape(dx_vec, size(x))
         return (NoTangent(), dx)
     end

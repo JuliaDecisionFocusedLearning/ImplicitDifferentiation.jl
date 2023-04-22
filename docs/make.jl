@@ -46,7 +46,8 @@ for file in sort(readdir(EXAMPLES_DIR_MD))
     end
 end
 
-pages = ["Home" => "index.md", "API reference" => "api.md", "Examples" => example_pages]
+# pages = ["Home" => "index.md", "API reference" => "api.md", "Examples" => example_pages]
+pages = ["Home" => "index.md", "API reference" => "api.md"]  # TODO: toggle
 
 format = Documenter.HTML(;
     prettyurls=get(ENV, "CI", "false") == "true",

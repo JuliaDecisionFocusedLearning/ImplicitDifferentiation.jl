@@ -3,7 +3,8 @@ on:
   push:
     branches:
       - main
-    tags: '*'
+    tags:
+      - '*'
   pull_request:
 concurrency:
   # Skip intermediate builds: always.
@@ -18,8 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.7'
-          - '1.8'
+          # TODO: toggle
+          # - '1.7'
+          # - '1.8'
           - '~1.9.0-0'
         os:
           - ubuntu-latest

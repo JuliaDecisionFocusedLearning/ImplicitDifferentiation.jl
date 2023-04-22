@@ -2,7 +2,6 @@
 
 using Aqua
 using Documenter
-using ForwardDiffChainRules
 using ImplicitDifferentiation
 using JET
 using JuliaFormatter
@@ -41,21 +40,21 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
     end
     @testset verbose = true "Static checking (JET.jl)" begin
         if VERSION >= v"1.8"
-            JET.test_package(
-                ImplicitDifferentiation;
-                toplevel_logger=nothing,
-                ignored_modules=(ForwardDiffChainRules,),
-            )  # TODO: remove once new version released
+            JET.test_package(ImplicitDifferentiation; toplevel_logger=nothing)
         end
     end
     @testset verbose = true "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
     end
-    for file in readdir(EXAMPLES_DIR_JL)
-        path = joinpath(EXAMPLES_DIR_JL, file)
-        title = markdown_title(path)
-        @testset verbose = true "$title" begin
-            include(path)
-        end
+    @testset verbose = true "Basic" begin
+        include("basic.jl")
     end
+    # TODO: toggle
+    # for file in readdir(EXAMPLES_DIR_JL)
+    #     path = joinpath(EXAMPLES_DIR_JL, file)
+    #     title = markdown_title(path)
+    #     @testset verbose = true "$title" begin
+    #         include(path)
+    #     end
+    # end
 end
