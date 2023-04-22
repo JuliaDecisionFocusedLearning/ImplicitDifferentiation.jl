@@ -51,7 +51,7 @@ Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 
 Custom forward rule for [`ImplicitFunction{F,C,L}`](@ref).
 
-We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
+We compute the Jacobian-vector product `Jv` by solving `Au = -Bv` and setting `Jv = u`.
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.frule(
@@ -76,8 +76,8 @@ function ChainRulesCore.frule(
     B = LinearOperator(R, m, n, false, false, mul_B!)
 
     dx_vec = convert(Vector{R}, vec(unthunk(dx)))
-    b = B * dx_vec
-    dy_vec, stats = linear_solver(A, -b)
+    b = -B * dx_vec
+    dy_vec, stats = linear_solver(A, b)
     if !stats.solved
         throw(SolverFailureException("Linear solver failed to converge", stats))
     end
@@ -91,7 +91,7 @@ end
 
 Custom reverse rule for [`ImplicitFunction{F,C,L}`](@ref).
 
-We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = Bᵀu`.
+We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = -Bᵀu`.
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
