@@ -13,7 +13,7 @@ This requires solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`, `
 # Fields:
 - `forward::F`: callable of the form `x -> (ŷ(x),z)`
 - `conditions::C`: callable of the form `(x,y,z) -> F(x,y,z)`
-- `linear_solver::L`: callable of the form `(A,b) -> u` such that `A * u = b`
+- `linear_solver::L`: callable of the form `(A,b) -> u` such that `Au = b`
 """
 struct ImplicitFunction{F,C,L}
     forward::F
@@ -44,12 +44,12 @@ end
 
 Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 """
-function (implicit::ImplicitFunction)(x; kwargs...)::AbstractArray
+function (implicit::ImplicitFunction)(x; kwargs...)
     y, z = implicit.forward(x; kwargs...)
     return y
 end
 
-# Fool JET into thinking there exists an implementation for frule_via_ad
+# Trick JET into thinking there exists an implementation for frule_via_ad
 function ChainRulesCore.frule_via_ad(
     ::RuleConfig{>:HasForwardsMode}, ȧrgs, f, args...; kwargs...
 )
@@ -71,7 +71,7 @@ function ChainRulesCore.frule(
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y, z = forward(x; kwargs...)  # TODO: revert back to implicit for 2nd order
+    y, z = forward(x; kwargs...)
     n, m = length(x), length(y)
 
     function pushforward_A(dỹ)
@@ -127,7 +127,7 @@ function ChainRulesCore.rrule(
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y, z = forward(x; kwargs...)  # TODO: revert back to implicit for 2nd order
+    y, z = forward(x; kwargs...)
     n, m = length(x), length(y)
 
     _, pullback = rrule_via_ad(rc, conditions, x, y, z; kwargs...)

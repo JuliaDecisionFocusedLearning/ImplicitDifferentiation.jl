@@ -23,12 +23,12 @@ function (implicit::ImplicitFunction)(
     linear_solver = implicit.linear_solver
 
     x = value.(x_and_dx)
-    y, z = forward(x)
+    y, z = forward(x; kwargs...)
     n, m = length(x), length(y)
 
     backend = ForwardDiffBackend()
-    pushforward_A = pushforward_function(backend, _y -> conditions(x, _y, z), y)
-    pushforward_B = pushforward_function(backend, _x -> conditions(_x, y, z), x)
+    pushforward_A = pushforward_function(backend, _y -> conditions(x, _y, z; kwargs...), y)
+    pushforward_B = pushforward_function(backend, _x -> conditions(_x, y, z; kwargs...), x)
 
     function mul_A!(res::Vector, dy_vec::Vector)
         dy = reshape(dy_vec, size(y))
