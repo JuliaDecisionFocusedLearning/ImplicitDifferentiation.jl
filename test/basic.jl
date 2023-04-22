@@ -1,6 +1,5 @@
 # Basic use
 
-using Enzyme
 using ForwardDiff
 using ImplicitDifferentiation
 using JET
@@ -30,7 +29,7 @@ conditions(x, y, z) = y .- x;
 implicit = ImplicitFunction(forward, conditions);
 
 @testset verbose = true "Implicit diff works" begin
-    implicit(x) ≈ x
-    ForwardDiff.jacobian(implicit, x) ≈ I
-    Zygote.jacobian(implicit, x)[1] ≈ I
+    (first ∘ implicit)(x) ≈ x
+    ForwardDiff.jacobian(first ∘ implicit, x) ≈ I
+    Zygote.jacobian(first ∘ implicit, x)[1] ≈ I
 end

@@ -46,7 +46,7 @@ Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
 """
 function (implicit::ImplicitFunction)(x; kwargs...)
     y, z = implicit.forward(x; kwargs...)
-    return y
+    return y, z
 end
 
 # Trick JET into thinking there exists an implementation for frule_via_ad
@@ -67,11 +67,10 @@ Keyword arguments are given to both `implicit.forward` and `implicit.conditions`
 function ChainRulesCore.frule(
     rc::RuleConfig, (_, dx), implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
-    forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y, z = forward(x; kwargs...)
+    y, z = implicit(x; kwargs...)
     n, m = length(x), length(y)
 
     function pushforward_A(dỹ)
@@ -108,8 +107,9 @@ function ChainRulesCore.frule(
         throw(SolverFailureException("Linear solver failed to converge", stats))
     end
     dy = reshape(dy_vec, size(y))
+    dz = NoTangent()
 
-    return y, dy
+    return (y, z), (dy, dz)
 end
 
 """
@@ -123,11 +123,10 @@ Keyword arguments are given to both `implicit.forward` and `implicit.conditions`
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R<:Real}
-    forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y, z = forward(x; kwargs...)
+    y, z = implicit(x; kwargs...)
     n, m = length(x), length(y)
 
     _, pullback = rrule_via_ad(rc, conditions, x, y, z; kwargs...)
@@ -147,8 +146,9 @@ function ChainRulesCore.rrule(
     Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)
     Bᵀ = LinearOperator(R, n, m, false, false, mul_Bᵀ!)
 
-    function implicit_pullback(dy)
-        dy_vec = convert(Vector{R}, vec(unthunk(dy)))
+    function implicit_pullback(dyz)
+        dy, dz = unthunk(dyz)
+        dy_vec = convert(Vector{R}, vec(dy))
         dF_vec, stats = linear_solver(Aᵀ, dy_vec)
         if !stats.solved
             throw(SolverFailureException("Linear solver failed to converge", stats))
@@ -158,5 +158,5 @@ function ChainRulesCore.rrule(
         return (NoTangent(), dx)
     end
 
-    return y, implicit_pullback
+    return (y, z), implicit_pullback
 end

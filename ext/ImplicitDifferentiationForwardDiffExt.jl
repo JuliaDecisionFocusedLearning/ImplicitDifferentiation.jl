@@ -58,7 +58,9 @@ function (implicit::ImplicitFunction)(
         Dual{T}(y[i], Partials(Tuple(dy[k][i] for k in 1:N)))
     end
 
-    return y_and_dy
+    z_and_dz = Dual{T}(z, Partials(Tuple(zero(z) for k in 1:N)))
+
+    return y_and_dy, z_and_dz
 end
 
 end
