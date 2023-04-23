@@ -146,9 +146,8 @@ function ChainRulesCore.rrule(
     Aᵀ = LinearOperator(R, m, m, false, false, mul_Aᵀ!)
     Bᵀ = LinearOperator(R, n, m, false, false, mul_Bᵀ!)
 
-    function implicit_pullback(dyz)
-        dy, dz = unthunk(dyz)
-        dy_vec = convert(Vector{R}, vec(dy))
+    function implicit_pullback((dy, dz))
+        dy_vec = convert(Vector{R}, vec(unthunk(dy)))
         dF_vec, stats = linear_solver(Aᵀ, dy_vec)
         if !stats.solved
             throw(SolverFailureException("Linear solver failed to converge", stats))
