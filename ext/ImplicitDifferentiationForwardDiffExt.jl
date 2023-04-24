@@ -7,8 +7,7 @@ else
 end
 
 using AbstractDifferentiation: ForwardDiffBackend, lazy_jacobian
-using ImplicitDifferentiation: ImplicitFunction, SolverFailureException
-using ImplicitDifferentiation: LazyJacobianMul!
+using ImplicitDifferentiation: ImplicitFunction, SolverFailureException, LazyJacobianMul!
 using LinearOperators: LinearOperator
 
 """
@@ -19,12 +18,11 @@ Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility w
 function (implicit::ImplicitFunction)(
     x_and_dx::AbstractArray{Dual{T,R,N}}; kwargs...
 ) where {T,R,N}
-    forward = implicit.forward
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
     x = value.(x_and_dx)
-    y, z = forward(x; kwargs...)
+    y, z = implicit(x; kwargs...)
     n, m = length(x), length(y)
 
     backend = ForwardDiffBackend()

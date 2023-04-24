@@ -26,7 +26,7 @@ end
 
 Construct an [`ImplicitFunction{F,C,L}`](@ref) with `Krylov.gmres` as the default linear solver.
 """
-function ImplicitFunction(forward::F, conditions::C) where {F,C}
+function ImplicitFunction(forward, conditions)
     return ImplicitFunction(forward, conditions, gmres)
 end
 

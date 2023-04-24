@@ -1,3 +1,11 @@
+module ImplicitDifferentiationChainRulesExt
+
+using AbstractDifferentiation: ReverseRuleConfigBackend, lazy_jacobian
+using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, unthunk
+using ImplicitDifferentiation:
+    ImplicitFunction, SolverFailureException, LazyJacobianTransposeMul!
+using LinearOperators: LinearOperator
+
 """
     rrule(rc, implicit, x[; kwargs...])
 
@@ -33,4 +41,6 @@ function ChainRulesCore.rrule(
     end
 
     return (y, z), implicit_pullback
+end
+
 end

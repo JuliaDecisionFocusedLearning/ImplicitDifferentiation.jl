@@ -10,13 +10,15 @@ using Zygote
 
 Random.seed!(63);
 
+s = (2, 1)
+
 function myidentity(x)
     a = [0.0]
     a[1] = first(x)
     return copy(x)
 end;
 
-x = rand(2, 1)
+x = rand(s...)
 
 @testset verbose = true "Automatic diff fails" begin
     @test myidentity(x) ≈ x
@@ -29,7 +31,7 @@ conditions(x, y, z) = y .- x;
 implicit = ImplicitFunction(forward, conditions);
 
 @testset verbose = true "Implicit diff works" begin
-    (first ∘ implicit)(x) ≈ x
-    ForwardDiff.jacobian(first ∘ implicit, x) ≈ I
-    Zygote.jacobian(first ∘ implicit, x)[1] ≈ I
+    @test (first ∘ implicit)(x) ≈ x
+    @test ForwardDiff.jacobian(first ∘ implicit, x) ≈ I
+    @test Zygote.jacobian(first ∘ implicit, x)[1] ≈ I
 end

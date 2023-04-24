@@ -32,8 +32,15 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
 ## Test sets
 
 @testset verbose = true "ImplicitDifferentiation.jl" begin
-    @testset verbose = true "Code quality (Aqua.jl)" begin
-        Aqua.test_all(ImplicitDifferentiation)
+    @testset verbose = false "Code quality (Aqua.jl)" begin
+        Aqua.test_ambiguities([ImplicitDifferentiation, Base, Core])
+        Aqua.test_unbound_args(ImplicitDifferentiation)
+        Aqua.test_undefined_exports(ImplicitDifferentiation)
+        Aqua.test_piracy(ImplicitDifferentiation)
+        Aqua.test_project_extras(ImplicitDifferentiation)
+        Aqua.test_stale_deps(ImplicitDifferentiation; ignore=[:ChainRulesCore])
+        Aqua.test_deps_compat(ImplicitDifferentiation)
+        Aqua.test_project_toml_formatting(ImplicitDifferentiation)
     end
     @testset verbose = true "Formatting (JuliaFormatter.jl)" begin
         @test format(ImplicitDifferentiation; verbose=true, overwrite=false)
@@ -43,7 +50,7 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
             JET.test_package(ImplicitDifferentiation; toplevel_logger=nothing)
         end
     end
-    @testset verbose = true "Doctests (Documenter.jl)" begin
+    @testset verbose = false "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
     end
     @testset verbose = true "Basic" begin
