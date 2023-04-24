@@ -6,8 +6,9 @@ else
     using ..ForwardDiff: Dual, Partials, jacobian, partials, value
 end
 
-using AbstractDifferentiation: ForwardDiffBackend, pushforward_function
+using AbstractDifferentiation: ForwardDiffBackend, lazy_jacobian
 using ImplicitDifferentiation: ImplicitFunction, SolverFailureException
+using ImplicitDifferentiation: LazyJacobianMul!
 using LinearOperators: LinearOperator
 
 """
@@ -27,27 +28,14 @@ function (implicit::ImplicitFunction)(
     n, m = length(x), length(y)
 
     backend = ForwardDiffBackend()
-    pushforward_A = pushforward_function(backend, _y -> conditions(x, _y, z; kwargs...), y)
-    pushforward_B = pushforward_function(backend, _x -> conditions(_x, y, z; kwargs...), x)
-
-    function mul_A!(res::Vector, dy_vec::Vector)
-        dy = reshape(dy_vec, size(y))
-        dF = only(pushforward_A(dy))
-        return res .= vec(dF)
-    end
-
-    function mul_B!(res::Vector, dx_vec::Vector)
-        dx = reshape(dx_vec, size(x))
-        dF = only(pushforward_B(dx))
-        return res .= vec(dF)
-    end
-
-    A = LinearOperator(R, m, m, false, false, mul_A!)
-    B = LinearOperator(R, m, n, false, false, mul_B!)
+    A = lazy_jacobian(backend, _y -> conditions(x, _y, z; kwargs...), y)
+    B = lazy_jacobian(backend, _x -> conditions(_x, y, z; kwargs...), x)
+    A_op = LinearOperator(R, m, m, false, false, LazyJacobianMul!(A, size(y)))
+    B_op = LinearOperator(R, m, n, false, false, LazyJacobianMul!(B, size(x)))
 
     dy = map(1:N) do k
         dₖx_vec = vec(partials.(x_and_dx, k))
-        dₖy_vec, stats = linear_solver(A, -B * dₖx_vec)
+        dₖy_vec, stats = linear_solver(A_op, -(B_op * dₖx_vec))
         if !stats.solved
             throw(SolverFailureException("Linear solver failed to converge", stats))
         end

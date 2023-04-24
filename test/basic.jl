@@ -13,10 +13,10 @@ Random.seed!(63);
 function myidentity(x)
     a = [0.0]
     a[1] = first(x)
-    return x
+    return copy(x)
 end;
 
-x = rand(2, 3)
+x = rand(2, 1)
 
 @testset verbose = true "Automatic diff fails" begin
     @test myidentity(x) ≈ x
