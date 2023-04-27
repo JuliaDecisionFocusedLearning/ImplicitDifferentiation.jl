@@ -53,15 +53,11 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
     @testset verbose = false "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
     end
-    @testset verbose = true "Basic" begin
-        include("basic.jl")
+    for file in readdir(EXAMPLES_DIR_JL)
+        path = joinpath(EXAMPLES_DIR_JL, file)
+        title = markdown_title(path)
+        @testset verbose = true "$title" begin
+            include(path)
+        end
     end
-    # TODO: toggle
-    # for file in readdir(EXAMPLES_DIR_JL)
-    #     path = joinpath(EXAMPLES_DIR_JL, file)
-    #     title = markdown_title(path)
-    #     @testset verbose = true "$title" begin
-    #         include(path)
-    #     end
-    # end
 end

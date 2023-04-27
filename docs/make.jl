@@ -28,26 +28,25 @@ for file in readdir(EXAMPLES_DIR_MD)
     end
 end
 
-# for file in readdir(EXAMPLES_DIR_JL)
-#     Literate.markdown(
-#         joinpath(EXAMPLES_DIR_JL, file),
-#         EXAMPLES_DIR_MD;
-#         documenter=true,
-#         flavor=Literate.DocumenterFlavor(),
-#     )
-# end
+for file in readdir(EXAMPLES_DIR_JL)
+    Literate.markdown(
+        joinpath(EXAMPLES_DIR_JL, file),
+        EXAMPLES_DIR_MD;
+        documenter=true,
+        flavor=Literate.DocumenterFlavor(),
+    )
+end
 
-# example_pages = Pair{String,String}[]
-# for file in sort(readdir(EXAMPLES_DIR_MD))
-#     if endswith(file, ".md")
-#         title = markdown_title(joinpath(EXAMPLES_DIR_MD, file))
-#         path = joinpath("examples", file)
-#         push!(example_pages, title => path)
-#     end
-# end
+example_pages = Pair{String,String}[]
+for file in sort(readdir(EXAMPLES_DIR_MD))
+    if endswith(file, ".md")
+        title = markdown_title(joinpath(EXAMPLES_DIR_MD, file))
+        path = joinpath("examples", file)
+        push!(example_pages, title => path)
+    end
+end
 
-# pages = ["Home" => "index.md", "API reference" => "api.md", "Examples" => example_pages]
-pages = ["Home" => "index.md", "API reference" => "api.md"]  # TODO: toggle
+pages = ["Home" => "index.md", "API reference" => "api.md", "Examples" => example_pages]
 
 format = Documenter.HTML(;
     prettyurls=get(ENV, "CI", "false") == "true",

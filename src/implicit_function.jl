@@ -1,17 +1,18 @@
 """
     ImplicitFunction{F,C,L}
 
-Differentiable wrapper for an implicit function `x -> ŷ(x)` whose output is defined by explicit conditions `F(x,ŷ(x)) = 0`.
+Differentiable wrapper for an implicit function `x -> y(x)` whose output is defined by conditions `F(x,y(x)) = 0`.
 
-If `x ∈ ℝⁿ` and `y ∈ ℝᵈ`, then we need as many conditions as output dimensions: `F(x,y) ∈ ℝᵈ`.
-Thanks to these conditions, we can compute the Jacobian of `ŷ(⋅)` using the implicit function theorem:
+More generally, we consider functions `x -> (y(x),z(x))` and conditions `F(x,y(x),z(x)) = 0`, where `z(x)` contains additional information that _is considered constant for differentiation purposes_. Beware: the method `zero(z)` must exist.
+
+If `x ∈ ℝⁿ` and `y ∈ ℝᵈ`, then we need as many conditions as output dimensions: `F(x,y,z) ∈ ℝᵈ`. Thanks to these conditions, we can compute the Jacobian of `y(⋅)` using the implicit function theorem:
 ```
-∂₂F(x,ŷ(x)) * ∂ŷ(x) = -∂₁F(x,ŷ(x))
+∂₂F(x,y(x),z(x)) * ∂y(x) = -∂₁F(x,y(x),z(x))
 ```
-This requires solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`, `B ∈ ℝᵈˣⁿ` and `J ∈ ℝᵈˣⁿ`.
+This amounts to solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`, `B ∈ ℝᵈˣⁿ` and `J ∈ ℝᵈˣⁿ`.
 
 # Fields:
-- `forward::F`: callable of the form `x -> (ŷ(x),z)`
+- `forward::F`: callable of the form `x -> (ŷ(x),z(x))`.
 - `conditions::C`: callable of the form `(x,y,z) -> F(x,y,z)`
 - `linear_solver::L`: callable of the form `(A,b) -> u` such that `Au = b`
 """
@@ -24,7 +25,7 @@ end
 """
     ImplicitFunction(forward, conditions)
 
-Construct an [`ImplicitFunction{F,C,L}`](@ref) with `Krylov.gmres` as the default linear solver.
+Construct an [`ImplicitFunction{F,C,L}`](@ref) with [`Krylov.gmres`](https://juliasmoothoptimizers.github.io/Krylov.jl/stable/solvers/unsymmetric/#GMRES) as the default linear solver.
 """
 function ImplicitFunction(forward, conditions)
     return ImplicitFunction(forward, conditions, gmres)
