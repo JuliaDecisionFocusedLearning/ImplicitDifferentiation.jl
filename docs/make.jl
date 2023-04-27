@@ -65,4 +65,6 @@ makedocs(;
     linkcheck=true,
 )
 
-deploydocs(; repo="github.com/gdalle/ImplicitDifferentiation.jl", devbranch="main")
+deploydocs(;
+    repo="github.com/gdalle/ImplicitDifferentiation.jl", devbranch="main", push_preview=true
+)
