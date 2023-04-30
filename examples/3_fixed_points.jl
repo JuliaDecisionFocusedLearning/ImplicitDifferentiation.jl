@@ -63,8 +63,8 @@ x = rand(2)
 
 #-
 
-(first ∘ implicit_fixedpoint)(x; iterations=10) .^ 2
-@test (first ∘ implicit_fixedpoint)(x; iterations=10) .^ 2 ≈ x  #src
+first(implicit_fixedpoint(x; iterations=10)) .^ 2
+@test first(implicit_fixedpoint(x; iterations=10)) .^ 2 ≈ x  #src
 
 #-
 
