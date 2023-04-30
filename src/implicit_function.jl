@@ -14,7 +14,7 @@ This amounts to solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`,
 # Fields:
 - `forward::F`: callable of the form `x -> (ŷ(x),z(x))`.
 - `conditions::C`: callable of the form `(x,y,z) -> F(x,y,z)`
-- `linear_solver::L`: callable of the form `(A,b) -> u` such that `Au = b`
+- `linear_solver::L`: callable of the form `(A,b) -> u` such that `Au = b`, must be taken from Krylov.jl
 """
 struct ImplicitFunction{F,C,L}
     forward::F
@@ -25,7 +25,7 @@ end
 """
     ImplicitFunction(forward, conditions)
 
-Construct an [`ImplicitFunction{F,C,L}`](@ref) with [`Krylov.gmres`](https://juliasmoothoptimizers.github.io/Krylov.jl/stable/solvers/unsymmetric/#GMRES) as the default linear solver.
+Construct an `ImplicitFunction` with `Krylov.gmres` as the default linear solver.
 """
 function ImplicitFunction(forward, conditions)
     return ImplicitFunction(forward, conditions, gmres)
@@ -34,7 +34,7 @@ end
 """
     implicit(x[; kwargs...])
 
-Make [`ImplicitFunction{F,C,L}`](@ref) callable by applying `implicit.forward`.
+Make `ImplicitFunction` callable by applying `implicit.forward`.
 """
 function (implicit::ImplicitFunction)(x; kwargs...)
     y, z = implicit.forward(x; kwargs...)

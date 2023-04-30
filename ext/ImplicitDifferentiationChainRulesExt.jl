@@ -1,9 +1,8 @@
 module ImplicitDifferentiationChainRulesExt
 
-using AbstractDifferentiation: ReverseRuleConfigBackend, lazy_jacobian
+using AbstractDifferentiation: ReverseRuleConfigBackend, pullback_function
 using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, unthunk
-using ImplicitDifferentiation:
-    ImplicitFunction, SolverFailureException, LazyJacobianTransposeMul!
+using ImplicitDifferentiation: ImplicitFunction, PullbackMul!, check_solution
 using LinearOperators: LinearOperator
 
 """
@@ -24,17 +23,15 @@ function ChainRulesCore.rrule(
     n, m = length(x), length(y)
 
     backend = ReverseRuleConfigBackend(rc)
-    A = lazy_jacobian(backend, _y -> conditions(x, _y, z; kwargs...), y)
-    B = lazy_jacobian(backend, _x -> conditions(_x, y, z; kwargs...), x)
-    Aᵀ_op = LinearOperator(R, m, m, false, false, LazyJacobianTransposeMul!(A, size(y)))
-    Bᵀ_op = LinearOperator(R, n, m, false, false, LazyJacobianTransposeMul!(B, size(y)))
+    pbA = pullback_function(backend, _y -> conditions(x, _y, z; kwargs...), y)
+    pbB = pullback_function(backend, _x -> conditions(_x, y, z; kwargs...), x)
+    Aᵀ_op = LinearOperator(R, m, m, false, false, PullbackMul!(pbA, size(y)))
+    Bᵀ_op = LinearOperator(R, n, m, false, false, PullbackMul!(pbB, size(y)))
 
     function implicit_pullback((dy, dz))
         dy_vec = convert(Vector{R}, vec(unthunk(dy)))
         dF_vec, stats = linear_solver(Aᵀ_op, dy_vec)
-        if !stats.solved
-            throw(SolverFailureException("Linear solver failed to converge", stats))
-        end
+        check_solution(linear_solver, stats)
         dx_vec = -(Bᵀ_op * dF_vec)
         dx = reshape(dx_vec, size(x))
         return (NoTangent(), dx)

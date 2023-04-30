@@ -13,81 +13,97 @@ using Zygote
 
 Random.seed!(63);
 
-# ## Autodiff fails
+# ## Why do we bother?
 
 #=
-ForwardDiff.jl and Zygote.jl are two prominent packages for automatic differentiation in Julia.
+[ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl) and [Zygote.jl](https://github.com/FluxML/Zygote.jl) are two prominent packages for automatic differentiation in Julia.
 While they are very generic, there are simple language constructs that they cannot differentiate through.
 =#
 
-function mysquare(x::AbstractArray)
+function mysqrt(x::AbstractArray)
     a = [0.0]
     a[1] = first(x)
-    return x .^ 2
-end;
+    return sqrt.(x)
+end
 
 #=
-This is basically the componentwise square function but with an additional twist: `a::Vector{Float64}` is created internally, and its only element is replaced with the first element of `x`.
+This is essentially the componentwise square root function but with an additional twist: `a::Vector{Float64}` is created internally, and its only element is replaced with the first element of `x`.
 We can check that it does what it's supposed to do.
 =#
 
 x = rand(2)
-mysquare(x) ≈ x .^ 2
-@test mysquare(x) ≈ x .^ 2  #src
+mysqrt(x) ≈ sqrt.(x)
+@test mysqrt(x) ≈ sqrt.(x)  #src
 
 #=
-However, things start to go wrong when we compute Jacobians, due to the limitations of [ForwardDiff.jl](https://juliadiff.org/ForwardDiff.jl/stable/user/limitations/) and [Zygote.jl](https://fluxml.ai/Zygote.jl/stable/limitations/).
+Of course the Jacobian has an explicit formula.
+=#
+
+J = Diagonal(0.5 ./ sqrt.(x))
+
+#=
+However, things start to go wrong when we compute it with autodiff, due to the [limitations of ForwardDiff.jl](https://juliadiff.org/ForwardDiff.jl/stable/user/limitations/) and [those of Zygote.jl](https://fluxml.ai/Zygote.jl/stable/limitations/).
 =#
 
 try
-    ForwardDiff.jacobian(mysquare, x)
+    ForwardDiff.jacobian(mysqrt, x)
 catch e
     e
 end
-@test_throws MethodError ForwardDiff.jacobian(mysquare, x)  #src
+@test_throws MethodError ForwardDiff.jacobian(mysqrt, x)  #src
 
 #=
-ForwardDiff.jl throws an error because it tries to call `mysquare` with an array of dual numbers, and cannot use one of these numbers to fill `a` (which has element type `Float64`).
+ForwardDiff.jl throws an error because it tries to call `mysqrt` with an array of dual numbers, and cannot use one of these numbers to fill `a` (which has element type `Float64`).
 =#
 
 try
-    Zygote.jacobian(mysquare, x)
+    Zygote.jacobian(mysqrt, x)
 catch e
     e
 end
-@test_throws ErrorException Zygote.jacobian(mysquare, x)  #src
+@test_throws ErrorException Zygote.jacobian(mysqrt, x)  #src
 
 #=
 Zygote.jl also throws an error because it cannot handle mutation.
 =#
 
-# ## Implicit functions
+# ## Implicit function
 
 #=
-The first possible use of ImplicitDifferentiation.jl is to overcome the limitations of automatic differentiation packages by defining Jacobians implicitly.
-Its main export is a type called [`ImplicitFunction`](@ref), which we are going to see in action.
+The first possible use of ImplicitDifferentiation.jl is to overcome the limitations of automatic differentiation packages by defining functions (and computing their derivatives) implicitly.
+An implicit function is a mapping
+```math
+x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
+```
+whose output is defined by conditions
+```math
+F(x,y(x)) = 0 \in \mathbb{R}^m
+```
+We represent it using a type called `ImplicitFunction`, which you will see in action shortly.
 =#
 
 #=
 First we define a `forward` pass correponding to the function we consider.
-It returns the actual output `y` of the function, as well as additional information `z` (which we don't need here, hence the `0`).
+It returns the actual output $y(x)$ of the function, as well as additional information $z(x)$.
+Here we don't need any additional information, so we set it to $0$.
 Importantly, this forward pass _doesn't need to be differentiable_.
 =#
 
 function forward(x)
-    y = mysquare(x)
+    y = mysqrt(x)
     z = 0
     return y, z
 end
 
 #=
-Then we define `conditions` that the output `y` is supposed to satisfy.
-These conditions must be array-valued, with the same size as `y`.
-Here they are very obvious, but in later examples they will be more involved.
+Then we define `conditions` $F(x, y, z) = 0$ that the output $y(x)$ is supposed to satisfy.
+These conditions must be array-valued, with the same size as $y$, and take $z$ as an additional argument.
+And unlike the forward pass, _the conditions need to be differentiable_ with respect to $x$ and $y$.
+Here they are very obvious: the square of the square root should be equal to the original value.
 =#
 
 function conditions(x, y, z)
-    c = y .- (x .^ 2)
+    c = y .^ 2 .- x
     return c
 end
 
@@ -99,31 +115,33 @@ What does this wrapper do?
 implicit = ImplicitFunction(forward, conditions)
 
 #=
-When we call it as a function, it just falls back on `implicit.forward`, so unsurprisingly we get the same tuple `(y, z)`.
+When we call it as a function, it just falls back on `implicit.forward`, so unsurprisingly we get the same tuple $(y(x), z(x))$.
 =#
 
-implicit(x)[1] ≈ x .^ 2
-@test implicit(x)[1] ≈ x .^ 2  #src
-
-# ## Autodiff works
+(first ∘ implicit)(x) ≈ sqrt.(x)
+@test (first ∘ implicit)(x) ≈ sqrt.(x)  #src
 
 #=
 And when we try to compute its Jacobian, the [implicit function theorem](https://en.wikipedia.org/wiki/Implicit_function_theorem) is applied in the background to circumvent the lack of differentiablility of the forward pass.
 =#
 
+# ## Forward and reverse mode autodiff
+
 #=
 Now ForwardDiff.jl works seamlessly.
 =#
 
-ForwardDiff.jacobian(first ∘ implicit, x) ≈ Diagonal(2x)
-@test ForwardDiff.jacobian(first ∘ implicit, x) ≈ Diagonal(2x)  #src
+ForwardDiff.jacobian(first ∘ implicit, x) ≈ J
+@test ForwardDiff.jacobian(first ∘ implicit, x) ≈ J  #src
 
 #=
 And so does Zygote.jl. Hurray!
 =#
 
-Zygote.jacobian(first ∘ implicit, x)[1] ≈ Diagonal(2x)
-@test Zygote.jacobian(first ∘ implicit, x)[1] ≈ Diagonal(2x)  #src
+Zygote.jacobian(first ∘ implicit, x)[1] ≈ J
+@test Zygote.jacobian(first ∘ implicit, x)[1] ≈ J  #src
+
+# ## Second derivative
 
 #=
 We can even go higher-order by mixing the two packages (forward-over-reverse mode).
@@ -139,5 +157,19 @@ Then the Jacobian itself is differentiable.
 
 h = rand(2)
 J_Z(t) = Zygote.jacobian(first ∘ implicit2, x .+ t .* h)[1]
-ForwardDiff.derivative(J_Z, 0) ≈ Diagonal(2h)
-@test ForwardDiff.derivative(J_Z, 0) ≈ Diagonal(2h)  #src
+ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))
+@test ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))  #src
+
+# The following tests are not included in the docs  #src
+
+X = rand(2, 3, 4)  #src
+JJ = Diagonal(0.5 ./ sqrt.(vec(X)))  #src
+@test (first ∘ implicit)(X) ≈ sqrt.(X)  #src
+@test ForwardDiff.jacobian(first ∘ implicit, X) ≈ JJ  #src
+@test Zygote.jacobian(first ∘ implicit, X)[1] ≈ JJ  #src
+
+# Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232  #src
+@testset verbose = true "ChainRulesTestUtils.jl" begin  #src
+    @test_skip test_rrule(implicit, x)  #src
+    @test_skip test_rrule(implicit, X)  #src
+end  #src

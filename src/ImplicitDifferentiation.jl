@@ -1,7 +1,7 @@
 module ImplicitDifferentiation
 
 using AbstractDifferentiation: LazyJacobian, ReverseRuleConfigBackend, lazy_jacobian
-using Krylov: gmres
+using Krylov: KrylovStats, gmres
 using LinearOperators: LinearOperator
 using Requires: @require
 
