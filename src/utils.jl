@@ -38,7 +38,7 @@ end
 Callable structure wrapping a pullback with `N`-dimensional outputs into an in-place multiplication for vectors.
 
 # Fields
-- `pullback::P: the pullback of the function
+- `pullback::P`: the pullback of the function
 - `output_size::NTuple{N,Int}`: the array size of the function output
 """
 struct PullbackMul!{P,N}
