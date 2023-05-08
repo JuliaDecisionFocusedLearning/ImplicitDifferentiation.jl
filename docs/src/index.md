@@ -4,7 +4,17 @@ CurrentModule = ImplicitDifferentiation
 
 # ImplicitDifferentiation.jl
 
-[ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly.
+[ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly, i.e., mappings
+
+```math
+x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
+```
+
+whose output is defined by conditions
+
+```math
+F(x,y(x)) = 0 \in \mathbb{R}^m
+```
 
 ## Background
 
@@ -29,11 +39,8 @@ For the latest version, run this instead:
 julia> using Pkg; Pkg.add(url="https://github.com/gdalle/ImplicitDifferentiation.jl")
 ```
 
-Check out the API reference to know more about the main object defined here, [`ImplicitFunction`](@ref).
-The tutorials give you some ideas of real-life applications for our package.
-
 ## Related projects
 
 - [DiffOpt.jl](https://github.com/jump-dev/DiffOpt.jl): differentiation of convex optimization problems
-- [InferOpt.jl](https://github.com/axelparmentier/InferOpt.jl): differentiation of combinatorial optimization problems
+- [InferOpt.jl](https://github.com/axelparmentier/InferOpt.jl): approximate differentiation of combinatorial optimization problems
 - [NonconvexUtils.jl](https://github.com/JuliaNonconvex/NonconvexUtils.jl): contains the original implementation from which this package drew inspiration

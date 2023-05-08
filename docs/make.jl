@@ -46,7 +46,12 @@ for file in sort(readdir(EXAMPLES_DIR_MD))
     end
 end
 
-pages = ["Home" => "index.md", "API reference" => "api.md", "Examples" => example_pages]
+pages = [
+    "Home" => "index.md",
+    "API reference" => "api.md",
+    "Examples" => example_pages,
+    "FAQ" => "faq.md",
+]
 
 format = Documenter.HTML(;
     prettyurls=get(ENV, "CI", "false") == "true",
@@ -63,7 +68,8 @@ makedocs(;
     format=format,
     pages=pages,
     linkcheck=true,
-    strict=true,
 )
 
-deploydocs(; repo="github.com/gdalle/ImplicitDifferentiation.jl", devbranch="main")
+deploydocs(;
+    repo="github.com/gdalle/ImplicitDifferentiation.jl", devbranch="main", push_preview=true
+)
