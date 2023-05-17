@@ -38,11 +38,15 @@ function (implicit::ImplicitFunction)(
         reshape(dₖy_vec, size(y))
     end
 
-    y_and_dy = map(eachindex(y)) do i
-        Dual{T}(y[i], Partials(Tuple(dy[k][i] for k in 1:N)))
+    y_and_dy = let y = y, dy = dy
+        map(eachindex(y)) do i
+            Dual{T}(y[i], Partials(ntuple(k -> dy[k][i], Val(N))))
+        end
     end
 
-    z_and_dz = Dual{T}(z, Partials(Tuple(zero(z) for k in 1:N)))
+    z_and_dz = let z = z
+        Dual{T}(z, Partials(ntuple(_ -> zero(z), Val(N))))
+    end
 
     return y_and_dy, z_and_dz
 end
