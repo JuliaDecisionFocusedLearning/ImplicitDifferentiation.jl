@@ -39,10 +39,10 @@ function (implicit::ImplicitFunction)(
     end
 
     y_and_dy = map(eachindex(y)) do i
-        Dual{T}(y[i], Partials(Tuple(dy[k][i] for k in 1:N)))
+        Dual{T, R, N}(y[i], Partials(Tuple(dy[k][i] for k in 1:N)))
     end
 
-    z_and_dz = Dual{T}(z, Partials(Tuple(zero(z) for k in 1:N)))
+    z_and_dz = Dual{T, typeof(z), N}(z, Partials(Tuple(zero(z) for k in 1:N)))
 
     return y_and_dy, z_and_dz
 end
