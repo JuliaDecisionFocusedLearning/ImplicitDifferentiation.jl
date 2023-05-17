@@ -4,8 +4,11 @@
 In this example, we demonstrate the basics of our package on a simple function that is not amenable to automatic differentiation.
 =#
 
+using ChainRulesCore  #src
+using ChainRulesTestUtils  #src
 using ForwardDiff
 using ImplicitDifferentiation
+using JET  #src
 using LinearAlgebra
 using Random
 using Test  #src
@@ -168,8 +171,16 @@ JJ = Diagonal(0.5 ./ sqrt.(vec(X)))  #src
 @test ForwardDiff.jacobian(first ∘ implicit, X) ≈ JJ  #src
 @test Zygote.jacobian(first ∘ implicit, X)[1] ≈ JJ  #src
 
-# Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232  #src
+# Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities  #src
 @testset verbose = true "ChainRulesTestUtils.jl" begin  #src
     @test_skip test_rrule(implicit, x)  #src
     @test_skip test_rrule(implicit, X)  #src
 end  #src
+
+x_and_dx = [ForwardDiff.Dual(x[i], (0, 0)) for i in eachindex(x)]  #src
+@inferred implicit(x_and_dx)  #src
+
+rc = Zygote.ZygoteRuleConfig()  #src
+_, pullback = @inferred rrule(rc, implicit, x)  #src
+dy, dz = zero(implicit(x)[1]), 0
+@inferred pullback((dy, dz))

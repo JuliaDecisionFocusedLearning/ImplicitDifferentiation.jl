@@ -40,12 +40,12 @@ function (implicit::ImplicitFunction)(
 
     y_and_dy = let y = y, dy = dy
         map(eachindex(y)) do i
-            Dual{T}(y[i], Partials(ntuple(k->dy[k][i], Val(N))))
+            Dual{T}(y[i], Partials(ntuple(k -> dy[k][i], Val(N))))
         end
     end
 
     z_and_dz = let z = z
-        Dual{T}(z, Partials(ntuple(_->zero(z), Val(N))))
+        Dual{T}(z, Partials(ntuple(_ -> zero(z), Val(N))))
     end
 
     return y_and_dy, z_and_dz

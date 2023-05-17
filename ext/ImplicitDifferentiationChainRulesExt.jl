@@ -25,19 +25,35 @@ function ChainRulesCore.rrule(
     backend = ReverseRuleConfigBackend(rc)
     pbA = pullback_function(backend, _y -> conditions(x, _y, z; kwargs...), y)
     pbB = pullback_function(backend, _x -> conditions(_x, y, z; kwargs...), x)
-    Aᵀ_op = LinearOperator(R, m, m, false, false, PullbackMul!(pbA, size(y)))
-    Bᵀ_op = LinearOperator(R, n, m, false, false, PullbackMul!(pbB, size(y)))
-
-    function implicit_pullback((dy, dz))
-        dy_vec = convert(Vector{R}, vec(unthunk(dy)))
-        dF_vec, stats = linear_solver(Aᵀ_op, dy_vec)
-        check_solution(linear_solver, stats)
-        dx_vec = -(Bᵀ_op * dF_vec)
-        dx = reshape(dx_vec, size(x))
-        return (NoTangent(), dx)
-    end
+    pbmA = PullbackMul!(pbA, size(y))
+    pbmB = PullbackMul!(pbB, size(y))
+    Aᵀ_op = LinearOperator(R, m, m, false, false, pbmA)
+    Bᵀ_op = LinearOperator(R, n, m, false, false, pbmB)
+    implicit_pullback = ImplicitPullback(Aᵀ_op, Bᵀ_op, linear_solver, x)
 
     return (y, z), implicit_pullback
+end
+
+struct ImplicitPullback{A,B,L,X}
+    Aᵀ_op::A
+    Bᵀ_op::B
+    linear_solver::L
+    x::X
+end
+
+function (implicit_pullback::ImplicitPullback)((dy, dz))
+    Aᵀ_op = implicit_pullback.Aᵀ_op
+    Bᵀ_op = implicit_pullback.Bᵀ_op
+    linear_solver = implicit_pullback.linear_solver
+    x = implicit_pullback.x
+    R = eltype(x)
+
+    dy_vec = convert(Vector{R}, vec(unthunk(dy)))
+    dF_vec, stats = linear_solver(Aᵀ_op, dy_vec)
+    check_solution(linear_solver, stats)
+    dx_vec = -(Bᵀ_op * dF_vec)
+    dx = reshape(dx_vec, size(x))
+    return (NoTangent(), dx)
 end
 
 end
