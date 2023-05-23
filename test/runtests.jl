@@ -40,7 +40,9 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
         Aqua.test_project_extras(ImplicitDifferentiation)
         Aqua.test_stale_deps(ImplicitDifferentiation; ignore=[:ChainRulesCore])
         Aqua.test_deps_compat(ImplicitDifferentiation)
-        Aqua.test_project_toml_formatting(ImplicitDifferentiation)
+        if VERSION >= v"1.7"
+            Aqua.test_project_toml_formatting(ImplicitDifferentiation)
+        end
     end
     @testset verbose = true "Formatting (JuliaFormatter.jl)" begin
         @test format(ImplicitDifferentiation; verbose=true, overwrite=false)

@@ -57,4 +57,3 @@ function (pbm::PullbackMul!)(res::AbstractVector, δoutput_vec::AbstractVector)
     δinput = only(pbm.pullback(δoutput))
     return res .= vec(δinput)
 end
-
