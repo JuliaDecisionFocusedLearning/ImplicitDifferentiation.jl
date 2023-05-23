@@ -46,13 +46,13 @@ struct PullbackMul!{P,N}
     output_size::NTuple{N,Int}
 end
 
-function (pfm::PushforwardMul!)(res::Vector, δinput_vec::Vector)
+function (pfm::PushforwardMul!)(res::AbstractVector, δinput_vec::AbstractVector)
     δinput = reshape(δinput_vec, pfm.input_size)
     δoutput = only(pfm.pushforward(δinput))
     return res .= vec(δoutput)
 end
 
-function (pbm::PullbackMul!)(res::Vector, δoutput_vec::Vector)
+function (pbm::PullbackMul!)(res::AbstractVector, δoutput_vec::AbstractVector)
     δoutput = reshape(δoutput_vec, pbm.output_size)
     δinput = only(pbm.pullback(δoutput))
     return res .= vec(δinput)
