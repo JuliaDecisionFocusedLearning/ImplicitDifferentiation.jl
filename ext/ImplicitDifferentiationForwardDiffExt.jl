@@ -40,9 +40,10 @@ function (implicit::ImplicitFunction)(
     end
 
     y_and_dy = let y = y, dy = dy
-        map(eachindex(y)) do i
+        y_and_dy_vec = map(eachindex(y)) do i
             Dual{T}(y[i], Partials(ntuple(k -> dy[k][i], Val(N))))
         end
+        reshape(y_and_dy_vec, size(y))
     end
     return y_and_dy, z
 end
