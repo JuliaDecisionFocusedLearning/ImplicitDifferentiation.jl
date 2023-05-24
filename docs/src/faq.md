@@ -7,19 +7,19 @@
 
 In the future, we would like to add [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) support.
 
-## Dealing with higher-dimensional arrays
+## Higher-dimensional arrays
 
 For simplicity, our examples only display functions that eat and spit out vectors.
 However, arbitrary array shapes are supported, as long as the forward _and_ conditions callables return similar arrays.
 Beware however, sparse arrays will be densified in the differentiation process.
 
-## Dealing with scalar input / output
+## Scalar input / output
 
 Functions that eat or spit out a single number are not supported.
 The forward _and_ conditions callables need arrays: for example, instead of returning `value` you should return `[value]` (a 1-element `Vector`). 
 Consider using an `SVector` from [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) if you seek increased performance.
 
-## Dealing with inputs / outputs
+## Multiple inputs / outputs
 
 In this package, implicit functions can only take a single input array `x` and output a single output array `y` (plus the additional info `z`).
 But sometimes, your forward pass or conditions may require multiple input arrays, say `a` and `b`:
