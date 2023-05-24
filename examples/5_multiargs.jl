@@ -12,7 +12,6 @@ using ComponentArrays
 using ForwardDiff
 using ImplicitDifferentiation
 using LinearAlgebra
-using Optim
 using Random
 using Test  #src
 using Zygote
@@ -22,16 +21,12 @@ Random.seed!(63);
 # ## Implicit function
 
 #=
-To make verification easy, we minimize the following objective:
-```math
-f(a, b, y) = \lVert y \odot y - (a + 2b) \rVert^2
-```
-In this case, the optimization problem boils down to the componentwise square root of $a + 2b$.
-We implement it with mutation to make sure that Zygote.jl will fail but ImplicitDifferentiation.jl will succeed.
+The task is to compute the componentwise square root of $a + 2b$.
+We implement it with mutation and `Float64` conversion to make sure that ForwardDiff.jl and Zygote.jl will fail but ImplicitDifferentiation.jl will succeed.
 =#
 
 function mysqrt_components(a, b)
-    y = copy(a)
+    y = float.(a)
     y .+= 2 .* b
     y .= sqrt.(y)
     return y
@@ -51,7 +46,7 @@ The optimality conditions are fairly easy to write.
 =#
 
 function conditions_components(x, y, z)
-    return @. 2(y^2 - (x.a + 2x.b))
+    return @. y^2 - (x.a + 2x.b)
 end
 
 # We now have all the ingredients to construct our implicit function.

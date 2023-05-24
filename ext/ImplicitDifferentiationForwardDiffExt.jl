@@ -7,7 +7,7 @@ else
 end
 
 using AbstractDifferentiation: ForwardDiffBackend, pushforward_function
-using ImplicitDifferentiation: ImplicitFunction, PushforwardMul!, check_solution
+using ImplicitDifferentiation: ImplicitFunction, PushforwardMul!, check_solution, make_array
 using LinearOperators: LinearOperator
 
 """
@@ -26,8 +26,12 @@ function (implicit::ImplicitFunction)(
     n, m = length(x), length(y)
 
     backend = ForwardDiffBackend()
-    pfA = pushforward_function(backend, _y -> conditions(x, _y, z; kwargs...), y)
-    pfB = pushforward_function(backend, _x -> conditions(_x, y, z; kwargs...), x)
+    pfA = pushforward_function(
+        backend, _y -> make_array(conditions(x, _y, z; kwargs...)), y
+    )
+    pfB = pushforward_function(
+        backend, _x -> make_array(conditions(_x, y, z; kwargs...)), x
+    )
     A_op = LinearOperator(R, m, m, false, false, PushforwardMul!(pfA, size(y)))
     B_op = LinearOperator(R, m, n, false, false, PushforwardMul!(pfB, size(x)))
 

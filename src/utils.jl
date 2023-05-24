@@ -1,3 +1,6 @@
+make_array(a::AbstractArray) = a
+make_array(a::Number) = [a]
+
 struct SolverFailureException{A,B} <: Exception
     solver::A
     stats::B
