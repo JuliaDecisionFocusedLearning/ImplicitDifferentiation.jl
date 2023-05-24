@@ -57,3 +57,8 @@ function (pbm::PullbackMul!)(res::AbstractVector, δoutput_vec::AbstractVector)
     δinput = only(pbm.pullback(δoutput))
     return res .= vec(δinput)
 end
+
+## Override this function from LinearOperators to avoid generating the whole methods table
+
+LinearOperators.get_nargs(pfm::PushforwardMul!) = 1
+LinearOperators.get_nargs(pbm::PullbackMul!) = 1

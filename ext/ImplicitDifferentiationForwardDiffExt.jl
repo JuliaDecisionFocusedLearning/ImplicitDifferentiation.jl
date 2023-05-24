@@ -33,7 +33,8 @@ function (implicit::ImplicitFunction)(
 
     dy = map(1:N) do k
         dₖx_vec = vec(partials.(x_and_dx, k))
-        dₖy_vec, stats = linear_solver(A_op, -(B_op * dₖx_vec))
+        dₖy_vec, stats = linear_solver(A_op, B_op * dₖx_vec)
+        dₖy_vec .*= -1
         check_solution(linear_solver, stats)
         reshape(dₖy_vec, size(y))
     end

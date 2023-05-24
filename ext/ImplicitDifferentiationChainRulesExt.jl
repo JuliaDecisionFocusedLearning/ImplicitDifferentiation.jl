@@ -51,7 +51,8 @@ function (implicit_pullback::ImplicitPullback)((dy, dz))
     dy_vec = convert(Vector{R}, vec(unthunk(dy)))
     dF_vec, stats = linear_solver(Aᵀ_op, dy_vec)
     check_solution(linear_solver, stats)
-    dx_vec = -(Bᵀ_op * dF_vec)
+    dx_vec = Bᵀ_op * dF_vec
+    dx_vec .*= -1
     dx = reshape(dx_vec, size(x))
     return (NoTangent(), dx)
 end
