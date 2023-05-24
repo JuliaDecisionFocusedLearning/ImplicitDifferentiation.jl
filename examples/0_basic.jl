@@ -162,25 +162,3 @@ h = rand(2)
 J_Z(t) = Zygote.jacobian(first ∘ implicit2, x .+ t .* h)[1]
 ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))
 @test ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))  #src
-
-# The following tests are not included in the docs  #src
-
-X = rand(2, 3, 4)  #src
-JJ = Diagonal(0.5 ./ sqrt.(vec(X)))  #src
-@test (first ∘ implicit)(X) ≈ sqrt.(X)  #src
-@test ForwardDiff.jacobian(first ∘ implicit, X) ≈ JJ  #src
-@test Zygote.jacobian(first ∘ implicit, X)[1] ≈ JJ  #src
-
-# Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities  #src
-@testset verbose = true "ChainRulesTestUtils.jl" begin  #src
-    @test_skip test_rrule(implicit, x)  #src
-    @test_skip test_rrule(implicit, X)  #src
-end  #src
-
-x_and_dx = [ForwardDiff.Dual(x[i], (0, 0)) for i in eachindex(x)]  #src
-@inferred implicit(x_and_dx)  #src
-
-rc = Zygote.ZygoteRuleConfig()  #src
-_, pullback = @inferred rrule(rc, implicit, x)  #src
-dy, dz = zero(implicit(x)[1]), 0
-@inferred pullback((dy, dz))

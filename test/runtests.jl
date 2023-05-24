@@ -55,6 +55,9 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
     @testset verbose = false "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
     end
+    @testset verbose = true "Miscellaneous" begin
+        include("misc.jl")
+    end
     for file in readdir(EXAMPLES_DIR_JL)
         path = joinpath(EXAMPLES_DIR_JL, file)
         title = markdown_title(path)
