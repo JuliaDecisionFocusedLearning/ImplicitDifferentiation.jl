@@ -15,7 +15,7 @@ Keyword arguments are given to both `implicit.forward` and `implicit.conditions`
 """
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
-) where {R<:Real}
+) where {R}
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
