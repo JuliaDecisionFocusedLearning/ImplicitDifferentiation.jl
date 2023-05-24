@@ -44,12 +44,7 @@ function (implicit::ImplicitFunction)(
             Dual{T}(y[i], Partials(ntuple(k -> dy[k][i], Val(N))))
         end
     end
-
-    z_and_dz = let z = z
-        Dual{T}(z, Partials(ntuple(_ -> zero(z), Val(N))))
-    end
-
-    return y_and_dy, z_and_dz
+    return y_and_dy, z
 end
 
 end
