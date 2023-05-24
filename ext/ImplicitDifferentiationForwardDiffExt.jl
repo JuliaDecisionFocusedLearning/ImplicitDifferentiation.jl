@@ -39,7 +39,9 @@ function (implicit::ImplicitFunction)(
         reshape(dₖy_vec, size(y))
     end
 
-    y_and_dy = let y = y, dy = dy
+    y_and_dy = if y isa Number
+        Dual{T}(y, Partials(ntuple(k -> dy[k][], Val(N))))
+    else
         map(eachindex(y)) do i
             Dual{T}(y[i], Partials(ntuple(k -> dy[k][i], Val(N))))
         end
