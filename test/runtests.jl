@@ -70,13 +70,12 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
             return y, z
         end
         function conditions(x, y, z)
-            c = [y ^ 2 - x[]]
+            c = [y^2 - x[]]
             return c
         end
         implicit = ImplicitFunction(forward, conditions)
         x = [3.14]
         J = 0.5 / sqrt(x[])
         @test ForwardDiff.gradient(first ∘ implicit, x)[] ≈ J
-
     end
 end
