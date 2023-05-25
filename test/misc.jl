@@ -32,9 +32,9 @@ end
     J = Diagonal(0.5 ./ sqrt.(x))
 
     @testset "Exactness" begin
-        @test (first ∘ implicit)(x) ≈ sqrt.(x)
-        @test ForwardDiff.jacobian(first ∘ implicit, x) ≈ J
-        @test Zygote.jacobian(first ∘ implicit, x)[1] ≈ J
+        @test implicit(x) ≈ sqrt.(x)
+        @test ForwardDiff.jacobian(implicit, x) ≈ J
+        @test Zygote.jacobian(implicit, x)[1] ≈ J
     end
 
     @testset verbose = true "Forward inference" begin
@@ -44,11 +44,21 @@ end
         @test size(y_and_dy) == size(y)
     end
     @testset "Reverse type inference" begin
-        _, pullback = @inferred rrule(Zygote.ZygoteRuleConfig(), implicit, x)
-        dy, dz = zero(implicit(x)[1]), 0
-        @test (@inferred pullback((dy, dz))) == pullback((dy, dz))
-        _, dx = pullback((dy, dz))
-        @test size(dx) == size(x)
+        for return_byproduct in (true, false)
+            _, pullback = @inferred rrule(
+                Zygote.ZygoteRuleConfig(), implicit, x, Val(return_byproduct)
+            )
+            dy, dz = zero(implicit(x)), 0
+            if return_byproduct
+                @test (@inferred pullback((dy, dz))) == pullback((dy, dz))
+                _, dx = pullback((dy, dz))
+                @test size(dx) == size(x)
+            else
+                @test (@inferred pullback(dy)) == pullback(dy)
+                _, dx = pullback(dy)
+                @test size(dx) == size(x)
+            end
+        end
     end
 end
 
@@ -58,9 +68,9 @@ end
     JJ = Diagonal(0.5 ./ sqrt.(vec(X)))
 
     @testset "Exactness" begin
-        @test (first ∘ implicit)(X) ≈ sqrt.(X)
-        @test ForwardDiff.jacobian(first ∘ implicit, X) ≈ JJ
-        @test Zygote.jacobian(first ∘ implicit, X)[1] ≈ JJ
+        @test (implicit)(X) ≈ sqrt.(X)
+        @test ForwardDiff.jacobian(implicit, X) ≈ JJ
+        @test Zygote.jacobian(implicit, X)[1] ≈ JJ
     end
 
     @testset "Forward type inference" begin
@@ -71,10 +81,20 @@ end
     end
 
     @testset "Reverse type inference" begin
-        _, pullback = @inferred rrule(Zygote.ZygoteRuleConfig(), implicit, X)
-        dY, dZ = zero(implicit(X)[1]), 0
-        @test (@inferred pullback((dY, dZ))) == pullback((dY, dZ))
-        _, dX = pullback((dY, dZ))
-        @test size(dX) == size(X)
+        for return_byproduct in (true, false)
+            _, pullback = @inferred rrule(
+                Zygote.ZygoteRuleConfig(), implicit, X, Val(return_byproduct)
+            )
+            dY, dZ = zero(implicit(X)), 0
+            if return_byproduct
+                @test (@inferred pullback((dY, dZ))) == pullback((dY, dZ))
+                _, dX = pullback((dY, dZ))
+                @test size(dX) == size(X)
+            else
+                @test (@inferred pullback(dY)) == pullback(dY)
+                _, dX = pullback(dY)
+                @test size(dX) == size(X)
+            end
+        end
     end
 end

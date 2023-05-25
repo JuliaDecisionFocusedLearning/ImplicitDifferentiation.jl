@@ -75,8 +75,8 @@ x = rand(2) .+ [0, 1]
 The second component of $x$ is $> 1$, so its square root will be thresholded to one, and the corresponding derivative will be $0$.
 =#
 
-(first ∘ implicit_cstr_optim)(x) .^ 2
-@test (first ∘ implicit_cstr_optim)(x) .^ 2 ≈ [x[1], 1]  #src
+implicit_cstr_optim(x) .^ 2
+@test implicit_cstr_optim(x) .^ 2 ≈ [x[1], 1]  #src
 
 #-
 
@@ -84,8 +84,8 @@ J_thres = Diagonal([0.5 / sqrt(x[1]), 0])
 
 # ## Forward mode autodiff
 
-ForwardDiff.jacobian(first ∘ implicit_cstr_optim, x)
-@test ForwardDiff.jacobian(first ∘ implicit_cstr_optim, x) ≈ J_thres  #src
+ForwardDiff.jacobian(implicit_cstr_optim, x)
+@test ForwardDiff.jacobian(implicit_cstr_optim, x) ≈ J_thres  #src
 
 #-
 
@@ -93,8 +93,8 @@ ForwardDiff.jacobian(mysqrt_cstr_optim, x)
 
 # ## Reverse mode autodiff
 
-Zygote.jacobian(first ∘ implicit_cstr_optim, x)[1]
-@test Zygote.jacobian(first ∘ implicit_cstr_optim, x)[1] ≈ J_thres  #src
+Zygote.jacobian(implicit_cstr_optim, x)[1]
+@test Zygote.jacobian(implicit_cstr_optim, x)[1] ≈ J_thres  #src
 
 #-
 

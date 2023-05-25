@@ -36,7 +36,9 @@ end
 
 Make `ImplicitFunction` callable by applying `implicit.forward`.
 """
-function (implicit::ImplicitFunction)(x; kwargs...)
+function (implicit::ImplicitFunction)(
+    x, ::Val{return_byproduct}=Val(false); kwargs...
+) where {return_byproduct}
     y, z = implicit.forward(x; kwargs...)
-    return y, z
+    return return_byproduct ? (y, z) : y
 end

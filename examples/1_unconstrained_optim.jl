@@ -70,8 +70,8 @@ x = rand(2)
 
 #-
 
-first(implicit_optim(x; method=LBFGS())) .^ 2
-@test first(implicit_optim(x; method=LBFGS())) .^ 2 ≈ x  #src
+implicit_optim(x; method=LBFGS()) .^ 2
+@test implicit_optim(x; method=LBFGS()) .^ 2 ≈ x  #src
 
 #=
 Let's see what the explicit Jacobian looks like.
@@ -81,8 +81,8 @@ J = Diagonal(0.5 ./ sqrt.(x))
 
 # ## Forward mode autodiff
 
-ForwardDiff.jacobian(_x -> first(implicit_optim(_x; method=LBFGS())), x)
-@test ForwardDiff.jacobian(_x -> first(implicit_optim(_x; method=LBFGS())), x) ≈ J  #src
+ForwardDiff.jacobian(_x -> implicit_optim(_x; method=LBFGS()), x)
+@test ForwardDiff.jacobian(_x -> implicit_optim(_x; method=LBFGS()), x) ≈ J  #src
 
 #=
 Unsurprisingly, the Jacobian is the identity.
@@ -93,8 +93,8 @@ ForwardDiff.jacobian(_x -> mysqrt_optim(x; method=LBFGS()), x)
 
 # ## Reverse mode autodiff
 
-Zygote.jacobian(_x -> first(implicit_optim(_x; method=LBFGS())), x)[1]
-@test Zygote.jacobian(_x -> first(implicit_optim(_x; method=LBFGS())), x)[1] ≈ J  #src
+Zygote.jacobian(_x -> implicit_optim(_x; method=LBFGS()), x)[1]
+@test Zygote.jacobian(_x -> implicit_optim(_x; method=LBFGS()), x)[1] ≈ J  #src
 
 #=
 Again, the Jacobian is the identity.
