@@ -49,8 +49,8 @@ struct ImplicitPullback{return_byproduct,A,B,L,X}
 end
 
 function (pb::ImplicitPullback{false})(dy)
-    pb = ImplicitPullback(pb.Aᵀ_op, pb.Bᵀ_op, pb.linear_solver, pb.x, Val(true))
-    return pb((dy, nothing))
+    _pb = ImplicitPullback(pb.Aᵀ_op, pb.Bᵀ_op, pb.linear_solver, pb.x, Val(true))
+    return _pb((dy, nothing))
 end
 function (implicit_pullback::ImplicitPullback{true})((dy, _))
     Aᵀ_op = implicit_pullback.Aᵀ_op
