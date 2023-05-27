@@ -4,8 +4,8 @@ struct Forward{returns_byproduct,F}
         return new{returns_byproduct,F}(f)
     end
 end
-(f::Forward{true})(x; kwargs...) = f.f(x, kwargs...)
-(f::Forward{false})(x; kwargs...) = f.f(x, kwargs...), 0
+(f::Forward{true})(x; kwargs...) = f.f(x; kwargs...)
+(f::Forward{false})(x; kwargs...) = (f.f(x; kwargs...), 0)
 
 struct Conditions{accepts_byproduct,F}
     f::F
@@ -13,8 +13,8 @@ struct Conditions{accepts_byproduct,F}
         return new{accepts_byproduct,F}(f)
     end
 end
-(f::Conditions{true})(x, y, z; kwargs...) = f.f(x, y, z, kwargs...)
-(f::Conditions{false})(x, y, z; kwargs...) = f.f(x, y, kwargs...)
+(f::Conditions{true})(x, y, z; kwargs...) = f.f(x, y, z; kwargs...)
+(f::Conditions{false})(x, y, z; kwargs...) = f.f(x, y; kwargs...)
 
 """
     ImplicitFunction{F,C,L}
@@ -61,6 +61,13 @@ function ImplicitFunction(
     return ImplicitFunction(_forward, _conditions, linear_solver)
 end
 
+# JET complained without this method
+function ImplicitFunction(
+    forward::Forward, conditions::Conditions, ::Val{returns_byproduct}
+) where {returns_byproduct}
+    return ImplicitFunction(forward, conditions, gmres)
+end
+
 """
     ImplicitFunction(forward, conditions, ::Val{returns_byproduct} = Val(false))
 
@@ -77,7 +84,9 @@ using `ImplicitFunction(forward, conditions, Val(true))`.
 function ImplicitFunction(
     forward, conditions, ::Val{returns_byproduct}=Val(false)
 ) where {returns_byproduct}
-    return ImplicitFunction(forward, conditions, gmres, Val(returns_byproduct))
+    _forward = Forward{returns_byproduct}(forward)
+    _conditions = Conditions{returns_byproduct}(conditions)
+    return ImplicitFunction(_forward, _conditions, Val(returns_byproduct))
 end
 
 """

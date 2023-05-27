@@ -41,16 +41,14 @@ end
 First, we create the forward pass which returns the solution $y(x)$, where $x$ is a `ComponentVector` containing both $a$ and $b$.
 =#
 function forward_components(x)
-    y = mysqrt_components(x.a, x.b)
-    z = 0
-    return y, z
+    return mysqrt_components(x.a, x.b)
 end
 
 #=
 The optimality conditions are fairly easy to write.
 =#
 
-function conditions_components(x, y, z)
+function conditions_components(x, y)
     return @. 2(y^2 - (x.a + 2x.b))
 end
 

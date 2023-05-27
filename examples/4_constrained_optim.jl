@@ -33,7 +33,7 @@ on the hypercube $\mathcal{C}(x) = [0, 1]^n$.
 In this case, the optimization problem boils down to a thresholded componentwise square root function, but we implement it using a black box solver from [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl).
 =#
 
-function mysqrt_cstr_optim(x)
+function forward_cstr_optim(x)
     f(y) = sum(abs2, y .^ 2 - x)
     lower = zeros(size(x))
     upper = ones(size(x))
@@ -45,19 +45,11 @@ end
 
 #-
 
-function forward_cstr_optim(x)
-    y = mysqrt_cstr_optim(x)
-    z = 0
-    return y, z
-end
-
-#-
-
 function proj_hypercube(p)
     return max.(0, min.(1, p))
 end
 
-function conditions_cstr_optim(x, y, z)
+function conditions_cstr_optim(x, y)
     ∇₂f = 2 .* (y .^ 2 .- x)
     η = 0.1
     return y .- proj_hypercube(y .- η .* ∇₂f)
@@ -89,7 +81,7 @@ ForwardDiff.jacobian(implicit_cstr_optim, x)
 
 #-
 
-ForwardDiff.jacobian(mysqrt_cstr_optim, x)
+ForwardDiff.jacobian(forward_cstr_optim, x)
 
 # ## Reverse mode autodiff
 
@@ -99,7 +91,7 @@ Zygote.jacobian(implicit_cstr_optim, x)[1]
 #-
 
 try
-    Zygote.jacobian(mysqrt_cstr_optim, x)[1]
+    Zygote.jacobian(forward_cstr_optim, x)[1]
 catch e
     e
 end

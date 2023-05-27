@@ -31,7 +31,7 @@ F(x, y) = y \odot y - x = 0
 In this case, the optimization problem boils down to the componentwise square root function, but we implement it using a black box solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl).
 =#
 
-function mysqrt_nlsolve(x; method)
+function forward_nlsolve(x; method)
     F!(storage, y) = (storage .= y .^ 2 - x)
     initial_y = ones(eltype(x), size(x))
     result = nlsolve(F!, initial_y; method)
@@ -40,15 +40,7 @@ end
 
 #-
 
-function forward_nlsolve(x; method)
-    y = mysqrt_nlsolve(x; method)
-    z = 0
-    return y, z
-end
-
-#-
-
-function conditions_nlsolve(x, y, z; method)
+function conditions_nlsolve(x, y; method)
     F = y .^ 2 .- x
     return F
 end
@@ -77,7 +69,7 @@ ForwardDiff.jacobian(_x -> implicit_nlsolve(_x; method=:newton), x)
 
 #-
 
-ForwardDiff.jacobian(_x -> mysqrt_nlsolve(_x; method=:newton), x)
+ForwardDiff.jacobian(_x -> forward_nlsolve(_x; method=:newton), x)
 
 # ## Reverse mode autodiff
 
@@ -87,7 +79,7 @@ Zygote.jacobian(_x -> implicit_nlsolve(_x; method=:newton), x)[1]
 #-
 
 try
-    Zygote.jacobian(_x -> mysqrt_nlsolve(_x; method=:newton), x)[1]
+    Zygote.jacobian(_x -> forward_nlsolve(_x; method=:newton), x)[1]
 catch e
     e
 end

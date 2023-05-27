@@ -87,37 +87,63 @@ We represent it using a type called `ImplicitFunction`, which you will see in ac
 
 #=
 First we define a `forward` pass correponding to the function we consider.
-It returns the actual output $y(x)$ of the function, as well as the optional byproduct $z(x)$.
-Here we don't need any additional information, so we set $z(x)$ to $0$.
-Importantly, this forward pass _doesn't need to be differentiable_.
+It returns the actual output $y(x)$ of the function. Importantly, this
+forward pass _doesn't need to be differentiable by automatic differentiation
+packages but it still needs to be mathematically differentiable_.
 =#
 
-function forward(x)
-    y = mysqrt(x)
-    z = 0
-    return y, z
+forward(x) = mysqrt(x)
+
+#=
+Optionally, the forward function can also return some additional byproduct $z$,
+e.g a pre-computed Jacobian, which can be used in the conditions function.
+=#
+
+forward2(x) = (mysqrt(x), 0)
+
+#=
+Then we define `conditions` $F(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
+These conditions must be array-valued, with the same size as $y$. If the forward pass
+function returns an additional byproduct $z$, the conditions function must also accept a
+third argument $z$, such that $F(x, y, z) = 0$. Unlike the forward pass, _the conditions
+function needs to be differentiable by automatic differentiation packages_ with respect
+to both $x$ and $y$. Here the conditions are very obvious: the square of the square root
+should be equal to the original value.
+=#
+
+function conditions(x, y)
+    c = y .^ 2 .- x
+    return c
 end
 
 #=
-Then we define `conditions` $F(x, y, z) = 0$ that the output $y(x)$ is supposed to satisfy.
-These conditions must be array-valued, with the same size as $y$, and take $z$ as an additional argument.
-And unlike the forward pass, _the conditions need to be differentiable_ with respect to $x$ and $y$.
-Here they are very obvious: the square of the square root should be equal to the original value.
+Or if it accepts a third argument:
 =#
 
-function conditions(x, y, z)
+function conditions2(x, y, z)
     c = y .^ 2 .- x
     return c
 end
 
 #=
 Finally, we construct a wrapper `implicit` around the previous objects.
-What does this wrapper do?
+By default, `forward` is assumed to return a single output and `conditions`
+is assumed to accept 2 inputs.
 =#
 
 implicit = ImplicitFunction(forward, conditions)
 
 #=
+Alternatively, we can use `forward2` which returns two outputs and
+`conditions2 ` which accepts three inputs. In this case, we must
+pass `Val(true)` as the third argument to `ImplicitFunction` to tell
+`ImplicitDifferentiation` that we have a byproduct carried around.
+=#
+
+implicit2 = ImplicitFunction(forward2, conditions2, Val(true))
+
+#=
+What does this wrapper do?
 When we call it as a function, it just falls back on `first ∘ implicit.forward`, so unsurprisingly we get the first output $y(x)$.
 =#
 
