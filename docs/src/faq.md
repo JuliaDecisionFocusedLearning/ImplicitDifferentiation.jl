@@ -21,7 +21,7 @@ Consider using an `SVector` from [StaticArrays.jl](https://github.com/JuliaArray
 
 ## Multiple inputs / outputs
 
-In this package, implicit functions can only take a single input array `x` and output a single output array `y` (plus the additional info `z`).
+In this package, implicit functions can only take a single input array `x` and output a single output array `y` (plus the byproduct `z`).
 But sometimes, your forward pass or conditions may require multiple input arrays, say `a` and `b`:
 
 ```julia
@@ -38,6 +38,13 @@ f(x::ComponentVector) = f(x.a, x.b)
 ```
 
 The same trick works for multiple outputs.
+
+## Byproducts
+
+At first glance, it is not obvious why we impose that the `forward` callable returns a byproduct `z` in addition to `y`.
+It is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the `conditions`.
+We will provide simple examples soon.
+In the meantime, an advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
 
 ## Modeling constrained optimization problems
 

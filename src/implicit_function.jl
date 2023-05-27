@@ -3,8 +3,7 @@
 
 Differentiable wrapper for an implicit function `x -> y(x)` whose output is defined by conditions `F(x,y(x)) = 0`.
 
-More generally, we consider functions `x -> (y(x),z(x))` and conditions `F(x,y(x),z(x)) = 0`, where `z(x)` contains additional information that _is considered constant for differentiation purposes_.
-
+More generally, we consider functions `x -> (y(x),z(x))` and conditions `F(x,y(x),z(x)) = 0`, where `z(x)` is a byproduct _considered constant for differentiation purposes_.
 If `x ∈ ℝⁿ` and `y ∈ ℝᵈ`, then we need as many conditions as output dimensions: `F(x,y,z) ∈ ℝᵈ`. Thanks to these conditions, we can compute the Jacobian of `y(⋅)` using the implicit function theorem:
 ```
 ∂₂F(x,y(x),z(x)) * ∂y(x) = -∂₁F(x,y(x),z(x))
@@ -33,10 +32,15 @@ end
 
 """
     implicit(x[; kwargs...])
+    implicit(x, Val(true), [; kwargs...])
 
 Make `ImplicitFunction` callable by applying `implicit.forward`.
+
+The first (default) call signature only returns `y(x)`, while the second returns `(y(x), z(x))`.
 """
-function (implicit::ImplicitFunction)(x; kwargs...)
+function (implicit::ImplicitFunction)(
+    x, ::Val{return_byproduct}=Val(false); kwargs...
+) where {return_byproduct}
     y, z = implicit.forward(x; kwargs...)
-    return y, z
+    return return_byproduct ? (y, z) : y
 end

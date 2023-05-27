@@ -63,8 +63,8 @@ x = rand(2)
 
 #-
 
-first(implicit_fixedpoint(x; iterations=10)) .^ 2
-@test first(implicit_fixedpoint(x; iterations=10)) .^ 2 ≈ x  #src
+implicit_fixedpoint(x; iterations=10) .^ 2
+@test implicit_fixedpoint(x; iterations=10) .^ 2 ≈ x  #src
 
 #-
 
@@ -72,8 +72,8 @@ J = Diagonal(0.5 ./ sqrt.(x))
 
 # ## Forward mode autodiff
 
-ForwardDiff.jacobian(_x -> first(implicit_fixedpoint(_x; iterations=10)), x)
-@test ForwardDiff.jacobian(_x -> first(implicit_fixedpoint(_x; iterations=10)), x) ≈ J  #src
+ForwardDiff.jacobian(_x -> implicit_fixedpoint(_x; iterations=10), x)
+@test ForwardDiff.jacobian(_x -> implicit_fixedpoint(_x; iterations=10), x) ≈ J  #src
 
 #-
 
@@ -81,8 +81,8 @@ ForwardDiff.jacobian(_x -> mysqrt_fixedpoint(_x; iterations=10), x)
 
 # ## Reverse mode autodiff
 
-Zygote.jacobian(_x -> first(implicit_fixedpoint(_x; iterations=10)), x)[1]
-@test Zygote.jacobian(_x -> first(implicit_fixedpoint(_x; iterations=10)), x)[1] ≈ J  #src
+Zygote.jacobian(_x -> implicit_fixedpoint(_x; iterations=10), x)[1]
+@test Zygote.jacobian(_x -> implicit_fixedpoint(_x; iterations=10), x)[1] ≈ J  #src
 
 #-
 

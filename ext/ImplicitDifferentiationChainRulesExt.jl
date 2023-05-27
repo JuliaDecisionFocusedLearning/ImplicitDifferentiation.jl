@@ -14,12 +14,16 @@ We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and settin
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
-    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
-) where {R}
+    rc::RuleConfig,
+    implicit::ImplicitFunction,
+    x::AbstractArray{R},
+    ::Val{return_byproduct};
+    kwargs...,
+) where {R,return_byproduct}
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
-    y, z = implicit(x; kwargs...)
+    y, z = implicit(x, Val(true); kwargs...)
     n, m = length(x), length(y)
 
     backend = ReverseRuleConfigBackend(rc)
@@ -29,19 +33,26 @@ function ChainRulesCore.rrule(
     pbmB = PullbackMul!(pbB, size(y))
     Aᵀ_op = LinearOperator(R, m, m, false, false, pbmA)
     Bᵀ_op = LinearOperator(R, n, m, false, false, pbmB)
-    implicit_pullback = ImplicitPullback(Aᵀ_op, Bᵀ_op, linear_solver, x)
+    implicit_pullback = ImplicitPullback(
+        Aᵀ_op, Bᵀ_op, linear_solver, x, Val(return_byproduct)
+    )
 
-    return (y, z), implicit_pullback
+    return (return_byproduct ? (y, z) : y), implicit_pullback
 end
 
-struct ImplicitPullback{A,B,L,X}
+struct ImplicitPullback{return_byproduct,A,B,L,X}
     Aᵀ_op::A
     Bᵀ_op::B
     linear_solver::L
     x::X
+    _v::Val{return_byproduct}
 end
 
-function (implicit_pullback::ImplicitPullback)((dy, dz))
+function (pb::ImplicitPullback{false})(dy)
+    _pb = ImplicitPullback(pb.Aᵀ_op, pb.Bᵀ_op, pb.linear_solver, pb.x, Val(true))
+    return _pb((dy, nothing))
+end
+function (implicit_pullback::ImplicitPullback{true})((dy, _))
     Aᵀ_op = implicit_pullback.Aᵀ_op
     Bᵀ_op = implicit_pullback.Bᵀ_op
     linear_solver = implicit_pullback.linear_solver
@@ -54,7 +65,7 @@ function (implicit_pullback::ImplicitPullback)((dy, dz))
     dx_vec = Bᵀ_op * dF_vec
     dx_vec .*= -1
     dx = reshape(dx_vec, size(x))
-    return (NoTangent(), dx)
+    return (NoTangent(), dx, NoTangent())
 end
 
 end

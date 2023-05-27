@@ -64,8 +64,8 @@ x = ComponentVector(; a=rand(2), b=rand(2))
 
 #-
 
-first(implicit_components(x)) .^ 2
-@test first(implicit_components(x)) .^ 2 ≈ x.a + 2x.b  #src
+implicit_components(x) .^ 2
+@test implicit_components(x) .^ 2 ≈ x.a + 2x.b  #src
 
 #=
 Let's see what the explicit Jacobian looks like.
@@ -75,10 +75,10 @@ J = hcat(Diagonal(0.5 ./ sqrt.(x.a + 2x.b)), 2 * Diagonal(0.5 ./ sqrt.(x.a + 2x.
 
 # ## Forward mode autodiff
 
-ForwardDiff.jacobian(_x -> first(implicit_components(_x)), x)
-@test ForwardDiff.jacobian(_x -> first(implicit_components(_x)), x) ≈ J  #src
+ForwardDiff.jacobian(implicit_components, x)
+@test ForwardDiff.jacobian(implicit_components, x) ≈ J  #src
 
 # ## Reverse mode autodiff
 
-Zygote.jacobian(_x -> first(implicit_components(_x)), x)[1]
-@test Zygote.jacobian(_x -> first(implicit_components(_x)), x)[1] ≈ J  #src
+Zygote.jacobian(implicit_components, x)[1]
+@test Zygote.jacobian(implicit_components, x)[1] ≈ J  #src

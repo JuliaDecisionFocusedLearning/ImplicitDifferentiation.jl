@@ -87,8 +87,8 @@ We represent it using a type called `ImplicitFunction`, which you will see in ac
 
 #=
 First we define a `forward` pass correponding to the function we consider.
-It returns the actual output $y(x)$ of the function, as well as additional information $z(x)$.
-Here we don't need any additional information, so we set it to $0$.
+It returns the actual output $y(x)$ of the function, as well as the optional byproduct $z(x)$.
+Here we don't need any additional information, so we set $z(x)$ to $0$.
 Importantly, this forward pass _doesn't need to be differentiable_.
 =#
 
@@ -118,11 +118,11 @@ What does this wrapper do?
 implicit = ImplicitFunction(forward, conditions)
 
 #=
-When we call it as a function, it just falls back on `implicit.forward`, so unsurprisingly we get the same tuple $(y(x), z(x))$.
+When we call it as a function, it just falls back on `first ∘ implicit.forward`, so unsurprisingly we get the first output $y(x)$.
 =#
 
-(first ∘ implicit)(x) ≈ sqrt.(x)
-@test (first ∘ implicit)(x) ≈ sqrt.(x)  #src
+implicit(x) ≈ sqrt.(x)
+@test implicit(x) ≈ sqrt.(x)  #src
 
 #=
 And when we try to compute its Jacobian, the [implicit function theorem](https://en.wikipedia.org/wiki/Implicit_function_theorem) is applied in the background to circumvent the lack of differentiablility of the forward pass.
@@ -134,15 +134,15 @@ And when we try to compute its Jacobian, the [implicit function theorem](https:/
 Now ForwardDiff.jl works seamlessly.
 =#
 
-ForwardDiff.jacobian(first ∘ implicit, x) ≈ J
-@test ForwardDiff.jacobian(first ∘ implicit, x) ≈ J  #src
+ForwardDiff.jacobian(implicit, x) ≈ J
+@test ForwardDiff.jacobian(implicit, x) ≈ J  #src
 
 #=
 And so does Zygote.jl. Hurray!
 =#
 
-Zygote.jacobian(first ∘ implicit, x)[1] ≈ J
-@test Zygote.jacobian(first ∘ implicit, x)[1] ≈ J  #src
+Zygote.jacobian(implicit, x)[1] ≈ J
+@test Zygote.jacobian(implicit, x)[1] ≈ J  #src
 
 # ## Second derivative
 
@@ -159,6 +159,6 @@ Then the Jacobian itself is differentiable.
 =#
 
 h = rand(2)
-J_Z(t) = Zygote.jacobian(first ∘ implicit2, x .+ t .* h)[1]
+J_Z(t) = Zygote.jacobian(implicit2, x .+ t .* h)[1]
 ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))
 @test ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))  #src

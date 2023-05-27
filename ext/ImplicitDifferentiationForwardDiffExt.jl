@@ -16,13 +16,13 @@ using LinearOperators: LinearOperator
 Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with ForwardDiff.jl.
 """
 function (implicit::ImplicitFunction)(
-    x_and_dx::AbstractArray{Dual{T,R,N}}; kwargs...
-) where {T,R,N}
+    x_and_dx::AbstractArray{Dual{T,R,N}}, ::Val{return_byproduct}=Val(false); kwargs...
+) where {T,R,N,return_byproduct}
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
     x = value.(x_and_dx)
-    y, z = implicit(x; kwargs...)
+    y, z = implicit(x, Val(true); kwargs...)
     n, m = length(x), length(y)
 
     backend = ForwardDiffBackend()
@@ -45,7 +45,7 @@ function (implicit::ImplicitFunction)(
         end
         reshape(y_and_dy_vec, size(y))
     end
-    return y_and_dy, z
+    return return_byproduct ? (y_and_dy, z) : y_and_dy
 end
 
 end

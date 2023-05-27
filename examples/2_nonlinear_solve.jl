@@ -63,8 +63,8 @@ x = rand(2)
 
 #-
 
-first(implicit_nlsolve(x; method=:newton)) .^ 2
-@test first(implicit_nlsolve(x; method=:newton)) .^ 2 ≈ x  #src
+implicit_nlsolve(x; method=:newton) .^ 2
+@test implicit_nlsolve(x; method=:newton) .^ 2 ≈ x  #src
 
 #-
 
@@ -72,8 +72,8 @@ J = Diagonal(0.5 ./ sqrt.(x))
 
 # ## Forward mode autodiff
 
-ForwardDiff.jacobian(_x -> first(implicit_nlsolve(_x; method=:newton)), x)
-@test ForwardDiff.jacobian(_x -> first(implicit_nlsolve(_x; method=:newton)), x) ≈ J  #src
+ForwardDiff.jacobian(_x -> implicit_nlsolve(_x; method=:newton), x)
+@test ForwardDiff.jacobian(_x -> implicit_nlsolve(_x; method=:newton), x) ≈ J  #src
 
 #-
 
@@ -81,8 +81,8 @@ ForwardDiff.jacobian(_x -> mysqrt_nlsolve(_x; method=:newton), x)
 
 # ## Reverse mode autodiff
 
-Zygote.jacobian(_x -> first(implicit_nlsolve(_x; method=:newton)), x)[1]
-@test Zygote.jacobian(_x -> first(implicit_nlsolve(_x; method=:newton)), x)[1] ≈ J  #src
+Zygote.jacobian(_x -> implicit_nlsolve(_x; method=:newton), x)[1]
+@test Zygote.jacobian(_x -> implicit_nlsolve(_x; method=:newton), x)[1] ≈ J  #src
 
 #-
 
