@@ -1,7 +1,7 @@
 name = "ImplicitDifferentiation"
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 authors = ["Guillaume Dalle", "Mohamed Tarek and contributors"]
-version = "0.4.4"
+version = "0.5.0-DEV"
 
 [deps]
 AbstractDifferentiation = "c29ec348-61ec-40c8-8164-b8c60e9d9f3d"
@@ -20,6 +20,7 @@ ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
 
 [compat]
 AbstractDifferentiation = "0.5"
+Aqua = "0.6.1"
 ChainRulesCore = "1.14"
 ForwardDiff = "0.10"
 Krylov = "0.8, 0.9"

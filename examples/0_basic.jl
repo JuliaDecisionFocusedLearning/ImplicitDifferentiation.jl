@@ -87,8 +87,8 @@ We represent it using a type called `ImplicitFunction`, which you will see in ac
 
 #=
 First we define a `forward` pass correponding to the function we consider.
-It returns the actual output $y(x)$ of the function, as well as the optional additional information $z(x)$.
-Here we don't need any additional information, so we set it to $0$.
+It returns the actual output $y(x)$ of the function, as well as the optional byproduct $z(x)$.
+Here we don't need any additional information, so we set $z(x)$ to $0$.
 Importantly, this forward pass _doesn't need to be differentiable_.
 =#
 

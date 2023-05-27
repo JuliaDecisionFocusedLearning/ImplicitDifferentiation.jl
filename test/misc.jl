@@ -31,19 +31,21 @@ end
     y, _ = implicit(x)
     J = Diagonal(0.5 ./ sqrt.(x))
 
-    @testset "Exactness" begin
-        @test implicit(x) ≈ sqrt.(x)
-        @test ForwardDiff.jacobian(implicit, x) ≈ J
-        @test Zygote.jacobian(implicit, x)[1] ≈ J
+    @testset "Call" begin
+        @test (@inferred implicit(x)) ≈ sqrt.(x)
+        @test_opt implicit(x)
     end
 
-    @testset verbose = true "Forward inference" begin
+    @testset verbose = true "Forward" begin
+        @test ForwardDiff.jacobian(implicit, x) ≈ J
         x_and_dx = ForwardDiff.Dual.(x, ((0, 0),))
         @test (@inferred implicit(x_and_dx)) == implicit(x_and_dx)
         y_and_dy, _ = implicit(x_and_dx)
         @test size(y_and_dy) == size(y)
     end
-    @testset "Reverse type inference" begin
+
+    @testset "Reverse" begin
+        @test Zygote.jacobian(implicit, x)[1] ≈ J
         for return_byproduct in (true, false)
             _, pullback = @inferred rrule(
                 Zygote.ZygoteRuleConfig(), implicit, x, Val(return_byproduct)
@@ -67,20 +69,21 @@ end
     Y, _ = implicit(X)
     JJ = Diagonal(0.5 ./ sqrt.(vec(X)))
 
-    @testset "Exactness" begin
-        @test (implicit)(X) ≈ sqrt.(X)
-        @test ForwardDiff.jacobian(implicit, X) ≈ JJ
-        @test Zygote.jacobian(implicit, X)[1] ≈ JJ
+    @testset "Call" begin
+        @test (@inferred implicit(X)) ≈ sqrt.(X)
+        @test_opt implicit(X)
     end
 
-    @testset "Forward type inference" begin
+    @testset "Forward" begin
+        @test ForwardDiff.jacobian(implicit, X) ≈ JJ
         X_and_dX = ForwardDiff.Dual.(X, ((0, 0),))
         @test (@inferred implicit(X_and_dX)) == implicit(X_and_dX)
         Y_and_dY, _ = implicit(X_and_dX)
         @test size(Y_and_dY) == size(Y)
     end
 
-    @testset "Reverse type inference" begin
+    @testset "Reverse" begin
+        @test Zygote.jacobian(implicit, X)[1] ≈ JJ
         for return_byproduct in (true, false)
             _, pullback = @inferred rrule(
                 Zygote.ZygoteRuleConfig(), implicit, X, Val(return_byproduct)

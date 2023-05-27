@@ -41,7 +41,7 @@ end
 
 #=
 First, we create the forward pass which returns the solution $y(x)$.
-Remember that it should also return additional information $z(x)$, which is useless here.
+Remember that it should also return a byproduct $z(x)$, which is useless here.
 =#
 function forward_optim(x; method)
     y = mysqrt_optim(x; method)
