@@ -33,7 +33,9 @@ end
 
     @testset "Call" begin
         @test (@inferred implicit(x)) ≈ sqrt.(x)
-        VERSION >= v"1.7" && @test_opt implicit(x)
+        if VERSION >= v"1.7"
+            test_opt(implicit, typeof(x))
+        end
     end
 
     @testset verbose = true "Forward" begin
@@ -71,7 +73,9 @@ end
 
     @testset "Call" begin
         @test (@inferred implicit(X)) ≈ sqrt.(X)
-        VERSION >= v"1.7" && @test_opt implicit(X)
+        if VERSION >= v"1.7"
+            test_opt(implicit, typeof(X))
+        end
     end
 
     @testset "Forward" begin
