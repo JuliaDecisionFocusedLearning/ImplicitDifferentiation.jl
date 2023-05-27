@@ -34,7 +34,7 @@ end
     @testset "Call" begin
         @test (@inferred implicit(x)) ≈ sqrt.(x)
         if VERSION >= v"1.7"
-            test_opt(implicit, typeof(x))
+            test_opt(implicit, (typeof(x),))
         end
     end
 
@@ -74,7 +74,7 @@ end
     @testset "Call" begin
         @test (@inferred implicit(X)) ≈ sqrt.(X)
         if VERSION >= v"1.7"
-            test_opt(implicit, typeof(X))
+            test_opt(implicit, (typeof(X),))
         end
     end
 
