@@ -1,3 +1,21 @@
+struct Forward{returns_byproduct,F}
+    f::F
+    function Forward{returns_byproduct}(f::F) where {returns_byproduct,F}
+        return new{returns_byproduct,F}(f)
+    end
+end
+(f::Forward{true})(x; kwargs...) = f.f(x, kwargs...)
+(f::Forward{false})(x; kwargs...) = f.f(x, kwargs...), 0
+
+struct Conditions{accepts_byproduct,F}
+    f::F
+    function Conditions{accepts_byproduct}(f::F) where {accepts_byproduct,F}
+        return new{accepts_byproduct,F}(f)
+    end
+end
+(f::Conditions{true})(x, y, z; kwargs...) = f.f(x, y, z, kwargs...)
+(f::Conditions{false})(x, y, z; kwargs...) = f.f(x, y, kwargs...)
+
 """
     ImplicitFunction{F,C,L}
 
@@ -15,19 +33,51 @@ This amounts to solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`,
 - `conditions::C`: callable of the form `(x,y,z) -> F(x,y,z)`
 - `linear_solver::L`: callable of the form `(A,b) -> u` such that `Au = b`, must be taken from Krylov.jl
 """
-struct ImplicitFunction{F,C,L}
+struct ImplicitFunction{F<:Forward,C<:Conditions,L}
     forward::F
     conditions::C
     linear_solver::L
 end
 
 """
-    ImplicitFunction(forward, conditions)
+    ImplicitFunction(forward, conditions, linear_solver, ::Val{returns_byproduct} = Val(false))
+
+Construct an `ImplicitFunction` with `linear_solver` as the linear solver used in the implicit
+differentiation. By default, `ImplicitFunction(forward, conditions, linear_solver)` will assume
+that the `forward` function returns a single output and that the `conditions` function accepts
+two arguments.
+
+In some cases, it may be that a byproduct of the `forward` function can be used in the
+`conditions` function to save computation. To tell `ImplicitDifferentiation` that the
+`forward` function returns a second constant byproduct output and that the `conditions`
+function accepts that byproduct as a third argument, you can construct the implicit function
+using `ImplicitFunction(forward, conditions, linear_solver, Val(true))`.
+"""
+function ImplicitFunction(
+    forward, conditions, linear_solver, ::Val{returns_byproduct}=Val(false)
+) where {returns_byproduct}
+    _forward = Forward{returns_byproduct}(forward)
+    _conditions = Conditions{returns_byproduct}(conditions)
+    return ImplicitFunction(_forward, _conditions, linear_solver)
+end
+
+"""
+    ImplicitFunction(forward, conditions, ::Val{returns_byproduct} = Val(false))
 
 Construct an `ImplicitFunction` with `Krylov.gmres` as the default linear solver.
+By default, `ImplicitFunction(forward, conditions)` will assume that the `forward`
+function returns a single output and that the `conditions` function accepts two arguments.
+
+In some cases, it may be that a byproduct of the `forward` function can be used in the
+`conditions` function to save computation. To tell `ImplicitDifferentiation` that the
+`forward` function returns a second constant byproduct output and that the `conditions`
+function accepts that byproduct as a third argument, you can construct the implicit function
+using `ImplicitFunction(forward, conditions, Val(true))`.
 """
-function ImplicitFunction(forward, conditions)
-    return ImplicitFunction(forward, conditions, gmres)
+function ImplicitFunction(
+    forward, conditions, ::Val{returns_byproduct}=Val(false)
+) where {returns_byproduct}
+    return ImplicitFunction(forward, conditions, gmres, Val(returns_byproduct))
 end
 
 """
