@@ -33,7 +33,7 @@ This amounts to solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`,
 - `conditions::C`: callable of the form `(x,y,z) -> F(x,y,z)`
 - `linear_solver::L`: callable of the form `(A,b) -> u` such that `Au = b`, must be taken from Krylov.jl
 """
-struct ImplicitFunction{F<:Forward,C<:Conditions,L}
+struct ImplicitFunction{byproduct,F<:Forward{byproduct},C<:Conditions{byproduct},L}
     forward::F
     conditions::C
     linear_solver::L
