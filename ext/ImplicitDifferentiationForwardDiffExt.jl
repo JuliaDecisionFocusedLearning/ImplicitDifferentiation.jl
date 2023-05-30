@@ -16,8 +16,8 @@ using LinearOperators: LinearOperator
 Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with ForwardDiff.jl.
 """
 function (implicit::ImplicitFunction)(
-    x_and_dx::AbstractArray{Dual{T,R,N}}, ::Val{return_byproduct}=Val(false); kwargs...
-) where {T,R,N,return_byproduct}
+    x_and_dx::AbstractArray{Dual{T,R,N}}, ::Val{byproduct}=Val(false); kwargs...
+) where {T,R,N,byproduct}
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
@@ -45,7 +45,7 @@ function (implicit::ImplicitFunction)(
         end
         reshape(y_and_dy_vec, size(y))
     end
-    return return_byproduct ? (y_and_dy, z) : y_and_dy
+    return byproduct ? (y_and_dy, z) : y_and_dy
 end
 
 end

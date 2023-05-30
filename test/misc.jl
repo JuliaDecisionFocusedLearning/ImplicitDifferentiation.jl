@@ -59,12 +59,12 @@ end
 
         @testset "Reverse" begin
             @test Zygote.jacobian(implicit, x)[1] ≈ J
-            for return_byproduct in (true, false)
+            for byproduct in (true, false)
                 _, pullback = @inferred rrule(
-                    Zygote.ZygoteRuleConfig(), implicit, x, Val(return_byproduct)
+                    Zygote.ZygoteRuleConfig(), implicit, x, Val(byproduct)
                 )
                 dy, dz = zero(implicit(x)), 0
-                if return_byproduct
+                if byproduct
                     @test (@inferred pullback((dy, dz))) == pullback((dy, dz))
                     _, dx = pullback((dy, dz))
                     @test size(dx) == size(x)
@@ -99,12 +99,12 @@ end
 
         @testset "Reverse" begin
             @test Zygote.jacobian(implicit, X)[1] ≈ JJ
-            for return_byproduct in (true, false)
+            for byproduct in (true, false)
                 _, pullback = @inferred rrule(
-                    Zygote.ZygoteRuleConfig(), implicit, X, Val(return_byproduct)
+                    Zygote.ZygoteRuleConfig(), implicit, X, Val(byproduct)
                 )
                 dY, dZ = zero(implicit(X)), 0
-                if return_byproduct
+                if byproduct
                     @test (@inferred pullback((dY, dZ))) == pullback((dY, dZ))
                     _, dX = pullback((dY, dZ))
                     @test size(dX) == size(X)

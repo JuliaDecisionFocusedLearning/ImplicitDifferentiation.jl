@@ -1,16 +1,16 @@
-struct Forward{returns_byproduct,F}
+struct Forward{byproduct,F}
     f::F
-    function Forward{returns_byproduct}(f::F) where {returns_byproduct,F}
-        return new{returns_byproduct,F}(f)
+    function Forward{byproduct}(f::F) where {byproduct,F}
+        return new{byproduct,F}(f)
     end
 end
 (f::Forward{true})(x; kwargs...) = f.f(x; kwargs...)
 (f::Forward{false})(x; kwargs...) = (f.f(x; kwargs...), 0)
 
-struct Conditions{accepts_byproduct,F}
+struct Conditions{byproduct,F}
     f::F
-    function Conditions{accepts_byproduct}(f::F) where {accepts_byproduct,F}
-        return new{accepts_byproduct,F}(f)
+    function Conditions{byproduct}(f::F) where {byproduct,F}
+        return new{byproduct,F}(f)
     end
 end
 (f::Conditions{true})(x, y, z; kwargs...) = f.f(x, y, z; kwargs...)
@@ -40,7 +40,7 @@ struct ImplicitFunction{F<:Forward,C<:Conditions,L}
 end
 
 """
-    ImplicitFunction(forward, conditions, linear_solver, ::Val{returns_byproduct} = Val(false))
+    ImplicitFunction(forward, conditions, linear_solver, ::Val{byproduct} = Val(false))
 
 Construct an `ImplicitFunction` with `linear_solver` as the linear solver used in the implicit
 differentiation. By default, `ImplicitFunction(forward, conditions, linear_solver)` will assume
@@ -54,22 +54,22 @@ function accepts that byproduct as a third argument, you can construct the impli
 using `ImplicitFunction(forward, conditions, linear_solver, Val(true))`.
 """
 function ImplicitFunction(
-    forward, conditions, linear_solver, ::Val{returns_byproduct}=Val(false)
-) where {returns_byproduct}
-    _forward = Forward{returns_byproduct}(forward)
-    _conditions = Conditions{returns_byproduct}(conditions)
+    forward, conditions, linear_solver, ::Val{byproduct}=Val(false)
+) where {byproduct}
+    _forward = Forward{byproduct}(forward)
+    _conditions = Conditions{byproduct}(conditions)
     return ImplicitFunction(_forward, _conditions, linear_solver)
 end
 
 # JET complained without this method
 function ImplicitFunction(
-    forward::Forward, conditions::Conditions, ::Val{returns_byproduct}
-) where {returns_byproduct}
+    forward::Forward, conditions::Conditions, ::Val{byproduct}
+) where {byproduct}
     return ImplicitFunction(forward, conditions, gmres)
 end
 
 """
-    ImplicitFunction(forward, conditions, ::Val{returns_byproduct} = Val(false))
+    ImplicitFunction(forward, conditions, ::Val{byproduct} = Val(false))
 
 Construct an `ImplicitFunction` with `Krylov.gmres` as the default linear solver.
 By default, `ImplicitFunction(forward, conditions)` will assume that the `forward`
@@ -82,11 +82,11 @@ function accepts that byproduct as a third argument, you can construct the impli
 using `ImplicitFunction(forward, conditions, Val(true))`.
 """
 function ImplicitFunction(
-    forward, conditions, ::Val{returns_byproduct}=Val(false)
-) where {returns_byproduct}
-    _forward = Forward{returns_byproduct}(forward)
-    _conditions = Conditions{returns_byproduct}(conditions)
-    return ImplicitFunction(_forward, _conditions, Val(returns_byproduct))
+    forward, conditions, ::Val{byproduct}=Val(false)
+) where {byproduct}
+    _forward = Forward{byproduct}(forward)
+    _conditions = Conditions{byproduct}(conditions)
+    return ImplicitFunction(_forward, _conditions, Val(byproduct))
 end
 
 """
@@ -98,8 +98,8 @@ Make `ImplicitFunction` callable by applying `implicit.forward`.
 The first (default) call signature only returns `y(x)`, while the second returns `(y(x), z(x))`.
 """
 function (implicit::ImplicitFunction)(
-    x, ::Val{return_byproduct}=Val(false); kwargs...
-) where {return_byproduct}
+    x, ::Val{byproduct}=Val(false); kwargs...
+) where {byproduct}
     y, z = implicit.forward(x; kwargs...)
-    return return_byproduct ? (y, z) : y
+    return byproduct ? (y, z) : y
 end

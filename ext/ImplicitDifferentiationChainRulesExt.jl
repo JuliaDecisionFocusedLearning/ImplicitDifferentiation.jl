@@ -17,9 +17,9 @@ function ChainRulesCore.rrule(
     rc::RuleConfig,
     implicit::ImplicitFunction,
     x::AbstractArray{R},
-    ::Val{return_byproduct};
+    ::Val{byproduct};
     kwargs...,
-) where {R,return_byproduct}
+) where {R,byproduct}
     conditions = implicit.conditions
     linear_solver = implicit.linear_solver
 
@@ -33,19 +33,17 @@ function ChainRulesCore.rrule(
     pbmB = PullbackMul!(pbB, size(y))
     Aᵀ_op = LinearOperator(R, m, m, false, false, pbmA)
     Bᵀ_op = LinearOperator(R, n, m, false, false, pbmB)
-    implicit_pullback = ImplicitPullback(
-        Aᵀ_op, Bᵀ_op, linear_solver, x, Val(return_byproduct)
-    )
+    implicit_pullback = ImplicitPullback(Aᵀ_op, Bᵀ_op, linear_solver, x, Val(byproduct))
 
-    return (return_byproduct ? (y, z) : y), implicit_pullback
+    return (byproduct ? (y, z) : y), implicit_pullback
 end
 
-struct ImplicitPullback{return_byproduct,A,B,L,X}
+struct ImplicitPullback{byproduct,A,B,L,X}
     Aᵀ_op::A
     Bᵀ_op::B
     linear_solver::L
     x::X
-    _v::Val{return_byproduct}
+    _v::Val{byproduct}
 end
 
 function (pb::ImplicitPullback{false})(dy)
