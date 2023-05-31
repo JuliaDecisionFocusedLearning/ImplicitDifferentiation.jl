@@ -39,12 +39,17 @@ f(x::ComponentVector) = f(x.a, x.b)
 
 The same trick works for multiple outputs.
 
-## Byproducts
+## Using byproducts
 
 At first glance, it is not obvious why we impose that the `forward` callable returns a byproduct `z` in addition to `y`.
 It is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the `conditions`.
 We will provide simple examples soon.
 In the meantime, an advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
+
+## Differentiating byproducts
+
+Nope. Sorry. Don't even think about it.
+The package is not designed to compute derivatives of `z`, only `y`, which is why the byproduct is considered constant during differentiation.
 
 ## Modeling constrained optimization problems
 
