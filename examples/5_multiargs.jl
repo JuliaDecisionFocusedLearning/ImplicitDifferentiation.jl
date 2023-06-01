@@ -38,7 +38,7 @@ function mysqrt_components(a, b)
 end
 
 #=
-First, we create the forward pass which returns the solution $y(x)$, where $x$ is a `ComponentVector` containing both $a$ and $b$.
+First, we create the forward mapping which returns the solution $y(x)$, where $x$ is a `ComponentVector` containing both $a$ and $b$.
 =#
 function forward_components(x)
     return mysqrt_components(x.a, x.b)

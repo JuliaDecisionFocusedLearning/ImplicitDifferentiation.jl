@@ -93,28 +93,13 @@ Importantly, this Julia callable _doesn't need to be differentiable by automatic
 forward(x) = mysqrt(x)
 
 #=
-Optionally, the forward mapping can also return some additional byproduct $z$, e.g a pre-computed Jacobian, which would then be used in the conditions.
-=#
-
-forward2(x) = (mysqrt(x), 0)
-
-#=
 Then we define `conditions` $c(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
 These conditions must be array-valued, with the same size as $y$.
-If the forward mapping returns an additional byproduct $z$, the conditions function must also accept a third argument $z$, such that $c(x, y, z) = 0$. Unlike the forward mapping, _the conditions need to be differentiable by automatic differentiation packages_ with respect to both $x$ and $y$.
+Unlike the forward mapping, _the conditions need to be differentiable by automatic differentiation packages_ with respect to both $x$ and $y$.
 Here the conditions are very obvious: the square of the square root should be equal to the original value.
 =#
 
 function conditions(x, y)
-    c = y .^ 2 .- x
-    return c
-end
-
-#=
-Or if we add a third argument:
-=#
-
-function conditions2(x, y, z)
     c = y .^ 2 .- x
     return c
 end
@@ -128,14 +113,6 @@ is assumed to accept 2 arguments.
 implicit = ImplicitFunction(forward, conditions)
 
 #=
-Alternatively, we can use `forward2` which returns two outputs and
-`conditions2 ` which accepts three arguments.
-In this case, we must pass `Val(true)` to the `ImplicitFunction` constructor, so that it knows we have a byproduct to carry around.
-=#
-
-implicit2 = ImplicitFunction(forward2, conditions2, Val(true))
-
-#=
 What does this wrapper do?
 When we call it as a function, it just falls back on `first ∘ implicit.forward`, so unsurprisingly we get the first output $y(x)$.
 =#
@@ -144,7 +121,7 @@ implicit(x) ≈ sqrt.(x)
 @test implicit(x) ≈ sqrt.(x)  #src
 
 #=
-And when we try to compute its Jacobian, the [implicit function theorem](https://en.wikipedia.org/wiki/Implicit_function_theorem) is applied in the background to circumvent the lack of differentiablility of the forward pass.
+And when we try to compute its Jacobian, the [implicit function theorem](https://en.wikipedia.org/wiki/Implicit_function_theorem) is applied in the background to circumvent the lack of differentiablility of the forward mapping.
 =#
 
 # ## Forward and reverse mode autodiff

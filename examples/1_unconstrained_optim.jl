@@ -40,20 +40,8 @@ function forward_optim(x; method)
 end
 
 #=
-The above forward mapping returns the solution $y(x)$.
-Optionally, this function can also return a byproduct $z$ for use in the conditions.
-=#
-
-function forward_optim2(x; method)
-    f(y) = sum(abs2, y .^ 2 .- x)
-    y0 = ones(eltype(x), size(x))
-    result = optimize(f, y0, method)
-    return Optim.minimizer(result), 0
-end
-
-#=
 Even though they are defined as a gradient, it is better to provide optimality conditions explicitly: that way we avoid nesting autodiff calls. By default, the conditions should accept two arguments as input.
-The forward pass and the conditions should accept the same set of keyword arguments.
+The forward mapping and the conditions should accept the same set of keyword arguments.
 =#
 
 function conditions_optim(x, y; method)
@@ -62,25 +50,10 @@ function conditions_optim(x, y; method)
 end
 
 #=
-Alternatively, if a second byproduct output was returned from the forward mapping, then the conditions must accept three arguments instead.
-=#
-function conditions_optim2(x, y, z; method)
-    ∇₂f = 2 .* (y .^ 2 .- x)
-    return ∇₂f
-end
-
-#=
-We now have all the ingredients to construct our implicit function. The default constructor assumes that `forward_optim` returns a single output and that `conditions_optim` accepts 2 arguments.
+We now have all the ingredients to construct our implicit function.
 =#
 
 implicit_optim = ImplicitFunction(forward_optim, conditions_optim)
-
-#=
-Alternatively, since `forward_optim2` returns two outputs and `conditions_optim2`
-accetps 3 arguments, the following constructor should be used.
-=#
-
-implicit_optim2 = ImplicitFunction(forward_optim2, conditions_optim2, Val(true))
 
 # And indeed, it behaves as it should when we call it:
 
