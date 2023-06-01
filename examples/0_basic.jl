@@ -5,7 +5,6 @@ In this example, we demonstrate the basics of our package on a simple function t
 =#
 
 using ChainRulesCore  #src
-using ChainRulesTestUtils  #src
 using ForwardDiff
 using ImplicitDifferentiation
 using JET  #src
@@ -86,29 +85,24 @@ We represent it using a type called `ImplicitFunction`, which you will see in ac
 =#
 
 #=
-First we define a `forward` pass correponding to the function we consider.
-It returns the actual output $y(x)$ of the function. Importantly, this
-forward pass _doesn't need to be differentiable by automatic differentiation
-packages but it still needs to be mathematically differentiable_.
+First we define a forward mapping correponding to the function we consider.
+It returns the actual output $y(x)$ of the function, and can be thought of as a black box solver.
+Importantly, this Julia callable _doesn't need to be differentiable by automatic differentiation packages but the underlying function still needs to be mathematically differentiable_.
 =#
 
 forward(x) = mysqrt(x)
 
 #=
-Optionally, the forward function can also return some additional byproduct $z$,
-e.g a pre-computed Jacobian, which can be used in the conditions function.
+Optionally, the forward mapping can also return some additional byproduct $z$, e.g a pre-computed Jacobian, which would then be used in the conditions.
 =#
 
 forward2(x) = (mysqrt(x), 0)
 
 #=
-Then we define `conditions` $F(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
-These conditions must be array-valued, with the same size as $y$. If the forward pass
-function returns an additional byproduct $z$, the conditions function must also accept a
-third argument $z$, such that $F(x, y, z) = 0$. Unlike the forward pass, _the conditions
-function needs to be differentiable by automatic differentiation packages_ with respect
-to both $x$ and $y$. Here the conditions are very obvious: the square of the square root
-should be equal to the original value.
+Then we define `conditions` $c(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
+These conditions must be array-valued, with the same size as $y$.
+If the forward mapping returns an additional byproduct $z$, the conditions function must also accept a third argument $z$, such that $c(x, y, z) = 0$. Unlike the forward mapping, _the conditions need to be differentiable by automatic differentiation packages_ with respect to both $x$ and $y$.
+Here the conditions are very obvious: the square of the square root should be equal to the original value.
 =#
 
 function conditions(x, y)
@@ -117,7 +111,7 @@ function conditions(x, y)
 end
 
 #=
-Or if it accepts a third argument:
+Or if we add a third argument:
 =#
 
 function conditions2(x, y, z)
@@ -128,16 +122,15 @@ end
 #=
 Finally, we construct a wrapper `implicit` around the previous objects.
 By default, `forward` is assumed to return a single output and `conditions`
-is assumed to accept 2 inputs.
+is assumed to accept 2 arguments.
 =#
 
 implicit = ImplicitFunction(forward, conditions)
 
 #=
 Alternatively, we can use `forward2` which returns two outputs and
-`conditions2 ` which accepts three inputs. In this case, we must
-pass `Val(true)` as the third argument to `ImplicitFunction` to tell
-`ImplicitDifferentiation` that we have a byproduct carried around.
+`conditions2 ` which accepts three arguments.
+In this case, we must pass `Val(true)` to the `ImplicitFunction` constructor, so that it knows we have a byproduct to carry around.
 =#
 
 implicit2 = ImplicitFunction(forward2, conditions2, Val(true))
@@ -177,14 +170,17 @@ We can even go higher-order by mixing the two packages (forward-over-reverse mod
 The only technical requirement is to switch the linear solver to something that can handle dual numbers:
 =#
 
-linear_solver(A, b) = (Matrix(A) \ b, (solved=true,))
-implicit2 = ImplicitFunction(forward, conditions, linear_solver)
+manual_linear_solver(A, b) = (Matrix(A) \ b, (solved=true,))
+
+implicit_higher_order = ImplicitFunction(
+    forward, conditions; linear_solver=manual_linear_solver
+)
 
 #=
 Then the Jacobian itself is differentiable.
 =#
 
 h = rand(2)
-J_Z(t) = Zygote.jacobian(implicit2, x .+ t .* h)[1]
+J_Z(t) = Zygote.jacobian(implicit_higher_order, x .+ t .* h)[1]
 ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))
 @test ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))  #src

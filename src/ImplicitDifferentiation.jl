@@ -4,6 +4,7 @@ using AbstractDifferentiation: LazyJacobian, ReverseRuleConfigBackend, lazy_jaco
 using Krylov: KrylovStats, gmres
 using LinearOperators: LinearOperators, LinearOperator
 using Requires: @require
+using SimpleUnPack: @unpack
 
 include("utils.jl")
 include("implicit_function.jl")

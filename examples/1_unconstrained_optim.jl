@@ -40,25 +40,29 @@ function forward_optim(x; method)
 end
 
 #=
-The above "forward pass" function returns the solution $y(x)$. Optionally,
-the function can also return a second byproduct $z$ output for use in the
-conditions function.
+The above forward mapping returns the solution $y(x)$.
+Optionally, this function can also return a byproduct $z$ for use in the conditions.
 =#
 
+function forward_optim2(x; method)
+    f(y) = sum(abs2, y .^ 2 .- x)
+    y0 = ones(eltype(x), size(x))
+    result = optimize(f, y0, method)
+    return Optim.minimizer(result), 0
+end
+
 #=
-Even though they are defined as a gradient, it is better to provide optimality
-conditions explicitly: that way we avoid nesting autodiff calls. By default,
-the conditions should accept two arguments as input. The forward pass and
-the conditions should accept the same set of keyword arguments.
+Even though they are defined as a gradient, it is better to provide optimality conditions explicitly: that way we avoid nesting autodiff calls. By default, the conditions should accept two arguments as input.
+The forward pass and the conditions should accept the same set of keyword arguments.
 =#
+
 function conditions_optim(x, y; method)
     ∇₂f = 2 .* (y .^ 2 .- x)
     return ∇₂f
 end
 
 #=
-Alternatively, if a second byproduct output was returned from the forward pass
-function, then the conditions function is assumed to accept three arguments instead.
+Alternatively, if a second byproduct output was returned from the forward mapping, then the conditions must accept three arguments instead.
 =#
 function conditions_optim2(x, y, z; method)
     ∇₂f = 2 .* (y .^ 2 .- x)
@@ -66,19 +70,17 @@ function conditions_optim2(x, y, z; method)
 end
 
 #=
-We now have all the ingredients to construct our implicit function. The default
-constructor assumes that `forward_optim` returns a single output and that
-`conditions_optim` accetps 2 arguments as input.
+We now have all the ingredients to construct our implicit function. The default constructor assumes that `forward_optim` returns a single output and that `conditions_optim` accepts 2 arguments.
 =#
 
 implicit_optim = ImplicitFunction(forward_optim, conditions_optim)
 
 #=
-Alternatively, if `forward_optim` returns two outputs and `conditions_optim`
-accetps 3 arguments as input, the following constructor should be used instead.
+Alternatively, since `forward_optim2` returns two outputs and `conditions_optim2`
+accetps 3 arguments, the following constructor should be used.
 =#
 
-implicit_optim2 = ImplicitFunction(forward_optim, conditions_optim, Val(true))
+implicit_optim2 = ImplicitFunction(forward_optim2, conditions_optim2, Val(true))
 
 # And indeed, it behaves as it should when we call it:
 

@@ -41,8 +41,8 @@ end
 #-
 
 function conditions_nlsolve(x, y; method)
-    F = y .^ 2 .- x
-    return F
+    c = y .^ 2 .- x
+    return c
 end
 
 #-

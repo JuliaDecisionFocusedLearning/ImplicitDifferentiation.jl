@@ -9,17 +9,24 @@ end
 using AbstractDifferentiation: ForwardDiffBackend, pushforward_function
 using ImplicitDifferentiation: ImplicitFunction, PushforwardMul!, check_solution
 using LinearOperators: LinearOperator
+using SimpleUnPack: @unpack
 
 """
-    implicit(x_and_dx::AbstractArray{ForwardDiff.Dual}[; kwargs...])
+    implicit(x_and_dx::AbstractArray{<:Dual}; kwargs...)
+    implicit(x_and_dx::AbstractArray{<:Dual}, Val(return_byproduct); kwargs...)
 
 Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with ForwardDiff.jl.
+
+- If `return_byproduct=false` (the default), this returns a single output `y_and_dy(x)`.
+- If `return_byproduct=true`, this returns a couple of outputs `(y_and_dy(x),z(x))` (remember that `z(x)` is not differentiated so `dz(x)` doesn't exist).
+
+We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
+Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function (implicit::ImplicitFunction)(
-    x_and_dx::AbstractArray{Dual{T,R,N}}, ::Val{byproduct}=Val(false); kwargs...
-) where {T,R,N,byproduct}
-    conditions = implicit.conditions
-    linear_solver = implicit.linear_solver
+    x_and_dx::AbstractArray{Dual{T,R,N}}, ::Val{return_byproduct}=Val(false); kwargs...
+) where {T,R,N,return_byproduct}
+    @unpack conditions, linear_solver = implicit
 
     x = value.(x_and_dx)
     y, z = implicit(x, Val(true); kwargs...)
@@ -45,7 +52,12 @@ function (implicit::ImplicitFunction)(
         end
         reshape(y_and_dy_vec, size(y))
     end
-    return byproduct ? (y_and_dy, z) : y_and_dy
+
+    if return_byproduct
+        return y_and_dy, z
+    else
+        return y_and_dy
+    end
 end
 
 end

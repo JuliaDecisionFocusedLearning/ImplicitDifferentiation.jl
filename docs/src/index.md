@@ -4,16 +4,16 @@ CurrentModule = ImplicitDifferentiation
 
 # ImplicitDifferentiation.jl
 
-[ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly, i.e., mappings
+[ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly, i.e., _forward mappings_
 
 ```math
 x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
 ```
 
-whose output is defined by conditions
+whose output is defined by _conditions_
 
 ```math
-F(x,y(x)) = 0 \in \mathbb{R}^m
+c(x,y(x)) = 0 \in \mathbb{R}^m
 ```
 
 ## Background
