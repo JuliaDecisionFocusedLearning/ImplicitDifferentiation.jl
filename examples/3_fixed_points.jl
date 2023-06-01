@@ -30,7 +30,7 @@ T(x, y) = \frac{1}{2} \left(y + \frac{x}{y}\right)
 In this case, the fixed point algorithm boils down to the componentwise square root function, but we implement it manually.
 =#
 
-function mysqrt_fixedpoint(x; iterations)
+function forward_fixedpoint(x; iterations)
     y = ones(eltype(x), size(x))
     for _ in 1:iterations
         y .= 0.5 .* (y .+ x ./ y)
@@ -40,15 +40,7 @@ end
 
 #-
 
-function forward_fixedpoint(x; iterations)
-    y = mysqrt_fixedpoint(x; iterations)
-    z = 0
-    return y, z
-end
-
-#-
-
-function conditions_fixedpoint(x, y, z; iterations)
+function conditions_fixedpoint(x, y; iterations)
     T = 0.5 .* (y .+ x ./ y)
     return T .- y
 end
@@ -77,7 +69,7 @@ ForwardDiff.jacobian(_x -> implicit_fixedpoint(_x; iterations=10), x)
 
 #-
 
-ForwardDiff.jacobian(_x -> mysqrt_fixedpoint(_x; iterations=10), x)
+ForwardDiff.jacobian(_x -> forward_fixedpoint(_x; iterations=10), x)
 
 # ## Reverse mode autodiff
 
@@ -87,7 +79,7 @@ Zygote.jacobian(_x -> implicit_fixedpoint(_x; iterations=10), x)[1]
 #-
 
 try
-    Zygote.jacobian(_x -> mysqrt_fixedpoint(_x; iterations=10), x)[1]
+    Zygote.jacobian(_x -> forward_fixedpoint(_x; iterations=10), x)[1]
 catch e
     e
 end

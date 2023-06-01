@@ -1,4 +1,6 @@
+using ChainRulesCore: ChainRulesCore
 using Documenter
+using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using Literate
 

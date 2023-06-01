@@ -32,7 +32,7 @@ In this case, the optimization problem boils down to the componentwise square ro
 Note the presence of a keyword argument.
 =#
 
-function mysqrt_optim(x; method)
+function forward_optim(x; method)
     f(y) = sum(abs2, y .^ 2 .- x)
     y0 = ones(eltype(x), size(x))
     result = optimize(f, y0, method)
@@ -40,27 +40,18 @@ function mysqrt_optim(x; method)
 end
 
 #=
-First, we create the forward pass which returns the solution $y(x)$.
-Remember that it should also return a byproduct $z(x)$, which is useless here.
-=#
-function forward_optim(x; method)
-    y = mysqrt_optim(x; method)
-    z = 0
-    return y, z
-end
-
-#=
-Even though they are defined as a gradient, it is better to provide optimality conditions explicitly: that way we avoid nesting autodiff calls.
-Remember, the conditions should accept three arguments to take additional information into account when needed.
-Moreover, the forward pass and the conditions should accept the same set of keyword arguments.
+Even though they are defined as a gradient, it is better to provide optimality conditions explicitly: that way we avoid nesting autodiff calls. By default, the conditions should accept two arguments as input.
+The forward mapping and the conditions should accept the same set of keyword arguments.
 =#
 
-function conditions_optim(x, y, z; method)
+function conditions_optim(x, y; method)
     ∇₂f = 2 .* (y .^ 2 .- x)
     return ∇₂f
 end
 
-# We now have all the ingredients to construct our implicit function.
+#=
+We now have all the ingredients to construct our implicit function.
+=#
 
 implicit_optim = ImplicitFunction(forward_optim, conditions_optim)
 
@@ -89,7 +80,7 @@ Unsurprisingly, the Jacobian is the identity.
 In this instance, we could use ForwardDiff.jl directly on the solver, but it returns the wrong result (not sure why).
 =#
 
-ForwardDiff.jacobian(_x -> mysqrt_optim(x; method=LBFGS()), x)
+ForwardDiff.jacobian(_x -> forward_optim(x; method=LBFGS()), x)
 
 # ## Reverse mode autodiff
 
@@ -102,7 +93,7 @@ In this instance, we cannot use Zygote.jl directly on the solver (due to unsuppo
 =#
 
 try
-    Zygote.jacobian(_x -> mysqrt_optim(x; method=LBFGS()), x)[1]
+    Zygote.jacobian(_x -> forward_optim(x; method=LBFGS()), x)[1]
 catch e
     e
 end

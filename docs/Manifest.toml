@@ -310,7 +310,7 @@ uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
 
 [[deps.ImplicitDifferentiation]]
-deps = ["AbstractDifferentiation", "Krylov", "LinearOperators", "Requires"]
+deps = ["AbstractDifferentiation", "Krylov", "LinearOperators", "Requires", "SimpleUnPack"]
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.5.0-DEV"
@@ -590,6 +590,11 @@ deps = ["ConstructionBase", "Future", "MacroTools", "StaticArraysCore"]
 git-tree-sha1 = "e2cc6d8c88613c05e1defb55170bf5ff211fbeac"
 uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 version = "1.1.1"
+
+[[deps.SimpleUnPack]]
+git-tree-sha1 = "58e6353e72cde29b90a69527e56df1b5c3d8c437"
+uuid = "ce78b400-467f-4804-87d8-8f486da07d0a"
+version = "1.1.0"
 
 [[deps.SnoopPrecompile]]
 deps = ["Preferences"]
