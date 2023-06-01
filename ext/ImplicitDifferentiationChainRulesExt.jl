@@ -10,7 +10,9 @@ using SimpleUnPack: @unpack
     rrule(rc, implicit, x; kwargs...)
     rrule(rc, implicit, x, Val(return_byproduct); kwargs...)
 
-Custom reverse rule for an [`ImplicitFunction`](@ref).
+Custom reverse rule for an [`ImplicitFunction`](@ref), to ensure compatibility with reverse mode autodiff.
+
+This is only available if ChainRulesCore.jl is loaded (extension).
 
 - If `return_byproduct=false` (the default), this returns a single output `y(x)` with a pullback accepting a single cotangent `̄y`.
 - If `return_byproduct=true`, this returns a couple of outputs `(y(x),z(x))` with a pullback accepting a couple of cotangents `(̄y, ̄z)` (remember that `z(x)` is not differentiated so its cotangent is ignored).

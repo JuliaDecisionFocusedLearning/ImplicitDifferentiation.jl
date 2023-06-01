@@ -15,7 +15,9 @@ using SimpleUnPack: @unpack
     implicit(x_and_dx::AbstractArray{<:Dual}; kwargs...)
     implicit(x_and_dx::AbstractArray{<:Dual}, Val(return_byproduct); kwargs...)
 
-Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with ForwardDiff.jl.
+Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with forward mode autodiff.
+
+This is only available if ForwardDiff.jl is loaded (extension).
 
 - If `return_byproduct=false` (the default), this returns a single output `y_and_dy(x)`.
 - If `return_byproduct=true`, this returns a couple of outputs `(y_and_dy(x),z(x))` (remember that `z(x)` is not differentiated so `dz(x)` doesn't exist).

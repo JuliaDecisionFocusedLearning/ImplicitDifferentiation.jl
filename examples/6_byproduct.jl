@@ -3,5 +3,6 @@
 #=
 In this example, we show that returning a byproduct with the forward mapping can be useful.
 
-> Work in progress!
+!!! warning "Work in progress"
+    Come back soon!
 =#
