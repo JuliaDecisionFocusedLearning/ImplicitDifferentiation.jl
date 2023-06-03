@@ -24,6 +24,19 @@ Apply `forward.f` to `x`, returning a dummy byproduct `z(x)=0` if needed.
 (forward::Forward{true})(x; kwargs...) = forward.f(x; kwargs...)
 (forward::Forward{false})(x; kwargs...) = (forward.f(x; kwargs...), 0)
 
+auto_linear_solver(A, b) = gmres(A, b)
+
+direct_linear_solver(A, b) = (A \ b, (; solved=true))
+
+function direct_presolver(A, ::T1, ::T2) where {T1<:AbstractArray,T2<:AbstractArray}
+    return lu(Matrix(A))
+end
+
+default_presolver(A, ::Any, ::Any) = A
+
+linear_solver_to_presolver(::typeof(direct_linear_solver)) = direct_presolver
+linear_solver_to_presolver(::Any) = default_presolver
+
 """
     Conditions{handle_byproduct,C}
 
@@ -59,8 +72,8 @@ Differentiable wrapper for an implicit function defined by a forward mapping and
 
 # Constructors
 
-    ImplicitFunction(f, c; linear_solver=gmres)
-    ImplicitFunction(f, c, Val(handle_byproduct); linear_solver=gmres)
+    ImplicitFunction(f, c; linear_solver=auto_linear_solver)
+    ImplicitFunction(f, c, Val(handle_byproduct); linear_solver=auto_linear_solver)
 
 Construct an `ImplicitFunction` from a forward mapping `f` and conditions `c`, both of which are Julia callables.
 While `f` does not not need to be compatible with automatic differentiation, `c` has to be.
@@ -75,7 +88,7 @@ Given `x ∈ ℝⁿ` and `y ∈ ℝᵈ`, we need as many conditions as output di
 ∂₂c(x,y(x),z(x)) * ∂y(x) = -∂₁c(x,y(x),z(x))
 ```
 This requires solving a linear system `A * J = -B`, where `A ∈ ℝᵈˣᵈ`, `B ∈ ℝᵈˣⁿ` and `J ∈ ℝᵈˣⁿ`.
-The default linear solver is `Krylov.gmres`, but this can be changed with a keyword argument.
+The default linear solver is `Krylov.gmres` when the input is a regular vector and a direct solver when the input is a static vector, but this can be changed with a keyword argument.
 
 # Fields
 
@@ -84,21 +97,50 @@ The default linear solver is `Krylov.gmres`, but this can be changed with a keyw
 - `linear_solver::LS`: a callable of the form `(A,b) -> (u,stats)` such that `Au = b` and `stats.solved ∈ {true,false}`, typically taken from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl)
 """
 struct ImplicitFunction{
-    handle_byproduct,FF<:Forward{handle_byproduct},CC<:Conditions{handle_byproduct},LS
+    handle_byproduct,FF<:Forward{handle_byproduct},CC<:Conditions{handle_byproduct},LS,P
 }
     forward::FF
     conditions::CC
     linear_solver::LS
+    presolver::P
 
     function ImplicitFunction(
-        f, c, ::Val{handle_byproduct}=Val(false); linear_solver=gmres
+        f,
+        c,
+        linear_solver,
+        presolver=linear_solver_to_presolver(linear_solver),
+        ::Val{handle_byproduct}=Val(false);
     ) where {handle_byproduct}
         forward = Forward{handle_byproduct}(f)
         conditions = Conditions{handle_byproduct}(c)
         return new{
-            handle_byproduct,typeof(forward),typeof(conditions),typeof(linear_solver)
+            handle_byproduct,
+            typeof(forward),
+            typeof(conditions),
+            typeof(linear_solver),
+            typeof(presolver),
         }(
-            forward, conditions, linear_solver
+            forward, conditions, linear_solver, presolver
+        )
+    end
+
+    function ImplicitFunction(
+        f, c, ::Val{handle_byproduct}=Val(false);
+    ) where {handle_byproduct}
+        return ImplicitFunction(
+            f, c, auto_linear_solver, default_presolver, Val(handle_byproduct)
+        )
+    end
+
+    function ImplicitFunction(
+        f, c, linear_solver, ::Val{handle_byproduct};
+    ) where {handle_byproduct}
+        return ImplicitFunction(
+            f,
+            c,
+            linear_solver,
+            linear_solver_to_presolver(linear_solver),
+            Val(handle_byproduct),
         )
     end
 end

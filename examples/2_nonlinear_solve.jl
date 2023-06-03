@@ -33,7 +33,8 @@ In this case, the optimization problem boils down to the componentwise square ro
 
 function forward_nlsolve(x; method)
     F!(storage, y) = (storage .= y .^ 2 - x)
-    initial_y = ones(eltype(x), size(x))
+    initial_y = similar(x)
+    initial_y .= 1
     result = nlsolve(F!, initial_y; method)
     return result.zero
 end

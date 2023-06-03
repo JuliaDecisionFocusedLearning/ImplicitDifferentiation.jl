@@ -7,6 +7,7 @@ version = "0.5.0-DEV"
 AbstractDifferentiation = "c29ec348-61ec-40c8-8164-b8c60e9d9f3d"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SimpleUnPack = "ce78b400-467f-4804-87d8-8f486da07d0a"
@@ -14,10 +15,12 @@ SimpleUnPack = "ce78b400-467f-4804-87d8-8f486da07d0a"
 [weakdeps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [extensions]
 ImplicitDifferentiationChainRulesExt = "ChainRulesCore"
 ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
+ImplicitDifferentiationStaticArraysExt = "StaticArrays"
 
 [compat]
 AbstractDifferentiation = "0.5"
@@ -40,14 +43,14 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "Documenter", "ForwardDiff", "JET", "JuliaFormatter", "LinearAlgebra", "NLsolve", "Optim", "Pkg", "Random", "SparseArrays", "Test", "Zygote"]
+test = ["Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "Documenter", "ForwardDiff", "JET", "JuliaFormatter", "NLsolve", "Optim", "Pkg", "Random", "SparseArrays", "StaticArrays", "Test", "Zygote"]

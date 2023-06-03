@@ -5,6 +5,7 @@ using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, unthun
 using ImplicitDifferentiation: ImplicitFunction, PullbackMul!, check_solution
 using LinearOperators: LinearOperator
 using SimpleUnPack: @unpack
+using LinearAlgebra: mul!
 
 """
     rrule(rc, implicit, x; kwargs...)
@@ -27,7 +28,7 @@ function ChainRulesCore.rrule(
     ::Val{return_byproduct};
     kwargs...,
 ) where {R,return_byproduct}
-    @unpack conditions, linear_solver = implicit
+    @unpack conditions, linear_solver, presolver = implicit
 
     y, z = implicit(x, Val(true); kwargs...)
     n, m = length(x), length(y)
@@ -40,7 +41,7 @@ function ChainRulesCore.rrule(
     Aᵀ_op = LinearOperator(R, m, m, false, false, pbmA)
     Bᵀ_op = LinearOperator(R, n, m, false, false, pbmB)
     implicit_pullback = ImplicitPullback(
-        Aᵀ_op, Bᵀ_op, linear_solver, x, Val(return_byproduct)
+        presolver(Aᵀ_op, x, y), Bᵀ_op, linear_solver, x, Val(return_byproduct)
     )
 
     if return_byproduct
@@ -69,11 +70,11 @@ end
 function (implicit_pullback_byproduct::ImplicitPullback{true})((dy, _))
     @unpack Aᵀ_op, Bᵀ_op, linear_solver, x = implicit_pullback_byproduct
     R = eltype(x)
-
-    dy_vec = convert(Vector{R}, vec(unthunk(dy)))
+    dy_vec = convert(AbstractVector{R}, vec(unthunk(dy)))
     dF_vec, stats = linear_solver(Aᵀ_op, dy_vec)
     check_solution(linear_solver, stats)
-    dx_vec = Bᵀ_op * dF_vec
+    dx_vec = vec(similar(x))
+    mul!(dx_vec, Bᵀ_op, dF_vec)
     dx_vec .*= -1
     dx = reshape(dx_vec, size(x))
     return (NoTangent(), dx, NoTangent())
