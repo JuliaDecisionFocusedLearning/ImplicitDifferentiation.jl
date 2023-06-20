@@ -1,30 +1,32 @@
 module ImplicitDifferentiationStaticArraysExt
 
 @static if isdefined(Base, :get_extension)
-    using StaticArrays: StaticVector, MMatrix, LU
+    using StaticArrays: StaticArray, MMatrix
 else
-    using ..StaticArrays: StaticVector, MMatrix, LU
+    using ..StaticArrays: StaticArray, MMatrix
 end
 
-import ImplicitDifferentiation: direct_presolver, default_presolver, auto_linear_solver
-using ImplicitDifferentiation: direct_linear_solver
-using LinearAlgebra: lu, mul!, I
+import ImplicitDifferentiation: ImplicitDifferentiation, DirectLinearSolver
+using LinearAlgebra: lu, mul!
 
-auto_linear_solver(A::LU, b) = direct_linear_solver(A, b)
+_prodsize(::Type{Tuple{}}) = 1
+_prodsize(::Type{Tuple{N1}}) where {N1} = N1
+_prodsize(::Type{Tuple{N1,N2}}) where {N1,N2} = N1 * N2
+_prodsize(::Type{Tuple{N1,N2,N3}}) where {N1,N2,N3} = N1 * N2 * N3
+_prodsize(::Type{Tuple{N1,N2,N3,N4}}) where {N1,N2,N3,N4} = N1 * N2 * N3 * N4
 
-function direct_presolver(A, ::StaticVector{N1}, y::StaticVector{N2}) where {N1,N2}
-    _A = zero(MMatrix{N1,N2,eltype(A)})
-    for i in 1:size(_A, 2)
-        v = similar(y)
-        v .= 0
-        v[i] = 1
-        mul!(@view(_A[:, i]), A, v)
+function ImplicitDifferentiation.presolve(
+    ::DirectLinearSolver, A, y::StaticArray{S,T,N}
+) where {S,T,N}
+    S_prod = _prodsize(S)
+    A_static = zero(MMatrix{S_prod,S_prod,T})
+    for i in axes(A_static, 2)
+        v = vec(similar(y))
+        v .= zero(T)
+        v[i] = one(T)
+        mul!(@view(A_static[:, i]), A, v)
     end
-    return lu(_A)
-end
-
-function default_presolver(A, x::StaticVector{N1}, y::StaticVector{N2}) where {N1,N2}
-    return direct_presolver(A, x, y)
+    return lu(A_static)
 end
 
 end

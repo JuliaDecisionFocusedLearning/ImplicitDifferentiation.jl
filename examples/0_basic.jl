@@ -147,9 +147,7 @@ We can even go higher-order by mixing the two packages (forward-over-reverse mod
 The only technical requirement is to switch the linear solver to something that can handle dual numbers:
 =#
 
-import ImplicitDifferentiation: direct_linear_solver
-
-implicit_higher_order = ImplicitFunction(forward, conditions, direct_linear_solver)
+implicit_higher_order = ImplicitFunction(forward, conditions, DirectLinearSolver())
 
 #=
 Then the Jacobian itself is differentiable.

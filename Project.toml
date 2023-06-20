@@ -24,7 +24,6 @@ ImplicitDifferentiationStaticArraysExt = "StaticArrays"
 
 [compat]
 AbstractDifferentiation = "0.5"
-Aqua = "0.6.1"
 ChainRulesCore = "1.14"
 ForwardDiff = "0.10"
 Krylov = "0.8, 0.9"

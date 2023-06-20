@@ -1,7 +1,5 @@
 module ImplicitDifferentiation
 
-using AbstractDifferentiation:
-    LazyJacobian, ReverseRuleConfigBackend, lazy_jacobian, pushforward_function
 using Krylov: KrylovStats, gmres
 using LinearOperators: LinearOperators, LinearOperator
 using LinearAlgebra: lu
@@ -9,9 +7,14 @@ using Requires: @require
 using SimpleUnPack: @unpack
 
 include("utils.jl")
+include("forward.jl")
+include("conditions.jl")
+include("linear_solver.jl")
 include("implicit_function.jl")
 
 export ImplicitFunction
+export IterativeLinearSolver, DirectLinearSolver
+export HandleByproduct, ReturnByproduct
 
 @static if !isdefined(Base, :get_extension)
     include("../ext/ImplicitDifferentiationChainRulesExt.jl")

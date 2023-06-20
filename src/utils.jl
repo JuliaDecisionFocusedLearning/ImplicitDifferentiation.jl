@@ -1,22 +1,5 @@
-struct SolverFailureException{A,B} <: Exception
-    solver::A
-    stats::B
-end
-
-function Base.show(io::IO, sfe::SolverFailureException)
-    return println(
-        io,
-        "SolverFailureException: \n Solver: $(sfe.solver) \n Solver stats: $(string(sfe.stats))",
-    )
-end
-
-function check_solution(solver, stats)
-    if stats.solved
-        return nothing
-    else
-        throw(SolverFailureException(solver, stats))
-    end
-end
+struct HandleByproduct end
+struct ReturnByproduct end
 
 """
     PushforwardMul!{P,N}
