@@ -48,23 +48,14 @@ for file in sort(readdir(EXAMPLES_DIR_MD))
     end
 end
 
-last_basic_example = 4
-basic_example_pages = filter(
-    p -> parse(Int, last(p)[1]) <= last_basic_example, example_pages
-)
-advanced_example_pages = filter(
-    p -> parse(Int, last(p)[1]) > last_basic_example, example_pages
-)
-
 pages = [
     "Home" => "index.md",
-    "Basic examples" => basic_example_pages,
-    "Advanced examples" => advanced_example_pages,
+    "Examples" => example_pages,
     "API reference" => "api.md",
     "FAQ" => "faq.md",
 ]
 
-format = Documenter.HTML(;
+fmt = Documenter.HTML(;
     prettyurls=get(ENV, "CI", "false") == "true",
     canonical="https://gdalle.github.io/ImplicitDifferentiation.jl",
     assets=String[],
@@ -76,7 +67,7 @@ makedocs(;
     authors="Guillaume Dalle, Mohamed Tarek and contributors",
     repo="https://github.com/gdalle/ImplicitDifferentiation.jl/blob/{commit}{path}#{line}",
     sitename="ImplicitDifferentiation.jl",
-    format=format,
+    format=fmt,
     pages=pages,
     linkcheck=true,
 )

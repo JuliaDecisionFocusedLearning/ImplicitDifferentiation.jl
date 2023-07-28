@@ -1,7 +1,7 @@
-# # Basic use
+# # Introduction
 
 #=
-In this example, we demonstrate the basics of our package on a simple function that is not amenable to automatic differentiation.
+We explain the basics of our package on a simple function that is not amenable to naive automatic differentiation.
 =#
 
 using ChainRulesCore  #src
