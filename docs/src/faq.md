@@ -5,7 +5,10 @@
 - Forward mode: [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
 - Reverse mode: all the packages compatible with [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)
 
-In the future, we would like to add [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) support.
+In the future, we would like to add
+
+- [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)
+- [Diffractor.jl](https://github.com/JuliaDiff/Diffractor.jl)
 
 ## Higher-dimensional arrays
 

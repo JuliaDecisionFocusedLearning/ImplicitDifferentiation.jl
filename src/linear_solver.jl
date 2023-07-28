@@ -18,7 +18,14 @@ An implementation of `AbstractLinearSolver` using `Krylov.gmres`.
 struct IterativeLinearSolver <: AbstractLinearSolver end
 
 presolve(::IterativeLinearSolver, A, y) = A
-solve(::IterativeLinearSolver, A, b) = gmres(A, b)
+
+function solve(::IterativeLinearSolver, A, b)
+    x, stats = gmres(A, b)
+    if !stats.solved
+        throw(SolverFailureException(gmres, stats))
+    end
+    return x
+end
 
 """
     DirectLinearSolver
@@ -28,7 +35,7 @@ An implementation of `AbstractLinearSolver` using the built-in `\` operator.
 struct DirectLinearSolver <: AbstractLinearSolver end
 
 presolve(::DirectLinearSolver, A, y) = lu(Matrix(A))
-solve(::DirectLinearSolver, A, b) = (A \ b, (; solved=true))
+solve(::DirectLinearSolver, A, b) = A \ b
 
 struct SolverFailureException{A,B} <: Exception
     solver::A
@@ -40,12 +47,4 @@ function Base.show(io::IO, sfe::SolverFailureException)
         io,
         "SolverFailureException: \n Linear solver: $(sfe.solver) \n Solver stats: $(string(sfe.stats))",
     )
-end
-
-function check_solution(solver, stats)
-    if stats.solved
-        return nothing
-    else
-        throw(SolverFailureException(solver, stats))
-    end
 end

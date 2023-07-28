@@ -48,10 +48,19 @@ for file in sort(readdir(EXAMPLES_DIR_MD))
     end
 end
 
+last_basic_example = 4
+basic_example_pages = filter(
+    p -> parse(Int, last(p)[1]) <= last_basic_example, example_pages
+)
+advanced_example_pages = filter(
+    p -> parse(Int, last(p)[1]) > last_basic_example, example_pages
+)
+
 pages = [
     "Home" => "index.md",
+    "Basic examples" => basic_example_pages,
+    "Advanced examples" => advanced_example_pages,
     "API reference" => "api.md",
-    "Examples" => example_pages,
     "FAQ" => "faq.md",
 ]
 

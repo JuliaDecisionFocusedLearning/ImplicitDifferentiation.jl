@@ -2,6 +2,7 @@
 
 using Aqua
 using Documenter
+using ForwardDiff
 using ImplicitDifferentiation
 using JET
 using JuliaFormatter
@@ -53,13 +54,16 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
         if VERSION >= v"1.9"
             JET.test_package(
                 ImplicitDifferentiation;
-                target_modules=(ImplicitDifferentiation,),
+                target_defined_modules=true,
                 toplevel_logger=nothing,
             )
         end
     end
     @testset verbose = false "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
+    end
+    @testset verbose = true "Systematic" begin
+        include("systematic.jl")
     end
     @testset verbose = true "Examples" begin
         for file in readdir(EXAMPLES_DIR_JL)
@@ -69,8 +73,5 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
                 include(path)
             end
         end
-    end
-    @testset verbose = true "Systematic" begin
-        include("systematic.jl")
     end
 end

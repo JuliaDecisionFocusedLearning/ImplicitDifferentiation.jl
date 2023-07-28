@@ -9,7 +9,7 @@ end
 using AbstractDifferentiation:
     AbstractDifferentiation, ForwardDiffBackend, pushforward_function
 using ImplicitDifferentiation:
-    ImplicitFunction, PushforwardMul!, ReturnByproduct, check_solution, presolve, solve
+    ImplicitFunction, PushforwardMul!, ReturnByproduct, presolve, solve
 using LinearAlgebra: lmul!, mul!
 using LinearOperators: LinearOperator
 using SimpleUnPack: @unpack
@@ -49,9 +49,8 @@ function (implicit::ImplicitFunction)(
         dₖx_vec = vec(partials.(x_and_dx, k))
         Bdx = vec(similar(y))
         mul!(Bdx, B_op, dₖx_vec)
-        dₖy_vec, stats = solve(linear_solver, A_op_presolved, Bdx)
+        dₖy_vec = solve(linear_solver, A_op_presolved, Bdx)
         lmul!(-one(R), dₖy_vec)
-        check_solution(linear_solver, stats)
         reshape(dₖy_vec, size(y))
     end
 

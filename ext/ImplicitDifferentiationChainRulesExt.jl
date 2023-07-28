@@ -3,7 +3,7 @@ module ImplicitDifferentiationChainRulesExt
 using AbstractDifferentiation: ReverseRuleConfigBackend, pullback_function
 using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, rrule, unthunk
 using ImplicitDifferentiation:
-    ImplicitFunction, PullbackMul!, ReturnByproduct, check_solution, presolve, solve
+    ImplicitFunction, PullbackMul!, ReturnByproduct, presolve, solve
 using LinearAlgebra: lmul!, mul!
 using LinearOperators: LinearOperator
 using SimpleUnPack: @unpack
@@ -14,7 +14,7 @@ using SimpleUnPack: @unpack
 
 Custom reverse rule for an [`ImplicitFunction`](@ref), to ensure compatibility with reverse mode autodiff.
 
-This is only available if ChainRulesCore.jl is loaded (extension).
+This is only available if ChainRulesCore.jl is loaded (extension), except on Julia < 1.9 where it is always available.
 
 - By default, this returns a single output `y(x)` with a pullback accepting a single cotangent `dy`.
 - If `ReturnByproduct()` is passed as an argument, this returns a couple of outputs `(y(x),z(x))` with a pullback accepting a couple of cotangents `(dy, dz)` (remember that `z(x)` is not differentiated so its cotangent is ignored).
@@ -68,13 +68,12 @@ function (implicit_pullback::ImplicitPullback)((dy, dz))
     @unpack Aᵀ_op, Bᵀ_op, linear_solver, x = implicit_pullback
     R = eltype(x)
     dy_vec = convert(AbstractVector{R}, vec(unthunk(dy)))
-    dF_vec, stats = solve(linear_solver, Aᵀ_op, dy_vec)
-    check_solution(linear_solver, stats)
+    dF_vec = solve(linear_solver, Aᵀ_op, dy_vec)
     dx_vec = vec(similar(x))
     mul!(dx_vec, Bᵀ_op, dF_vec)
     lmul!(-one(R), dx_vec)
     dx = reshape(dx_vec, size(x))
-    return (NoTangent(), dx, NoTangent())
+    return (NoTangent(), dx)
 end
 
 end
