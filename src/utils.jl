@@ -1,4 +1,19 @@
+"""
+    HandleByproduct
+
+Trivial struct specifying that the forward mapping and conditions handle a byproduct.
+
+Used in the constructor for `ImplicitFunction`.
+"""
 struct HandleByproduct end
+
+"""
+    ReturnByproduct
+
+Trivial struct specifying that we want to obtain a byproduct in addition to the solution.
+
+Used when calling an `ImplicitFunction`.
+"""
 struct ReturnByproduct end
 
 """

@@ -5,13 +5,17 @@ Differentiable wrapper for an implicit function defined by a forward mapping and
 
 # Constructors
 
-    ImplicitFunction(f, c)
-    ImplicitFunction(f, c, linear_solver)
-    ImplicitFunction(f, c, HandleByproduct())
-    ImplicitFunction(f, c, linear_solver, HandleByproduct())
-
-Construct an `ImplicitFunction` from a forward mapping `f` and conditions `c`, both of which are Julia callables.
+You can construct an `ImplicitFunction` from a forward mapping `f` and conditions `c`, both of which must be callables (function-like objects).
 While `f` does not not need to be compatible with automatic differentiation, `c` has to be.
+
+    ImplicitFunction(f, c[, HandleByproduct()])
+    ImplicitFunction(f, c, linear_solver[, HandleByproduct()])
+
+# Callable behavior
+
+An `ImplicitFunction` object `implicit` behaves like a function, and every call to it is differentiable.
+    
+    implicit(x::AbstractArray[, ReturnByproduct()]; kwargs...)
 
 # Details
 
@@ -67,21 +71,11 @@ function Base.show(io::IO, implicit::ImplicitFunction)
     return print(io, "ImplicitFunction($(forward.f), $(conditions.c), $linear_solver)")
 end
 
-"""
-    implicit(x::AbstractArray; kwargs...)
-
-Make an [`ImplicitFunction`](@ref) callable by applying the forward mapping `implicit.forward`.
-"""
 function (implicit::ImplicitFunction)(x::AbstractArray; kwargs...)
     y, z = implicit.forward(x; kwargs...)
     return y
 end
 
-"""
-    implicit(x::AbstractArray, ReturnByproduct(); kwargs...)
-
-Make an [`ImplicitFunction`](@ref) callable by applying the forward mapping `implicit.forward` and returning the byproduct.
-"""
 function (implicit::ImplicitFunction)(x::AbstractArray, ::ReturnByproduct; kwargs...)
     y, z = implicit.forward(x, ; kwargs...)
     return (y, z)

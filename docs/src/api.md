@@ -4,6 +4,10 @@
 
 ```@docs
 ImplicitFunction
+DirectLinearSolver
+IterativeLinearSolver
+HandleByproduct
+ReturnByproduct
 ```
 
 ## Internals
@@ -11,6 +15,7 @@ ImplicitFunction
 ```@docs
 ImplicitDifferentiation.Forward
 ImplicitDifferentiation.Conditions
+ImplicitDifferentiation.AbstractLinearSolver
 ImplicitDifferentiation.PushforwardMul!
 ImplicitDifferentiation.PullbackMul!
 ```
