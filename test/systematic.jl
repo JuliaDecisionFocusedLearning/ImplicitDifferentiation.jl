@@ -11,6 +11,15 @@ using Test
 using Zygote
 using Zygote: ZygoteRuleConfig
 
+@static if VERSION < v"1.9"
+    macro test_opt(x...)
+        return :()
+    end
+    macro test_call(x...)
+        return :()
+    end
+end
+
 Random.seed!(63);
 
 function is_static_array(a)
@@ -68,10 +77,8 @@ function test_implicit_call(implicit, x; y_true)
     else
         @test z2 == 0
     end
-    if VERSION >= v"1.9"
-        @test_opt target_modules = (ImplicitDifferentiation,) implicit(x)
-        @test_call target_modules = (ImplicitDifferentiation,) implicit(x)
-    end
+    @test_opt target_modules = (ImplicitDifferentiation,) implicit(x)
+    @test_call target_modules = (ImplicitDifferentiation,) implicit(x)
 end
 
 function test_implicit_forward(implicit, x; y_true, J_true)
@@ -97,10 +104,8 @@ function test_implicit_forward(implicit, x; y_true, J_true)
     else
         @test z2 == 0
     end
-    if VERSION >= v"1.9"
-        @test_opt target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
-        @test_call target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
-    end
+    @test_opt target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
+    @test_call target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
 end
 
 function test_implicit_reverse(implicit, x; y_true, J_true)
@@ -135,16 +140,14 @@ function test_implicit_reverse(implicit, x; y_true, J_true)
     else
         @test z2 == 0
     end
-    if VERSION >= v"1.9"
-        @test_skip @test_opt target_modules = (ImplicitDifferentiation,) rrule(
-            ZygoteRuleConfig(), implicit, x
-        )
-        @test_skip @test_opt target_modules = (ImplicitDifferentiation,) pb1(dy1)
-        @test_call target_modules = (ImplicitDifferentiation,) rrule(
-            ZygoteRuleConfig(), implicit, x
-        )
-        @test_call target_modules = (ImplicitDifferentiation,) pb1(dy1)
-    end
+    @test_skip @test_opt target_modules = (ImplicitDifferentiation,) rrule(
+        ZygoteRuleConfig(), implicit, x
+    )
+    @test_skip @test_opt target_modules = (ImplicitDifferentiation,) pb1(dy1)
+    @test_call target_modules = (ImplicitDifferentiation,) rrule(
+        ZygoteRuleConfig(), implicit, x
+    )
+    @test_call target_modules = (ImplicitDifferentiation,) pb1(dy1)
     # Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities
     @test_skip test_rrule(implicit, x)
     @test_skip test_rrule(x -> implicit(x, ReturnByproduct()), x)
