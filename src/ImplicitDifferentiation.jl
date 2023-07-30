@@ -1,5 +1,6 @@
 module ImplicitDifferentiation
 
+using AbstractDifferentiation: AbstractBackend
 using Krylov: KrylovStats, gmres
 using LinearOperators: LinearOperators, LinearOperator
 using LinearAlgebra: lu, SingularException

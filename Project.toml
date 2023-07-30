@@ -33,6 +33,7 @@ SimpleUnPack = "1.1"
 julia = "1.6"
 
 [extras]
+AbstractDifferentiation = "c29ec348-61ec-40c8-8164-b8c60e9d9f3d"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 ChainRulesTestUtils = "cdddcdb0-9152-4a09-a978-84456f9df70a"
@@ -52,4 +53,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "Documenter", "ForwardDiff", "JET", "JuliaFormatter", "NLsolve", "Optim", "Pkg", "Random", "SparseArrays", "StaticArrays", "Test", "Zygote"]
+test = ["AbstractDifferentiation", "Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "Documenter", "ForwardDiff", "JET", "JuliaFormatter", "NLsolve", "Optim", "Pkg", "Random", "SparseArrays", "StaticArrays", "Test", "Zygote"]

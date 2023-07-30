@@ -1,3 +1,4 @@
+using AbstractDifferentiation: ForwardDiffBackend, ZygoteBackend
 using ChainRulesCore
 using ChainRulesTestUtils
 using ForwardDiff
@@ -47,17 +48,19 @@ function mysqrt_byproduct(x::AbstractArray)
     return y, z
 end
 
-function make_implicit_sqrt(linear_solver)
+function make_implicit_sqrt(linear_solver, conditions_backend=nothing)
     forward(x) = mysqrt(x)
     conditions(x, y) = y .^ 2 .- x
-    implicit = ImplicitFunction(forward, conditions, linear_solver)
+    implicit = ImplicitFunction(forward, conditions; linear_solver, conditions_backend)
     return implicit
 end
 
-function make_implicit_sqrt_byproduct(linear_solver)
+function make_implicit_sqrt_byproduct(linear_solver, conditions_backend=nothing)
     forward(x) = mysqrt_byproduct(x)
     conditions(x, y, z) = y .^ z .- x
-    implicit = ImplicitFunction(forward, conditions, linear_solver, HandleByproduct())
+    implicit = ImplicitFunction(
+        forward, conditions, HandleByproduct(); linear_solver, conditions_backend
+    )
     return implicit
 end
 
@@ -168,19 +171,27 @@ for linear_solver in linear_solver_candidates, x in x_candidates
 
     testsetname = "$(typeof(x)) - $(typeof(linear_solver))"
     implicit_sqrt = make_implicit_sqrt(linear_solver)
+    implicit_sqrt_forwarddiff = make_implicit_sqrt(linear_solver, ForwardDiffBackend())
+    implicit_sqrt_zygote = make_implicit_sqrt(linear_solver, ZygoteBackend())
     implicit_sqrt_byproduct = make_implicit_sqrt_byproduct(linear_solver)
 
     @testset verbose = true "$testsetname" begin
         @testset "Call" begin
             test_implicit_call(implicit_sqrt, x; y_true)
+            test_implicit_call(implicit_sqrt_forwarddiff, x; y_true)
+            test_implicit_call(implicit_sqrt_zygote, x; y_true)
             test_implicit_call(implicit_sqrt_byproduct, x; y_true)
         end
         @testset "Forward" begin
             test_implicit_forward(implicit_sqrt, x; y_true, J_true)
+            test_implicit_forward(implicit_sqrt_forwarddiff, x; y_true, J_true)
+            @test_skip test_implicit_forward(implicit_sqrt_zygote, x; y_true, J_true)  # TODO: fix AD bug?
             test_implicit_forward(implicit_sqrt_byproduct, x; y_true, J_true)
         end
         @testset "Reverse" begin
             test_implicit_reverse(implicit_sqrt, x; y_true, J_true)
+            test_implicit_reverse(implicit_sqrt_forwarddiff, x; y_true, J_true)
+            @test_skip test_implicit_reverse(implicit_sqrt_zygote, x; y_true, J_true)  # TODO: fix AD bug?
             test_implicit_reverse(implicit_sqrt_byproduct, x; y_true, J_true)
         end
     end

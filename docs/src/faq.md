@@ -2,19 +2,17 @@
 
 ## Supported autodiff backends
 
-| Mode    | Backend                                                    | Support |
-| ------- | ---------------------------------------------------------- | ------- |
-| Forward | [ForwardDiff.jl]                                           | yes     |
-| Reverse | [ChainRules.jl]-compatible ([Zygote.jl], [ReverseDiff.jl]) | yes     |
-| Forward | [ChainRules.jl]-compatible ([Diffractor.jl])               | soon    |
-| Both    | [Enzyme.jl]                                                | someday |
+| Mode    | Backend                                                                | Support |
+| ------- | ---------------------------------------------------------------------- | ------- |
+| Forward | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes     |
+| Reverse | [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | yes     |
+| Forward | [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | soon    |
+| Both    | [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | someday |
 
-[ForwardDiff.jl]: https://github.com/JuliaDiff/ForwardDiff.jl
-[ChainRules.jl]: https://github.com/JuliaDiff/ChainRules.jl
-[Zygote.jl]: https://github.com/FluxML/Zygote.jl
-[ReverseDiff.jl]: https://github.com/JuliaDiff/ReverseDiff.jl
-[Enzyme.jl]: https://github.com/EnzymeAD/Enzyme.jl
-[Diffractor.jl]: https://github.com/JuliaDiff/Diffractor.jl
+Note that these are the backends supported to differentiate an `ImplicitFunction`.
+You choose one of them when you call e.g. `ForwardDiff.jacobian(implicit, x)` or `Zygote.jacobian(implicit, x)`.
+
+To differentiate the `Conditions`, you can select any backend compatible with [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl), and specify it with the `conditions_backend` argument to the `ImplicitFunction` constructor.
 
 ## Writing conditions
 
