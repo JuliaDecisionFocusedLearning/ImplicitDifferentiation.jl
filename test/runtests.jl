@@ -2,6 +2,7 @@
 
 using Aqua
 using Documenter
+using ForwardDiff
 using ImplicitDifferentiation
 using JET
 using JuliaFormatter
@@ -38,25 +39,31 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
         Aqua.test_undefined_exports(ImplicitDifferentiation)
         Aqua.test_piracy(ImplicitDifferentiation)
         Aqua.test_project_extras(ImplicitDifferentiation)
-        Aqua.test_stale_deps(ImplicitDifferentiation; ignore=[:ChainRulesCore])
+        Aqua.test_stale_deps(
+            ImplicitDifferentiation; ignore=[:AbstractDifferentiation, :ChainRulesCore]
+        )
         Aqua.test_deps_compat(ImplicitDifferentiation)
         if VERSION >= v"1.7"
             Aqua.test_project_toml_formatting(ImplicitDifferentiation)
         end
     end
     @testset verbose = true "Formatting (JuliaFormatter.jl)" begin
-        @test format(ImplicitDifferentiation; verbose=true, overwrite=false)
+        @test format(ImplicitDifferentiation; verbose=false, overwrite=false)
     end
     @testset verbose = true "Static checking (JET.jl)" begin
-        if VERSION >= v"1.8"
-            JET.test_package(ImplicitDifferentiation; toplevel_logger=nothing)
+        if VERSION >= v"1.9"
+            JET.test_package(
+                ImplicitDifferentiation;
+                target_defined_modules=true,
+                toplevel_logger=nothing,
+            )
         end
     end
     @testset verbose = false "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
     end
-    @testset verbose = true "Miscellaneous" begin
-        include("misc.jl")
+    @testset verbose = true "Systematic" begin
+        include("systematic.jl")
     end
     @testset verbose = true "Examples" begin
         for file in readdir(EXAMPLES_DIR_JL)

@@ -1,22 +1,20 @@
-struct SolverFailureException{A,B} <: Exception
-    solver::A
-    stats::B
-end
+"""
+    HandleByproduct
 
-function Base.show(io::IO, sfe::SolverFailureException)
-    return println(
-        io,
-        "SolverFailureException: \n Solver: $(sfe.solver) \n Solver stats: $(string(sfe.stats))",
-    )
-end
+Trivial struct specifying that the forward mapping and conditions handle a byproduct.
 
-function check_solution(solver, stats)
-    if stats.solved
-        return nothing
-    else
-        throw(SolverFailureException(solver, stats))
-    end
-end
+Used in the constructor for `ImplicitFunction`.
+"""
+struct HandleByproduct end
+
+"""
+    ReturnByproduct
+
+Trivial struct specifying that we want to obtain a byproduct in addition to the solution.
+
+Used when calling an `ImplicitFunction`.
+"""
+struct ReturnByproduct end
 
 """
     PushforwardMul!{P,N}
@@ -49,13 +47,17 @@ end
 function (pfm::PushforwardMul!)(res::AbstractVector, δinput_vec::AbstractVector)
     δinput = reshape(δinput_vec, pfm.input_size)
     δoutput = only(pfm.pushforward(δinput))
-    return res .= vec(δoutput)
+    for i in eachindex(IndexLinear(), res, δoutput)
+        res[i] = δoutput[i]
+    end
 end
 
 function (pbm::PullbackMul!)(res::AbstractVector, δoutput_vec::AbstractVector)
     δoutput = reshape(δoutput_vec, pbm.output_size)
     δinput = only(pbm.pullback(δoutput))
-    return res .= vec(δinput)
+    for i in eachindex(IndexLinear(), res, δinput)
+        res[i] = δinput[i]
+    end
 end
 
 ## Override this function from LinearOperators to avoid generating the whole methods table

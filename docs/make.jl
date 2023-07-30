@@ -3,6 +3,7 @@ using Documenter
 using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using Literate
+using StaticArrays: StaticArrays
 
 DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
@@ -50,24 +51,40 @@ end
 
 pages = [
     "Home" => "index.md",
-    "API reference" => "api.md",
     "Examples" => example_pages,
+    "API reference" => "api.md",
     "FAQ" => "faq.md",
 ]
 
-format = Documenter.HTML(;
+fmt = Documenter.HTML(;
     prettyurls=get(ENV, "CI", "false") == "true",
     canonical="https://gdalle.github.io/ImplicitDifferentiation.jl",
     assets=String[],
     edit_link=:commit,
 )
 
+if isdefined(Base, :get_extension)
+    extension_modules = [
+        Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationChainRulesExt)
+        Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationForwardDiffExt)
+        Base.get_extension(
+            ImplicitDifferentiation, :ImplicitDifferentiationStaticArraysExt
+        )
+    ]
+else
+    extension_modules = [
+        ImplicitDifferentiation.ImplicitDifferentiationChainRulesExt,
+        ImplicitDifferentiation.ImplicitDifferentiationForwardDiffExt,
+        ImplicitDifferentiation.ImplicitDifferentiationStaticArraysExt,
+    ]
+end
+
 makedocs(;
-    modules=[ImplicitDifferentiation],
+    modules=vcat([ImplicitDifferentiation], extension_modules),
     authors="Guillaume Dalle, Mohamed Tarek and contributors",
     repo="https://github.com/gdalle/ImplicitDifferentiation.jl/blob/{commit}{path}#{line}",
     sitename="ImplicitDifferentiation.jl",
-    format=format,
+    format=fmt,
     pages=pages,
     linkcheck=true,
 )

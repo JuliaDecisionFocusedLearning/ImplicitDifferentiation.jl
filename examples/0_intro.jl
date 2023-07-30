@@ -1,7 +1,7 @@
-# # Basic use
+# # Introduction
 
 #=
-In this example, we demonstrate the basics of our package on a simple function that is not amenable to automatic differentiation.
+We explain the basics of our package on a simple function that is not amenable to naive automatic differentiation.
 =#
 
 using ChainRulesCore  #src
@@ -147,11 +147,7 @@ We can even go higher-order by mixing the two packages (forward-over-reverse mod
 The only technical requirement is to switch the linear solver to something that can handle dual numbers:
 =#
 
-manual_linear_solver(A, b) = (Matrix(A) \ b, (solved=true,))
-
-implicit_higher_order = ImplicitFunction(
-    forward, conditions; linear_solver=manual_linear_solver
-)
+implicit_higher_order = ImplicitFunction(forward, conditions, DirectLinearSolver())
 
 #=
 Then the Jacobian itself is differentiable.

@@ -1,15 +1,8 @@
-# # Constrained optimization
+# # Advanced use cases
 
 #=
-In this example, we show how to differentiate through the solution of a constrained optimization problem:
-```math
-y(x) = \underset{y \in \mathbb{R}^m}{\mathrm{argmin}} ~ f(x, y) \quad \text{subject to} \quad g(x, y) \leq 0
-```
-The optimality conditions are a bit trickier than in the previous cases.
-We can projection on the feasible set $\mathcal{C}(x) = \{y: g(x, y) \leq 0 \}$ and exploit the convergence of projected gradient descent with step size $\eta$:
-```math
-y = \mathrm{proj}_{\mathcal{C}(x)} (y - \eta \nabla_2 f(x, y))
-```
+We dive into more advanced applications of implicit differentiation:
+- constrained optimization problems
 =#
 
 using ForwardDiff
@@ -22,7 +15,19 @@ using Zygote
 
 Random.seed!(63);
 
-# ## Implicit function
+# ## Constrained optimization
+
+#=
+First, we show how to differentiate through the solution of a constrained optimization problem:
+```math
+y(x) = \underset{y \in \mathbb{R}^m}{\mathrm{argmin}} ~ f(x, y) \quad \text{subject to} \quad g(x, y) \leq 0
+```
+The optimality conditions are a bit trickier than in the previous cases.
+We can projection on the feasible set $\mathcal{C}(x) = \{y: g(x, y) \leq 0 \}$ and exploit the convergence of projected gradient descent with step size $\eta$:
+```math
+y = \mathrm{proj}_{\mathcal{C}(x)} (y - \eta \nabla_2 f(x, y))
+```
+=#
 
 #=
 To make verification easy, we minimize the following objective:
@@ -50,7 +55,7 @@ function proj_hypercube(p)
 end
 
 function conditions_cstr_optim(x, y)
-    ∇₂f = 2 .* (y .^ 2 .- x)
+    ∇₂f = @. 4 * (y^2 - x) * y
     η = 0.1
     return y .- proj_hypercube(y .- η .* ∇₂f)
 end
@@ -74,7 +79,7 @@ implicit_cstr_optim(x) .^ 2
 
 J_thres = Diagonal([0.5 / sqrt(x[1]), 0])
 
-# ## Forward mode autodiff
+# Forward mode autodiff
 
 ForwardDiff.jacobian(implicit_cstr_optim, x)
 @test ForwardDiff.jacobian(implicit_cstr_optim, x) ≈ J_thres  #src
@@ -83,7 +88,7 @@ ForwardDiff.jacobian(implicit_cstr_optim, x)
 
 ForwardDiff.jacobian(forward_cstr_optim, x)
 
-# ## Reverse mode autodiff
+# Reverse mode autodiff
 
 Zygote.jacobian(implicit_cstr_optim, x)[1]
 @test Zygote.jacobian(implicit_cstr_optim, x)[1] ≈ J_thres  #src
