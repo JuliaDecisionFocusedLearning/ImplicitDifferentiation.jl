@@ -25,7 +25,7 @@ This is only available if ForwardDiff.jl is loaded (extension).
 - By default, this returns a single output `y_and_dy(x)`.
 - If `ReturnByproduct()` is passed as an argument, this returns a couple of outputs `(y_and_dy(x),z(x))` (remember that `z(x)` is not differentiated so `dz(x)` doesn't exist).
 
-We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
+We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u` (see [`ImplicitFunction`](@ref) for the definition of `A` and `B`).
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function (implicit::ImplicitFunction)(

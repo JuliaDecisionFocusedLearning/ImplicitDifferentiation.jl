@@ -77,6 +77,10 @@ function (implicit::ImplicitFunction)(x::AbstractArray; kwargs...)
 end
 
 function (implicit::ImplicitFunction)(x::AbstractArray, ::ReturnByproduct; kwargs...)
-    y, z = implicit.forward(x, ; kwargs...)
+    y, z = implicit.forward(x; kwargs...)
     return (y, z)
+end
+
+function handles_byproduct(implicit::ImplicitFunction)
+    return handles_byproduct(implicit.forward) && handles_byproduct(implicit.conditions)
 end

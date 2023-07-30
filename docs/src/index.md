@@ -7,7 +7,7 @@ CurrentModule = ImplicitDifferentiation
 [ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly, i.e., _forward mappings_
 
 ```math
-x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
+f: x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
 ```
 
 whose output is defined by _conditions_

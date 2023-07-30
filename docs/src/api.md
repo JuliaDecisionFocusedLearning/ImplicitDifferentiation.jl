@@ -8,6 +8,7 @@ DirectLinearSolver
 IterativeLinearSolver
 HandleByproduct
 ReturnByproduct
+ChainRulesCore.rrule
 ```
 
 ## Internals

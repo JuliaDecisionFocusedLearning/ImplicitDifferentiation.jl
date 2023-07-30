@@ -18,3 +18,5 @@ end
 
 (conditions::Conditions{true})(x, y, z; kwargs...) = conditions.c(x, y, z; kwargs...)
 (conditions::Conditions{false})(x, y, z; kwargs...) = conditions.c(x, y; kwargs...)
+
+handles_byproduct(::Conditions{byproduct}) where {byproduct} = byproduct

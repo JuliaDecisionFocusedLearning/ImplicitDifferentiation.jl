@@ -55,7 +55,7 @@ function proj_hypercube(p)
 end
 
 function conditions_cstr_optim(x, y)
-    ∇₂f = 2 .* (y .^ 2 .- x)
+    ∇₂f = @. 4 * (y^2 - x) * y
     η = 0.1
     return y .- proj_hypercube(y .- η .* ∇₂f)
 end

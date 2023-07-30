@@ -26,3 +26,5 @@ function (forward::Forward{false})(x; kwargs...)
     z = 0
     return y, z
 end
+
+handles_byproduct(::Forward{byproduct}) where {byproduct} = byproduct

@@ -66,7 +66,7 @@ The forward mapping and the conditions should accept the same set of keyword arg
 =#
 
 function conditions_optim(x, y; method)
-    ∇₂f = 2 .* (y .^ 2 .- x)
+    ∇₂f = @. 4 * (y^2 - x) * y
     return ∇₂f
 end
 
@@ -129,7 +129,7 @@ In this case, the optimization problem boils down to the componentwise square ro
 =#
 
 function forward_nlsolve(x; method)
-    F!(storage, y) = (storage .= y .^ 2 - x)
+    F!(storage, y) = (storage .= y .^ 2 .- x)
     initial_y = similar(x)
     initial_y .= 1
     result = nlsolve(F!, initial_y; method)

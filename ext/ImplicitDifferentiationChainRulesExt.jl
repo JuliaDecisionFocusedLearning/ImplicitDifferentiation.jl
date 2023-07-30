@@ -19,7 +19,7 @@ This is only available if ChainRulesCore.jl is loaded (extension), except on Jul
 - By default, this returns a single output `y(x)` with a pullback accepting a single cotangent `dy`.
 - If `ReturnByproduct()` is passed as an argument, this returns a couple of outputs `(y(x),z(x))` with a pullback accepting a couple of cotangents `(dy, dz)` (remember that `z(x)` is not differentiated so its cotangent is ignored).
 
-We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = -Bᵀu`.
+We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = -Bᵀu` (see [`ImplicitFunction`](@ref) for the definition of `A` and `B`).
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
@@ -53,7 +53,7 @@ function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R}
     (y, z), implicit_pullback = rrule(rc, implicit, x, ReturnByproduct(); kwargs...)
-    implicit_pullback_no_byproduct(dy) = implicit_pullback((dy, nothing))
+    implicit_pullback_no_byproduct(dy) = Base.front(implicit_pullback((dy, nothing)))
     return y, implicit_pullback_no_byproduct
 end
 
@@ -73,7 +73,7 @@ function (implicit_pullback::ImplicitPullback)((dy, dz))
     mul!(dx_vec, Bᵀ_op, dF_vec)
     lmul!(-one(R), dx_vec)
     dx = reshape(dx_vec, size(x))
-    return (NoTangent(), dx)
+    return (NoTangent(), dx, NoTangent())
 end
 
 end

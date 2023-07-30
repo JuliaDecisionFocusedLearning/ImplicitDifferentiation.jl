@@ -2,25 +2,36 @@
 
 ## Supported autodiff backends
 
-- Forward mode: [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
-- Reverse mode: all the packages compatible with [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)
+| Mode    | Backend                                                    | Support |
+| ------- | ---------------------------------------------------------- | ------- |
+| Forward | [ForwardDiff.jl]                                           | yes     |
+| Reverse | [ChainRules.jl]-compatible ([Zygote.jl], [ReverseDiff.jl]) | yes     |
+| Forward | [ChainRules.jl]-compatible ([Diffractor.jl])               | soon    |
+| Both    | [Enzyme.jl]                                                | someday |
 
-In the future, we would like to add
+[ForwardDiff.jl]: https://github.com/JuliaDiff/ForwardDiff.jl
+[ChainRules.jl]: https://github.com/JuliaDiff/ChainRules.jl
+[Zygote.jl]: https://github.com/FluxML/Zygote.jl
+[ReverseDiff.jl]: https://github.com/JuliaDiff/ReverseDiff.jl
+[Enzyme.jl]: https://github.com/EnzymeAD/Enzyme.jl
+[Diffractor.jl]: https://github.com/JuliaDiff/Diffractor.jl
 
-- [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)
-- [Diffractor.jl](https://github.com/JuliaDiff/Diffractor.jl)
+## Writing conditions
 
-## Higher-dimensional arrays
+We recommend that the conditions themselves do not involve calls to autodiff, even when they describe a gradient.
+Otherwise, you will need to make sure that nested autodiff works well in your case.
+For instance, if you're differentiating your implicit function in reverse mode with Zygote.jl, you may want to use [`Zygote.forwarddiff`](https://fluxml.ai/Zygote.jl/stable/utils/#Zygote.forwarddiff) to wrap the conditions and differentiate them with ForwardDiff.jl instead.
+
+## Matrices and higher-order arrays
 
 For simplicity, our examples only display functions that eat and spit out vectors.
 However, arbitrary array shapes are supported, as long as the forward mapping _and_ conditions return similar arrays.
 Beware however, sparse arrays will be densified in the differentiation process.
 
-## Scalar input / output
+## Scalars
 
 Functions that eat or spit out a single number are not supported.
-The forward mapping _and_ conditions need arrays: for example, instead of returning `value` you should return `[value]` (a 1-element `Vector`). 
-Consider using an `SVector` from [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) if you seek increased performance.
+The forward mapping _and_ conditions need arrays: for example, instead of returning `val` you should return `[val]` (a 1-element `Vector`).
 
 ## Multiple inputs / outputs
 
@@ -44,17 +55,18 @@ The same trick works for multiple outputs.
 
 ## Using byproducts
 
-At first glance, it is not obvious why we impose that the forward mapping should return a byproduct `z` in addition to `y`.
-It is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the `conditions`.
-We will provide simple examples soon.
-In the meantime, an advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
+Why would the forward mapping return a byproduct `z` in addition to `y`?
+It is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
+In that case, you may want to write the differentiation rules yourself for the conditions.
+A more advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
 
-## Differentiating byproducts
+Keep in mind that derivatives of `z` will not be computed: the byproduct is considered constant during differentiation (unlike the case of multiple outputs outlined above).
 
-Nope. Sorry. Don't even think about it.
-The package is not designed to compute derivatives of `z`, only `y`, which is why the byproduct is considered constant during differentiation.
+## Performance tips
 
-## Modeling constrained optimization problems
+If you work with small arrays (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) if you seek increased performance.
+
+## Modeling tips
 
 To express constrained optimization problems as implicit functions, you might need differentiable projections or proximal operators to write the optimality conditions.
 See [_Efficient and modular implicit differentiation_](https://arxiv.org/abs/2105.15183) for precise formulations.
