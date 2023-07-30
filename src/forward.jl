@@ -18,7 +18,7 @@ end
 
 function (forward::Forward{true})(x; kwargs...)
     yz = forward.f(x; kwargs...)
-    if !(yz isa Tuple && length * (yz) == 2)
+    if !(yz isa Tuple && length(yz) == 2)
         throw(
             ArgumentError(
                 "The forward function does not handle the by-product correctly. The forward function should return a tuple of 2 outputs, the main output and the byproduct.",
