@@ -17,8 +17,15 @@ function Base.show(io::IO, forward::Forward{byproduct}) where {byproduct}
 end
 
 function (forward::Forward{true})(x; kwargs...)
-    y, z = forward.f(x; kwargs...)
-    return y, z
+    yz = forward.f(x; kwargs...)
+    if !(yz isa Tuple && length * (yz) == 2)
+        throw(
+            ArgumentError(
+                "The forward function does not handle the by-product correctly.The forward function should return a tuple of 2 outputs, the main output and the byproduct.",
+            ),
+        )
+    end
+    return yz
 end
 
 function (forward::Forward{false})(x; kwargs...)

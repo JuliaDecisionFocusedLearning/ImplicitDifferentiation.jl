@@ -185,3 +185,16 @@ for linear_solver in linear_solver_candidates, x in x_candidates
         end
     end
 end
+
+@testset "Correct by-product handling" begin
+    f = (_) -> [1.0, 2.0]
+    c = (_, _) -> [0.0, 0.0]
+    imf1 = ImplicitFunction(f, c, HandleByproduct())
+    f = (_) -> [1.0, 2.0, 3.0]
+    imf2 = ImplicitFunction(f, c, HandleByproduct())
+    for imf in (imf1, imf2)
+        @test_throws ArgumentError(
+            "The forward function does not handle the by-product correctly.The forward function should return a tuple of 2 outputs, the main output and the byproduct.",
+        ) imf(zeros(2))
+    end
+end
