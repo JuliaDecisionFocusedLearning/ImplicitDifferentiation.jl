@@ -194,7 +194,7 @@ end
     imf2 = ImplicitFunction(f, c, HandleByproduct())
     for imf in (imf1, imf2)
         @test_throws ArgumentError(
-            "The forward function does not handle the by-product correctly.The forward function should return a tuple of 2 outputs, the main output and the byproduct.",
+            "The forward function does not handle the by-product correctly. The forward function should return a tuple of 2 outputs, the main output and the byproduct.",
         ) imf(zeros(2))
     end
 end
