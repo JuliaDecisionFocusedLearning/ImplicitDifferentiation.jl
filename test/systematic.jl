@@ -98,7 +98,7 @@ function test_implicit_forward(implicit, x; y_true, J_true)
         @test z2 == 0
     end
     if VERSION >= v"1.9"
-        @test_skip @test_opt target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
+        @test_opt target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
         @test_call target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
     end
 end

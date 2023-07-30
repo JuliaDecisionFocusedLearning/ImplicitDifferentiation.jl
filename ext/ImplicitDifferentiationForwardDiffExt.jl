@@ -45,7 +45,7 @@ function (implicit::ImplicitFunction)(
     B_op = LinearOperator(R, m, n, false, false, PushforwardMul!(pfB, size(x)))
     A_op_presolved = presolve(linear_solver, A_op, y)
 
-    dy = map(1:N) do k
+    dy = ntuple(Val(N)) do k
         dₖx_vec = vec(partials.(x_and_dx, k))
         Bdx = vec(similar(y))
         mul!(Bdx, B_op, dₖx_vec)
