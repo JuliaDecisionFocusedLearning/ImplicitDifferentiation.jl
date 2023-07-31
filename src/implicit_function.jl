@@ -41,7 +41,9 @@ struct ImplicitFunction{FF<:Forward,CC<:Conditions,LS<:AbstractLinearSolver}
     conditions::CC
     linear_solver::LS
 
-    function ImplicitFunction(f, c; linear_solver::AbstractLinearSolver)
+    function ImplicitFunction(
+        f, c; linear_solver::AbstractLinearSolver=IterativeLinearSolver()
+    )
         forward = Forward{false}(f)
         conditions = Conditions{false}(c)
         return new{typeof(forward),typeof(conditions),typeof(linear_solver)}(
@@ -49,7 +51,9 @@ struct ImplicitFunction{FF<:Forward,CC<:Conditions,LS<:AbstractLinearSolver}
         )
     end
 
-    function ImplicitFunction(f, c, ::HandleByproduct; linear_solver::AbstractLinearSolver)
+    function ImplicitFunction(
+        f, c, ::HandleByproduct; linear_solver::AbstractLinearSolver=IterativeLinearSolver()
+    )
         forward = Forward{true}(f)
         conditions = Conditions{true}(c)
         return new{typeof(forward),typeof(conditions),typeof(linear_solver)}(
