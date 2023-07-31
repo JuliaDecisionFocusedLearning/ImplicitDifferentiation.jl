@@ -15,8 +15,7 @@ using LinearOperators: LinearOperator
 using SimpleUnPack: @unpack
 
 """
-    implicit(x_and_dx::AbstractArray{<:Dual}; kwargs...)
-    implicit(x_and_dx::AbstractArray{<:Dual}, ReturnByproduct(); kwargs...)
+    implicit(x_and_dx::AbstractArray{<:Dual}[, ReturnByproduct()]; kwargs...)
 
 Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with forward mode autodiff.
 

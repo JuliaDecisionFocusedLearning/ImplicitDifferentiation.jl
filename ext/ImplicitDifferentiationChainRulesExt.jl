@@ -9,8 +9,7 @@ using LinearOperators: LinearOperator
 using SimpleUnPack: @unpack
 
 """
-    rrule(rc, implicit, x; kwargs...)
-    rrule(rc, implicit, x, ReturnByproduct(); kwargs...)
+    rrule(rc, implicit, x[, ReturnByproduct()]; kwargs...)
 
 Custom reverse rule for an [`ImplicitFunction`](@ref), to ensure compatibility with reverse mode autodiff.
 

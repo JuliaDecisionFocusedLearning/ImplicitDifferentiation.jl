@@ -2,19 +2,11 @@
 
 ## Supported autodiff backends
 
-| Mode    | Backend                                                    | Support |
-| ------- | ---------------------------------------------------------- | ------- |
-| Forward | [ForwardDiff.jl]                                           | yes     |
-| Reverse | [ChainRules.jl]-compatible ([Zygote.jl], [ReverseDiff.jl]) | yes     |
-| Forward | [ChainRules.jl]-compatible ([Diffractor.jl])               | soon    |
-| Both    | [Enzyme.jl]                                                | someday |
-
-[ForwardDiff.jl]: https://github.com/JuliaDiff/ForwardDiff.jl
-[ChainRules.jl]: https://github.com/JuliaDiff/ChainRules.jl
-[Zygote.jl]: https://github.com/FluxML/Zygote.jl
-[ReverseDiff.jl]: https://github.com/JuliaDiff/ReverseDiff.jl
-[Enzyme.jl]: https://github.com/EnzymeAD/Enzyme.jl
-[Diffractor.jl]: https://github.com/JuliaDiff/Diffractor.jl
+| Backend                                                                | Forward mode | Reverse mode |
+| ---------------------------------------------------------------------- | ------------ | ------------ |
+| [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
+| [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | yes          | soon         |
+| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | someday      | someday      |
 
 ## Writing conditions
 
