@@ -30,7 +30,7 @@ end
 """
     DirectLinearSolver
 
-An implementation of `AbstractLinearSolver` using the built-in `\` operator.
+An implementation of `AbstractLinearSolver` using the built-in backslash operator.
 """
 struct DirectLinearSolver <: AbstractLinearSolver end
 

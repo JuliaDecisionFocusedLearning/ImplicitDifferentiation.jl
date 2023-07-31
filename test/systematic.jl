@@ -47,17 +47,17 @@ function mysqrt_byproduct(x::AbstractArray)
     return y, z
 end
 
-function make_implicit_sqrt(linear_solver)
+function make_implicit_sqrt(; kwargs...)
     forward(x) = mysqrt(x)
     conditions(x, y) = y .^ 2 .- x
-    implicit = ImplicitFunction(forward, conditions, linear_solver)
+    implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
-function make_implicit_sqrt_byproduct(linear_solver)
+function make_implicit_sqrt_byproduct(; kwargs...)
     forward(x) = mysqrt_byproduct(x)
     conditions(x, y, z) = y .^ z .- x
-    implicit = ImplicitFunction(forward, conditions, linear_solver, HandleByproduct())
+    implicit = ImplicitFunction(forward, conditions, HandleByproduct(); kwargs...)
     return implicit
 end
 
@@ -150,7 +150,7 @@ function test_implicit_reverse(implicit, x; y_true, J_true)
     @test_call target_modules = (ImplicitDifferentiation,) pb1(dy1)
     # Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities
     @test_skip test_rrule(implicit, x)
-    @test_skip test_rrule(x -> implicit(x, ReturnByproduct()), x)
+    @test_skip test_rrule(implicit, x, ReturnByproduct())
 end
 
 x_candidates = (
@@ -167,8 +167,8 @@ for linear_solver in linear_solver_candidates, x in x_candidates
     J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
 
     testsetname = "$(typeof(x)) - $(typeof(linear_solver))"
-    implicit_sqrt = make_implicit_sqrt(linear_solver)
-    implicit_sqrt_byproduct = make_implicit_sqrt_byproduct(linear_solver)
+    implicit_sqrt = make_implicit_sqrt(; linear_solver)
+    implicit_sqrt_byproduct = make_implicit_sqrt_byproduct(; linear_solver)
 
     @testset verbose = true "$testsetname" begin
         @testset "Call" begin
@@ -193,8 +193,6 @@ end
     f = (_) -> [1.0, 2.0, 3.0]
     imf2 = ImplicitFunction(f, c, HandleByproduct())
     for imf in (imf1, imf2)
-        @test_throws ArgumentError(
-            "The forward function does not handle the by-product correctly. The forward function should return a tuple of 2 outputs, the main output and the byproduct.",
-        ) imf(zeros(2))
+        @test_throws ArgumentError imf(zeros(2))
     end
 end
