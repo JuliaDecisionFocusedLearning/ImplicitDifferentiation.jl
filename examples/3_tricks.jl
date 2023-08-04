@@ -136,7 +136,7 @@ x = [1.0, 1.0]
 implicit_cointoss(x)
 
 #=
-And as promised, differentiation works without taking the byproduct into account.
+Differentiation works by taking the byproduct into account but without computing a derivative for it:
 =#
 
 Zygote.withjacobian(first ∘ implicit_cointoss, x)
