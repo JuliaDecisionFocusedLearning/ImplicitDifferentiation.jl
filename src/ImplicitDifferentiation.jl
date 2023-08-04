@@ -1,21 +1,20 @@
 module ImplicitDifferentiation
 
-using Krylov: KrylovStats, gmres
+using AbstractDifferentiation: AbstractBackend, pushforward_function, pullback_function
+using Krylov: gmres
 using LinearOperators: LinearOperators, LinearOperator
-using LinearAlgebra: lu, SingularException, issuccess
+using LinearAlgebra: lu, issuccess
 using PrecompileTools: @compile_workload
 using Requires: @require
 using SimpleUnPack: @unpack
 
 include("utils.jl")
-include("forward.jl")
-include("conditions.jl")
 include("linear_solver.jl")
 include("implicit_function.jl")
+include("operators.jl")
 
 export ImplicitFunction
 export IterativeLinearSolver, DirectLinearSolver
-export HandleByproduct, ReturnByproduct
 
 @static if !isdefined(Base, :get_extension)
     include("../ext/ImplicitDifferentiationChainRulesExt.jl")
