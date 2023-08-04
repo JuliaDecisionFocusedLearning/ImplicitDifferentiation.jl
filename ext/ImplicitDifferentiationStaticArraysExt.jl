@@ -6,16 +6,15 @@ else
     using ..StaticArrays: StaticArray, MMatrix
 end
 
-import ImplicitDifferentiation: ImplicitDifferentiation, DirectLinearSolver
+import ImplicitDifferentiation: ImplicitDifferentiation, DirectLinearSolver, solve
 using LinearAlgebra: lu, mul!
 
-function ImplicitDifferentiation.presolve(
-    ::DirectLinearSolver, A, y::StaticArray{S,T,N}
-) where {S,T,N}
+function ImplicitDifferentiation.presolve(::DirectLinearSolver, A, y::StaticArray)
+    T = eltype(A)
     m = length(y)
     A_static = zero(MMatrix{m,m,T})
+    v = vec(similar(y, T))
     for i in axes(A_static, 2)
-        v = vec(similar(y))
         v .= zero(T)
         v[i] = one(T)
         mul!(@view(A_static[:, i]), A, v)

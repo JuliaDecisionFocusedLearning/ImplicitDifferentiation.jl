@@ -2,7 +2,7 @@ module ImplicitDifferentiation
 
 using Krylov: KrylovStats, gmres
 using LinearOperators: LinearOperators, LinearOperator
-using LinearAlgebra: lu, SingularException
+using LinearAlgebra: lu, SingularException, issuccess
 using Requires: @require
 using SimpleUnPack: @unpack
 
