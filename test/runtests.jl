@@ -8,7 +8,6 @@ using JET
 using JuliaFormatter
 using Pkg
 using Random
-using ReverseDiff: ReverseDiff
 using Test
 using Zygote: Zygote
 

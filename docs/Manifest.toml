@@ -329,20 +329,13 @@ deps = ["AbstractDifferentiation", "Krylov", "LinearAlgebra", "LinearOperators",
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.5.0-DEV"
+weakdeps = ["ChainRulesCore", "ForwardDiff", "StaticArrays", "Zygote"]
 
     [deps.ImplicitDifferentiation.extensions]
     ImplicitDifferentiationChainRulesExt = "ChainRulesCore"
     ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
-    ImplicitDifferentiationReverseDiffExt = "ReverseDiff"
     ImplicitDifferentiationStaticArraysExt = "StaticArrays"
     ImplicitDifferentiationZygoteExt = "Zygote"
-
-    [deps.ImplicitDifferentiation.weakdeps]
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-    ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
-    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-    Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]

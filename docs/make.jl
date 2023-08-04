@@ -3,7 +3,6 @@ using Documenter
 using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using Literate
-using ReverseDiff: ReverseDiff
 using StaticArrays: StaticArrays
 using Zygote: Zygote
 
@@ -71,7 +70,6 @@ if isdefined(Base, :get_extension)
     extension_modules = [
         Base.get_extension(ID, :ImplicitDifferentiationChainRulesExt),
         Base.get_extension(ID, :ImplicitDifferentiationForwardDiffExt),
-        Base.get_extension(ID, :ImplicitDifferentiationReverseDiffExt),
         Base.get_extension(ID, :ImplicitDifferentiationStaticArraysExt),
         Base.get_extension(ID, :ImplicitDifferentiationZygoteExt),
     ]
@@ -79,7 +77,6 @@ else
     extension_modules = [
         ID.ImplicitDifferentiationChainRulesExt,
         ID.ImplicitDifferentiationForwardDiffExt,
-        ID.ImplicitDifferentiationReverseDiffExt,
         ID.ImplicitDifferentiationStaticArraysExt,
         ID.ImplicitDifferentiationZygoteExt,
     ]
