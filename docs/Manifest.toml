@@ -2,13 +2,13 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "ff84ddc3d5227f964f2cd507ce5cbc83b4fba207"
+project_hash = "01aa55c2eb0613f5724b3240c0f6da431aa9c124"
 
 [[deps.AMD]]
-deps = ["Libdl", "LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "00163dc02b882ca5ec032400b919e5f5011dbd31"
+deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse_jll"]
+git-tree-sha1 = "d4b99dd70d7136fe75ec74d072191d688448d39c"
 uuid = "14f7f29c-3bd6-536c-9a0b-7339e30b5a3e"
-version = "0.5.0"
+version = "0.5.2"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -40,13 +40,14 @@ version = "0.5.2"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "cad4c758c0038eea30394b1b671526921ca85b21"
+git-tree-sha1 = "d92ad398961a3ed262d8bf04a1a2b8340f915fef"
 uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
-version = "1.4.0"
-weakdeps = ["ChainRulesCore"]
+version = "1.5.0"
+weakdeps = ["ChainRulesCore", "Test"]
 
     [deps.AbstractFFTs.extensions]
     AbstractFFTsChainRulesCoreExt = "ChainRulesCore"
+    AbstractFFTsTestExt = "Test"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -121,9 +122,9 @@ version = "0.3.0"
 
 [[deps.Compat]]
 deps = ["UUIDs"]
-git-tree-sha1 = "5ce999a19f4ca23ea484e92a1774a61b8ca4cf8e"
+git-tree-sha1 = "e460f044ca8b99be31d35fe54fc33a5c33dd8ed7"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "4.8.0"
+version = "4.9.0"
 weakdeps = ["Dates", "LinearAlgebra"]
 
     [deps.Compat.extensions]
@@ -177,9 +178,9 @@ version = "1.15.0"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "cf25ccb972fec4e4817764d01c82386ae94f77b4"
+git-tree-sha1 = "3dbd312d370723b6bb43ba9d02fc36abade4518d"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.18.14"
+version = "0.18.15"
 
 [[deps.DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -324,16 +325,17 @@ uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
 
 [[deps.ImplicitDifferentiation]]
-deps = ["AbstractDifferentiation", "Krylov", "LinearAlgebra", "LinearOperators", "Requires", "SimpleUnPack"]
+deps = ["AbstractDifferentiation", "Krylov", "LinearAlgebra", "LinearOperators", "PrecompileTools", "Requires", "SimpleUnPack"]
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.5.0-DEV"
-weakdeps = ["ChainRulesCore", "ForwardDiff", "StaticArrays"]
+weakdeps = ["ChainRulesCore", "ForwardDiff", "StaticArrays", "Zygote"]
 
     [deps.ImplicitDifferentiation.extensions]
     ImplicitDifferentiationChainRulesExt = "ChainRulesCore"
     ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
     ImplicitDifferentiationStaticArraysExt = "StaticArrays"
+    ImplicitDifferentiationZygoteExt = "Zygote"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -537,9 +539,9 @@ version = "0.12.3"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
-git-tree-sha1 = "4b2e829ee66d4218e0cef22c0a64ee37cf258c29"
+git-tree-sha1 = "716e24b21538abc91f6205fd1d8363f39b442851"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.7.1"
+version = "2.7.2"
 
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]

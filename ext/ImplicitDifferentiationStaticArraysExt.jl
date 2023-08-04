@@ -6,7 +6,7 @@ else
     using ..StaticArrays: StaticArray, MMatrix
 end
 
-import ImplicitDifferentiation: ImplicitDifferentiation, DirectLinearSolver, solve
+import ImplicitDifferentiation: ImplicitDifferentiation, DirectLinearSolver
 using LinearAlgebra: lu, mul!
 
 function ImplicitDifferentiation.presolve(::DirectLinearSolver, A, y::StaticArray)

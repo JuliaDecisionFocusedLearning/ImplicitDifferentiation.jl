@@ -2,14 +2,14 @@
 
 using Aqua
 using Documenter
-using ForwardDiff
+using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using JET
 using JuliaFormatter
 using Pkg
 using Random
 using Test
-using Zygote
+using Zygote: Zygote
 
 DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true

@@ -64,3 +64,11 @@ end
 
 LinearOperators.get_nargs(pfm::PushforwardMul!) = 1
 LinearOperators.get_nargs(pbm::PullbackMul!) = 1
+
+## For testing
+
+function identity_break_autodiff(x)
+    a = [0.0]
+    a[1] = float(first(x))
+    return x
+end

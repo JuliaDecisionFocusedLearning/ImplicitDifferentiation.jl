@@ -2,8 +2,8 @@ module ImplicitDifferentiationChainRulesExt
 
 using AbstractDifferentiation: ReverseRuleConfigBackend, pullback_function
 using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, rrule, unthunk
-using ImplicitDifferentiation:
-    ImplicitFunction, PullbackMul!, ReturnByproduct, presolve, solve
+using ImplicitDifferentiation: ImplicitFunction, PullbackMul!, ReturnByproduct
+using ImplicitDifferentiation: presolve, solve
 using LinearAlgebra: lmul!, mul!
 using LinearOperators: LinearOperator
 using SimpleUnPack: @unpack

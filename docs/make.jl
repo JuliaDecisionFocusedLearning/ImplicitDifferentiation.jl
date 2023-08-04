@@ -4,6 +4,9 @@ using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using Literate
 using StaticArrays: StaticArrays
+using Zygote: Zygote
+
+const ID = ImplicitDifferentiation
 
 DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
@@ -65,17 +68,17 @@ fmt = Documenter.HTML(;
 
 if isdefined(Base, :get_extension)
     extension_modules = [
-        Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationChainRulesExt)
-        Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationForwardDiffExt)
-        Base.get_extension(
-            ImplicitDifferentiation, :ImplicitDifferentiationStaticArraysExt
-        )
+        Base.get_extension(ID, :ImplicitDifferentiationChainRulesExt),
+        Base.get_extension(ID, :ImplicitDifferentiationForwardDiffExt),
+        Base.get_extension(ID, :ImplicitDifferentiationStaticArraysExt),
+        Base.get_extension(ID, :ImplicitDifferentiationZygoteExt),
     ]
 else
     extension_modules = [
-        ImplicitDifferentiation.ImplicitDifferentiationChainRulesExt,
-        ImplicitDifferentiation.ImplicitDifferentiationForwardDiffExt,
-        ImplicitDifferentiation.ImplicitDifferentiationStaticArraysExt,
+        ID.ImplicitDifferentiationChainRulesExt,
+        ID.ImplicitDifferentiationForwardDiffExt,
+        ID.ImplicitDifferentiationStaticArraysExt,
+        ID.ImplicitDifferentiationZygoteExt,
     ]
 end
 

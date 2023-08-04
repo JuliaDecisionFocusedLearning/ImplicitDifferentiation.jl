@@ -3,6 +3,7 @@ module ImplicitDifferentiation
 using Krylov: KrylovStats, gmres
 using LinearOperators: LinearOperators, LinearOperator
 using LinearAlgebra: lu, SingularException, issuccess
+using PrecompileTools: @compile_workload
 using Requires: @require
 using SimpleUnPack: @unpack
 
@@ -24,6 +25,9 @@ export HandleByproduct, ReturnByproduct
         end
         @require StaticArrays = "90137ffa-7385-5640-81b9-e52037218182" begin
             include("../ext/ImplicitDifferentiationStaticArraysExt.jl")
+        end
+        @require Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f" begin
+            include("../ext/ImplicitDifferentiationZygoteExt.jl")
         end
     end
 end

@@ -1,15 +1,17 @@
+import AbstractDifferentiation as AD
 using ChainRulesCore
 using ChainRulesTestUtils
-using ForwardDiff
-using ImplicitDifferentiation
-using ImplicitDifferentiation: handles_byproduct
+using ForwardDiff: ForwardDiff
+import ImplicitDifferentiation as ID
+using ImplicitDifferentiation: ImplicitFunction, HandleByproduct, ReturnByproduct
+using ImplicitDifferentiation: DirectLinearSolver, IterativeLinearSolver
+using ImplicitDifferentiation: identity_break_autodiff, handles_byproduct
 using JET
 using LinearAlgebra
 using Random
 using StaticArrays
 using Test
-using Zygote
-using Zygote: ZygoteRuleConfig
+using Zygote: Zygote, ZygoteRuleConfig
 
 @static if VERSION < v"1.9"
     macro test_opt(x...)
@@ -22,6 +24,8 @@ end
 
 Random.seed!(63);
 
+## Utils
+
 function is_static_array(a)
     return (
         typeof(a) <: StaticArray ||
@@ -29,21 +33,13 @@ function is_static_array(a)
     )
 end
 
-function break_forwarddiff_zygote(x)
-    a = [0.0]
-    a[1] = float(first(x))
-    return nothing
-end
-
 function mysqrt(x::AbstractArray)
-    break_forwarddiff_zygote(x)
-    return sqrt.(x)
+    return sqrt.(identity_break_autodiff(x))
 end
 
 function mysqrt_byproduct(x::AbstractArray)
-    break_forwarddiff_zygote(x)
     z = rand((2,))
-    y = x .^ (1 / z)
+    y = identity_break_autodiff(x) .^ (1 / z)
     return y, z
 end
 
@@ -60,6 +56,8 @@ function make_implicit_sqrt_byproduct(; kwargs...)
     implicit = ImplicitFunction(forward, conditions, HandleByproduct(); kwargs...)
     return implicit
 end
+
+## Low level tests
 
 function test_implicit_call(implicit, x; y_true)
     y1 = @inferred implicit(x)
@@ -82,19 +80,12 @@ function test_implicit_call(implicit, x; y_true)
         end
     end
     @testset "JET" begin
-        @test_opt target_modules = (ImplicitDifferentiation,) implicit(x)
-        @test_call target_modules = (ImplicitDifferentiation,) implicit(x)
+        @test_opt target_modules = (ID,) implicit(x)
+        @test_call target_modules = (ID,) implicit(x)
     end
 end
 
-function test_implicit_forward(implicit, x; y_true, J_true)
-    J1 = ForwardDiff.jacobian(implicit, x)
-    J2 = ForwardDiff.jacobian(x -> implicit(x, ReturnByproduct())[1], x)
-    @testset "Exact Jacobian" begin
-        @test J1 ≈ J_true
-        @test J2 ≈ J_true
-    end
-    # Low-level
+function test_implicit_duals(implicit, x; y_true)
     x_and_dx = ForwardDiff.Dual.(x, ((0, 0),))
     y_and_dy1 = @inferred implicit(x_and_dx)
     y_and_dy2, z2 = @inferred implicit(x_and_dx, ReturnByproduct())
@@ -118,24 +109,16 @@ function test_implicit_forward(implicit, x; y_true, J_true)
         end
     end
     @testset "JET" begin
-        @test_opt target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
-        @test_call target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
+        @test_opt target_modules = (ID,) implicit(x_and_dx)
+        @test_call target_modules = (ID,) implicit(x_and_dx)
     end
 end
 
-function test_implicit_reverse(implicit, x; y_true, J_true)
-    # High-level
-    J1 = Zygote.jacobian(implicit, x)[1]
-    J2 = Zygote.jacobian(x -> implicit(x, ReturnByproduct())[1], x)[1]
-    @testset "Exact Jacobian" begin
-        @test J1 ≈ J_true
-        @test J2 ≈ J_true
-    end
-    # Low-level
-    y1, pb1 = @inferred rrule(ZygoteRuleConfig(), implicit, x)
-    (y2, z2), pb2 = @inferred rrule(ZygoteRuleConfig(), implicit, x, ReturnByproduct())
-    dy1 = zeros(eltype(y1), size(y1)...)
-    dy2 = zeros(eltype(y2), size(y2)...)
+function test_implicit_rrule(rc, implicit, x; y_true, J_true)
+    y1, pb1 = @inferred rrule(rc, implicit, x)
+    (y2, z2), pb2 = @inferred rrule(rc, implicit, x, ReturnByproduct())
+    dy1 = rand(eltype(y1), size(y1)...)
+    dy2 = rand(eltype(y2), size(y2)...)
     dz2 = nothing
     dimp1, dx1 = @inferred pb1(dy1)
     dimp2, dx2, drp = @inferred pb2((dy2, dz2))
@@ -164,14 +147,10 @@ function test_implicit_reverse(implicit, x; y_true, J_true)
         end
     end
     @testset "JET" begin
-        @test_skip @test_opt target_modules = (ImplicitDifferentiation,) rrule(
-            ZygoteRuleConfig(), implicit, x
-        )
-        @test_skip @test_opt target_modules = (ImplicitDifferentiation,) pb1(dy1)
-        @test_call target_modules = (ImplicitDifferentiation,) rrule(
-            ZygoteRuleConfig(), implicit, x
-        )
-        @test_call target_modules = (ImplicitDifferentiation,) pb1(dy1)
+        @test_skip @test_opt target_modules = (ID,) rrule(rc, implicit, x)
+        @test_skip @test_opt target_modules = (ID,) pb1(dy1)
+        @test_call target_modules = (ID,) rrule(rc, implicit, x)
+        @test_call target_modules = (ID,) pb1(dy1)
     end
     @testset "ChainRulesTestUtils" begin
         # Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities
@@ -180,36 +159,67 @@ function test_implicit_reverse(implicit, x; y_true, J_true)
     end
 end
 
+## High-level tests per backend
+
+function test_implicit_forwarddiff(implicit, x; y_true, J_true)
+    J1 = ForwardDiff.jacobian(implicit, x)
+    J2 = ForwardDiff.jacobian(x -> implicit(x, ReturnByproduct())[1], x)
+    @testset "Exact Jacobian" begin
+        @test J1 ≈ J_true
+        @test J2 ≈ J_true
+    end
+    test_implicit_duals(implicit, x; y_true)
+    return nothing
+end
+
+function test_implicit_zygote(implicit, x; y_true, J_true)
+    J1 = Zygote.jacobian(implicit, x)[1]
+    J2 = Zygote.jacobian(x -> implicit(x, ReturnByproduct())[1], x)[1]
+    @testset "Exact Jacobian" begin
+        @test J1 ≈ J_true
+        @test J2 ≈ J_true
+    end
+    rc = Zygote.ZygoteRuleConfig()
+    test_implicit_rrule(rc, implicit, x; y_true, J_true)
+    return nothing
+end
+
+function test_implicit(implicit, x; y_true, J_true)
+    @testset "Call" begin
+        test_implicit_call(implicit, x; y_true)
+    end
+    @testset "ForwardDiff.jl" begin
+        test_implicit_forwarddiff(implicit, x; y_true, J_true)
+    end
+    @testset "Zygote.jl" begin
+        test_implicit_zygote(implicit, x; y_true, J_true)
+    end
+    return nothing
+end
+
+## Actual loop
+
 x_candidates = (
     rand(2), rand(2, 3, 4), SVector{2}(rand(2)), SArray{Tuple{2,3,4}}(rand(2, 3, 4))
 );
 
 linear_solver_candidates = (IterativeLinearSolver(), DirectLinearSolver())
 
-for linear_solver in linear_solver_candidates, x in x_candidates
-    if x isa StaticArray && linear_solver isa IterativeLinearSolver
-        continue
-    end
-    y_true = sqrt.(x)
-    J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
+for linear_solver in linear_solver_candidates
+    implicit_variants = (
+        make_implicit_sqrt(; linear_solver), make_implicit_sqrt_byproduct(; linear_solver)
+    )
+    for implicit in implicit_variants, x in x_candidates
+        x isa StaticArray && linear_solver isa IterativeLinearSolver && continue
 
-    testsetname = "$(typeof(x)) - $(typeof(linear_solver))"
-    implicit_sqrt = make_implicit_sqrt(; linear_solver)
-    implicit_sqrt_byproduct = make_implicit_sqrt_byproduct(; linear_solver)
+        y_true = sqrt.(x)
+        J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
 
-    @info "Systematic tests - $testsetname"
-    @testset verbose = true "$testsetname" begin
-        @testset "Call" begin
-            test_implicit_call(implicit_sqrt, x; y_true)
-            test_implicit_call(implicit_sqrt_byproduct, x; y_true)
-        end
-        @testset "Forward" begin
-            test_implicit_forward(implicit_sqrt, x; y_true, J_true)
-            test_implicit_forward(implicit_sqrt_byproduct, x; y_true, J_true)
-        end
-        @testset "Reverse" begin
-            test_implicit_reverse(implicit_sqrt, x; y_true, J_true)
-            test_implicit_reverse(implicit_sqrt_byproduct, x; y_true, J_true)
+        testsetname = "$(typeof(linear_solver)) - $(handles_byproduct(implicit)) - $(typeof(x))"
+
+        @info "Systematic tests - $testsetname"
+        @testset "$testsetname" begin
+            test_implicit(implicit, x; y_true, J_true)
         end
     end
 end
