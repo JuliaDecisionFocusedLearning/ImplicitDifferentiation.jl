@@ -1,13 +1,15 @@
 import AbstractDifferentiation as AD
 using ChainRulesCore
 using ChainRulesTestUtils
+using FiniteDifferences: FiniteDifferences
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction, identity_break_autodiff
 using ImplicitDifferentiation: DirectLinearSolver, IterativeLinearSolver
-using JET: @test_call, @test_opt
+using JET
 using LinearAlgebra
 using Random
+using ReverseDiff: ReverseDiff
 using StaticArrays
 using Test
 using Zygote: Zygote, ZygoteRuleConfig
@@ -237,8 +239,10 @@ x_candidates = (
 );
 
 linear_solver_candidates = (IterativeLinearSolver(), DirectLinearSolver())
-conditions_backend_candidates = (nothing, AD.ForwardDiffBackend())
-# conditions_backend_candidates = (nothing, AD.ForwardDiffBackend(), AD.ZygoteBackend())  # TODO: understand why ZygoteBackend fails
+conditions_backend_candidates = (nothing, AD.ForwardDiffBackend());
+# conditions_backend_failing_candidates = (
+#     AD.ZygoteBackend(), AD.FiniteDifferencesBackend, AD.ReverseDiffBackend()()
+# )  # TODO: understand why
 
 for linear_solver in linear_solver_candidates,
     conditions_backend in conditions_backend_candidates,
