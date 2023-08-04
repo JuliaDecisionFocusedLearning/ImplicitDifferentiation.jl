@@ -122,15 +122,13 @@ function conditions_cointoss(x, y, z)
 end
 
 #=
-To make sure that the implicit function you create takes this byproduct into account, just construct it like this:
+The `ImplicitFunction` is created as usual:
 =#
 
-implicit_cointoss = ImplicitFunction(
-    forward_cointoss, conditions_cointoss, HandleByproduct()
-)
+implicit_cointoss = ImplicitFunction(forward_cointoss, conditions_cointoss)
 
 #=
-Then you have two ways of calling the function: the standard way will only return `y`
+But this time, when you call it, it will return a tuple:
 =#
 
 x = [1.0, 1.0]
@@ -138,13 +136,7 @@ x = [1.0, 1.0]
 implicit_cointoss(x)
 
 #=
-Or if you also need the byproduct, you can do
+Differentiation works by taking the byproduct into account but without computing a derivative for it:
 =#
 
-implicit_cointoss(x, ReturnByproduct())
-
-#=
-But whatever you choose, the byproduct is taken into account during differentiation!
-=#
-
-Zygote.withjacobian(implicit_cointoss, x)
+Zygote.withjacobian(first ∘ implicit_cointoss, x)

@@ -1,67 +1,54 @@
 module ImplicitDifferentiationChainRulesExt
 
-using AbstractDifferentiation: ReverseRuleConfigBackend, pullback_function
+using AbstractDifferentiation: ReverseRuleConfigBackend
 using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, rrule, unthunk
-using ImplicitDifferentiation: ImplicitFunction, PullbackMul!, ReturnByproduct
-using ImplicitDifferentiation: presolve, solve
+using ImplicitDifferentiation: ImplicitFunction, reverse_operators, solve
 using LinearAlgebra: lmul!, mul!
-using LinearOperators: LinearOperator
 using SimpleUnPack: @unpack
 
 """
-    rrule(rc, implicit, x[, ReturnByproduct()]; kwargs...)
+    rrule(rc, implicit, x; kwargs...)
 
 Custom reverse rule for an [`ImplicitFunction`](@ref), to ensure compatibility with reverse mode autodiff.
 
 This is only available if ChainRulesCore.jl is loaded (extension), except on Julia < 1.9 where it is always available.
 
-- By default, this returns a single output `y(x)` with a pullback accepting a single cotangent `dy`.
-- If `ReturnByproduct()` is passed as an argument, this returns a couple of outputs `(y(x),z(x))` with a pullback accepting a couple of cotangents `(dy, dz)` (remember that `z(x)` is not differentiated so its cotangent is ignored).
-
-We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = -Bᵀu` (see [`ImplicitFunction`](@ref) for the definition of `A` and `B`).
+We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = -Bᵀu`.
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
-    rc::RuleConfig,
-    implicit::ImplicitFunction,
-    x::AbstractArray{R},
-    ::ReturnByproduct;
-    kwargs...,
-) where {R}
-    @unpack conditions, linear_solver = implicit
-
-    y, z = implicit(x, ReturnByproduct(); kwargs...)
-    n, m = length(x), length(y)
-
-    backend = ReverseRuleConfigBackend(rc)
-    pbA = pullback_function(backend, _y -> conditions(x, _y, z; kwargs...), y)
-    pbB = pullback_function(backend, _x -> conditions(_x, y, z; kwargs...), x)
-
-    Aᵀ_op = LinearOperator(R, m, m, false, false, PullbackMul!(pbA, size(y)))
-    Bᵀ_op = LinearOperator(R, n, m, false, false, PullbackMul!(pbB, size(y)))
-    Aᵀ_op_presolved = presolve(linear_solver, Aᵀ_op, y)
-
-    implicit_pullback = ImplicitPullback(Aᵀ_op_presolved, Bᵀ_op, linear_solver, x)
-
-    return (y, z), implicit_pullback
-end
-
-function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R}
-    (y, z), implicit_pullback = rrule(rc, implicit, x, ReturnByproduct(); kwargs...)
-    implicit_pullback_no_byproduct(dy) = Base.front(implicit_pullback((dy, nothing)))
-    return y, implicit_pullback_no_byproduct
+    y_or_yz = implicit(x; kwargs...)
+    backend = ReverseRuleConfigBackend(rc)
+    Aᵀ_op, Bᵀ_op = reverse_operators(backend, implicit, x, y_or_yz; kwargs)
+    byproduct = y_or_yz isa Tuple
+    implicit_pullback = ImplicitPullback{byproduct}(Aᵀ_op, Bᵀ_op, implicit.linear_solver, x)
+    return y_or_yz, implicit_pullback
 end
 
-struct ImplicitPullback{A,B,L,X}
+struct ImplicitPullback{byproduct,A,B,L,X}
     Aᵀ_op::A
     Bᵀ_op::B
     linear_solver::L
     x::X
+
+    function ImplicitPullback{byproduct}(
+        Aᵀ_op::A, Bᵀ_op::B, linear_solver::L, x::X
+    ) where {byproduct,A,B,L,X}
+        return new{byproduct,A,B,L,X}(Aᵀ_op, Bᵀ_op, linear_solver, x)
+    end
 end
 
-function (implicit_pullback::ImplicitPullback)((dy, dz))
+function (implicit_pullback::ImplicitPullback{true})((dy, dz))
+    return _apply(implicit_pullback, dy)
+end
+
+function (implicit_pullback::ImplicitPullback{false})(dy)
+    return _apply(implicit_pullback, dy)
+end
+
+function _apply(implicit_pullback::ImplicitPullback, dy)
     @unpack Aᵀ_op, Bᵀ_op, linear_solver, x = implicit_pullback
     R = eltype(x)
     dy_vec = convert(AbstractVector{R}, vec(unthunk(dy)))

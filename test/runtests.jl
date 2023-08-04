@@ -63,15 +63,19 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
         doctest(ImplicitDifferentiation)
     end
     @testset verbose = true "Systematic" begin
+        @info "Systematic tests"
         include("systematic.jl")
     end
     @testset verbose = true "Errors" begin
+        @info "Error tests"
         include("errors.jl")
     end
     @testset verbose = true "Examples" begin
+        @info "Example tests"
         for file in readdir(EXAMPLES_DIR_JL)
             path = joinpath(EXAMPLES_DIR_JL, file)
             title = markdown_title(path)
+            @info "$title"
             @testset verbose = true "$title" begin
                 include(path)
             end

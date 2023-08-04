@@ -4,13 +4,10 @@ using Test
 using Zygote
 
 @testset "Byproduct handling" begin
-    f = (_) -> [1.0, 2.0]
-    c = (_, _) -> [0.0, 0.0]
-    imf1 = ImplicitFunction(f, c, HandleByproduct())
-    @test_throws ArgumentError imf1(zeros(2))
-    f = (_) -> [1.0, 2.0, 3.0]
-    imf2 = ImplicitFunction(f, c, HandleByproduct())
-    @test_throws ArgumentError imf2(zeros(2))
+    f = (_) -> (1, 2)
+    c = (_, _) -> [0.0]
+    imf1 = ImplicitFunction(f, c)
+    @test_throws DimensionMismatch imf1(zeros(2))
 end
 
 @testset "Only accept one array" begin
