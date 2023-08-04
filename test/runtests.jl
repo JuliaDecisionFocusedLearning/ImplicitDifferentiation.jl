@@ -1,7 +1,6 @@
 ## Imports
 
 using Aqua
-using Diffractor: Diffractor
 using Documenter
 using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
