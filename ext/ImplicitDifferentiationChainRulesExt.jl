@@ -3,6 +3,7 @@ module ImplicitDifferentiationChainRulesExt
 using AbstractDifferentiation: ReverseRuleConfigBackend
 using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, rrule, unthunk
 using ImplicitDifferentiation: ImplicitFunction, reverse_operators, solve
+using LinearAlgebra: lmul!, mul!
 using SimpleUnPack: @unpack
 
 """
@@ -52,7 +53,9 @@ function _apply(implicit_pullback::ImplicitPullback, dy)
     R = eltype(x)
     dy_vec = convert(AbstractVector{R}, vec(unthunk(dy)))
     dF_vec = solve(linear_solver, Aᵀ_op, dy_vec)
-    dx_vec = Bᵀ_op * (-dF_vec)
+    dx_vec = vec(similar(x))
+    mul!(dx_vec, Bᵀ_op, dF_vec)
+    lmul!(-one(R), dx_vec)
     dx = reshape(dx_vec, size(x))
     return (NoTangent(), dx, NoTangent())
 end

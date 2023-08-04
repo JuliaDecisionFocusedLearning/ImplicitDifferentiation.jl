@@ -9,6 +9,7 @@ end
 using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend, pushforward_function
 using ImplicitDifferentiation: ImplicitFunction, DirectLinearSolver, IterativeLinearSolver
 using ImplicitDifferentiation: forward_operators, solve, identity_break_autodiff
+using LinearAlgebra: lmul!, mul!
 using PrecompileTools: @compile_workload
 
 """
@@ -33,8 +34,10 @@ function (implicit::ImplicitFunction)(
 
     dy = ntuple(Val(N)) do k
         dₖx_vec = vec(partials.(x_and_dx, k))
-        Bdx = B_op * dₖx_vec
-        dₖy_vec = -solve(implicit.linear_solver, A_op, Bdx)
+        Bdx = vec(similar(y))
+        mul!(Bdx, B_op, dₖx_vec)
+        dₖy_vec = solve(implicit.linear_solver, A_op, Bdx)
+        lmul!(-one(R), dₖy_vec)
         reshape(dₖy_vec, size(y))
     end
 

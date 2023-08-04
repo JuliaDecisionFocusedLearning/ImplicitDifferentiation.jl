@@ -241,7 +241,7 @@ linear_solver_candidates = (IterativeLinearSolver(), DirectLinearSolver())
 for linear_solver in linear_solver_candidates, x in x_candidates
     x isa StaticArray && linear_solver isa IterativeLinearSolver && continue
     testsetname = "$(typeof(linear_solver)) - $(typeof(x))"
-    @info "Systematic tests - $testsetname"
+    @info "$testsetname"
     @testset "$testsetname" begin
         test_implicit(x; linear_solver)
     end

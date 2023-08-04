@@ -16,7 +16,7 @@ While `forward` does not not need to be compatible with automatic differentiatio
 
     ImplicitFunction(forward, conditions; linear_solver=IterativeLinearSolver())
 
-There are two possible signatures for `forward` and `conditions`
+There are two possible signatures for `forward` and `conditions`, which must be consistent with one another:
 
 1. Standard: `forward(x; kwargs...) = y` and `conditions(x, y; kwargs...) = c`
 2. Byproduct: `forward(x; kwargs...) = (y, z)` and `conditions(x, y, z; kwargs...) = c`.
@@ -57,9 +57,12 @@ end
 
 function (implicit::ImplicitFunction)(x::AbstractArray; kwargs...)
     y_or_yz = implicit.forward(x; kwargs...)
-    if !(y_or_yz isa Tuple || y_or_yz isa AbstractArray)
+    if !(
+        y_or_yz isa AbstractArray ||  # 
+        (y_or_yz isa Tuple && length(y_or_yz) == 2 && y_or_yz[1] isa AbstractArray)
+    )
         throw(
-            ArgumentError(
+            DimensionMismatch(
                 "The forward mapping must return an array `y` or a tuple `(y, z)`"
             ),
         )

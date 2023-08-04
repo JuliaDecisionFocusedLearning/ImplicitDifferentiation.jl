@@ -96,7 +96,6 @@ function pullbacks_to_linops(
     return Aᵀ_op_presolved, Bᵀ_op
 end
 
-
 """
     PullbackMul!{P,N}
 

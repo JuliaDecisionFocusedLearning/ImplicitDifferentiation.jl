@@ -3,7 +3,7 @@ module ImplicitDifferentiation
 using AbstractDifferentiation: AbstractBackend, pushforward_function, pullback_function
 using Krylov: gmres
 using LinearOperators: LinearOperators, LinearOperator
-using LinearAlgebra: lu, issuccess
+using LinearAlgebra: issuccess, lu
 using PrecompileTools: @compile_workload
 using Requires: @require
 using SimpleUnPack: @unpack
