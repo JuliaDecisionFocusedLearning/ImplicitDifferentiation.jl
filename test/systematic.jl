@@ -5,7 +5,7 @@ using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction, identity_break_autodiff
 using ImplicitDifferentiation: DirectLinearSolver, IterativeLinearSolver
-using JET
+using JET: @test_call, @test_opt
 using LinearAlgebra
 using Random
 using StaticArrays
@@ -237,12 +237,17 @@ x_candidates = (
 );
 
 linear_solver_candidates = (IterativeLinearSolver(), DirectLinearSolver())
+conditions_backend_candidates = (nothing, AD.ForwardDiffBackend())
+# conditions_backend_candidates = (nothing, AD.ForwardDiffBackend(), AD.ZygoteBackend())  # TODO: understand why ZygoteBackend fails
 
-for linear_solver in linear_solver_candidates, x in x_candidates
+for linear_solver in linear_solver_candidates,
+    conditions_backend in conditions_backend_candidates,
+    x in x_candidates
+
     x isa StaticArray && linear_solver isa IterativeLinearSolver && continue
-    testsetname = "$(typeof(linear_solver)) - $(typeof(x))"
+    testsetname = "$(typeof(linear_solver)) - $(typeof(conditions_backend)) - $(typeof(x))"
     @info "$testsetname"
     @testset "$testsetname" begin
-        test_implicit(x; linear_solver)
+        test_implicit(x; linear_solver, conditions_backend)
     end
 end

@@ -2,17 +2,23 @@
 
 ## Supported autodiff backends
 
+To differentiate an `ImplicitFunction`, the following backends are supported.
+
 | Backend                                                                | Forward mode | Reverse mode |
 | ---------------------------------------------------------------------- | ------------ | ------------ |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
 | [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | yes          | soon         |
 | [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | someday      | someday      |
 
+By default, the conditions are differentiated with the same backend as the `ImplicitFunction` that contains them.
+However, this can be switched to any backend compatible with [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl) (i.e. a subtype of `AD.AbstractBackend`).
+You can specify it with the `conditions_backend` keyword argument when constructing an `ImplicitFunction`.
+
 ## Writing conditions
 
 We recommend that the conditions themselves do not involve calls to autodiff, even when they describe a gradient.
 Otherwise, you will need to make sure that nested autodiff works well in your case.
-For instance, if you're differentiating your implicit function in reverse mode with Zygote.jl, you may want to use [`Zygote.forwarddiff`](https://fluxml.ai/Zygote.jl/stable/utils/#Zygote.forwarddiff) to wrap the conditions and differentiate them with ForwardDiff.jl instead.
+For instance, if you're differentiating your implicit function (and your conditions) in reverse mode with Zygote.jl, you may want to use ForwardDiff.jl mode to compute gradients inside the conditions.
 
 ## Matrices and higher-order arrays
 
@@ -56,7 +62,7 @@ Keep in mind that derivatives of `z` will not be computed: the byproduct is cons
 
 ## Performance tips
 
-If you work with small arrays (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) if you seek increased performance.
+If you work with small arrays (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
 
 ## Modeling tips
 

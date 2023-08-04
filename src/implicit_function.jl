@@ -1,5 +1,5 @@
 """
-    ImplicitFunction{F,C,L<:AbstractLinearSolver}
+    ImplicitFunction{F,C,L,B}
 
 Differentiable wrapper for an implicit function defined by a forward mapping `y` and a set of conditions `c`.
 
@@ -12,7 +12,7 @@ This requires solving a linear system `A * J = -B`.
 # Constructors
 
 You can construct an `ImplicitFunction` from two callables (function-like objects) `forward` and `conditions`.
-While `forward` does not not need to be compatible with automatic differentiation, `conditions` has to be.
+While `forward` does not not need to be compatible with automatic differentiation, `conditions` has to be (with the provided backend if there is one).
 
     ImplicitFunction(forward, conditions; linear_solver=IterativeLinearSolver())
 
@@ -36,23 +36,30 @@ This returns exactly `implicit.forward(x; kwargs...)`, which as we mentioned can
 
 - `forward::F`
 - `conditions::C`
-- `linear_solver::L`
+- `linear_solver::L<:AbstractLinearSolver`
+- `conditions_backend::B<:Union{Nothing,AbstractBackend}`
 """
-struct ImplicitFunction{F,C,L<:AbstractLinearSolver}
+struct ImplicitFunction{F,C,L<:AbstractLinearSolver,B<:Union{Nothing,AbstractBackend}}
     forward::F
     conditions::C
     linear_solver::L
+    conditions_backend::B
 
     function ImplicitFunction(
-        forward::F, conditions::C; linear_solver::L=IterativeLinearSolver()
-    ) where {F,C,L}
-        return new{F,C,L}(forward, conditions, linear_solver)
+        forward::F,
+        conditions::C;
+        linear_solver::L=IterativeLinearSolver(),
+        conditions_backend::B=nothing,
+    ) where {F,C,L,B}
+        return new{F,C,L,B}(forward, conditions, linear_solver, conditions_backend)
     end
 end
 
 function Base.show(io::IO, implicit::ImplicitFunction)
-    @unpack forward, conditions, linear_solver = implicit
-    return print(io, "ImplicitFunction($forward, $conditions, $linear_solver)")
+    @unpack forward, conditions, linear_solver, conditions_backend = implicit
+    return print(
+        io, "ImplicitFunction($forward, $conditions, $linear_solver, $condiions_backend)"
+    )
 end
 
 function (implicit::ImplicitFunction)(x::AbstractArray; kwargs...)
