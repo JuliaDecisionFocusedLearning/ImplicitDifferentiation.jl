@@ -62,95 +62,122 @@ function make_implicit_sqrt_byproduct(; kwargs...)
 end
 
 function test_implicit_call(implicit, x; y_true)
-    @test_throws MethodError implicit("hello")
-    @test_throws MethodError implicit(x, x)
     y1 = @inferred implicit(x)
     y2, z2 = @inferred implicit(x, ReturnByproduct())
-    @test y1 ≈ y_true
-    @test y2 ≈ y_true
+    @testset "Exact value" begin
+        @test y1 ≈ y_true
+        @test y2 ≈ y_true
+    end
+    @testset "Byproduct" begin
+        if handles_byproduct(implicit)
+            @test z2 == 2
+        else
+            @test z2 == 0
+        end
+    end
     if typeof(x) <: StaticArray
-        @test is_static_array(y1)
-        @test is_static_array(y2)
+        @testset "Static arrays" begin
+            @test is_static_array(y1)
+            @test is_static_array(y2)
+        end
     end
-    if handles_byproduct(implicit)
-        @test z2 == 2
-    else
-        @test z2 == 0
+    @testset "JET" begin
+        @test_opt target_modules = (ImplicitDifferentiation,) implicit(x)
+        @test_call target_modules = (ImplicitDifferentiation,) implicit(x)
     end
-    @test_opt target_modules = (ImplicitDifferentiation,) implicit(x)
-    @test_call target_modules = (ImplicitDifferentiation,) implicit(x)
 end
 
 function test_implicit_forward(implicit, x; y_true, J_true)
-    # High-level
     J1 = ForwardDiff.jacobian(implicit, x)
     J2 = ForwardDiff.jacobian(x -> implicit(x, ReturnByproduct())[1], x)
-    @test J1 ≈ J_true
-    @test J2 ≈ J_true
+    @testset "Exact Jacobian" begin
+        @test J1 ≈ J_true
+        @test J2 ≈ J_true
+    end
     # Low-level
     x_and_dx = ForwardDiff.Dual.(x, ((0, 0),))
     y_and_dy1 = @inferred implicit(x_and_dx)
     y_and_dy2, z2 = @inferred implicit(x_and_dx, ReturnByproduct())
-    @test size(y_and_dy1) == size(y_true)
-    @test size(y_and_dy2) == size(y_true)
-    @test ForwardDiff.value.(y_and_dy1) ≈ y_true
-    @test ForwardDiff.value.(y_and_dy2) ≈ y_true
+    @testset "Dual numbers" begin
+        @test size(y_and_dy1) == size(y_true)
+        @test size(y_and_dy2) == size(y_true)
+        @test ForwardDiff.value.(y_and_dy1) ≈ y_true
+        @test ForwardDiff.value.(y_and_dy2) ≈ y_true
+    end
+    @testset "Byproduct" begin
+        if handles_byproduct(implicit)
+            @test z2 == 2
+        else
+            @test z2 == 0
+        end
+    end
     if typeof(x) <: StaticArray
-        @test is_static_array(y_and_dy1)
-        @test is_static_array(y_and_dy2)
+        @testset "Static arrays" begin
+            @test is_static_array(y_and_dy1)
+            @test is_static_array(y_and_dy2)
+        end
     end
-    if handles_byproduct(implicit)
-        @test z2 == 2
-    else
-        @test z2 == 0
+    @testset "JET" begin
+        @test_opt target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
+        @test_call target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
     end
-    @test_opt target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
-    @test_call target_modules = (ImplicitDifferentiation,) implicit(x_and_dx)
 end
 
 function test_implicit_reverse(implicit, x; y_true, J_true)
     # High-level
     J1 = Zygote.jacobian(implicit, x)[1]
     J2 = Zygote.jacobian(x -> implicit(x, ReturnByproduct())[1], x)[1]
-    @test J1 ≈ J_true
-    @test J2 ≈ J_true
+    @testset "Exact Jacobian" begin
+        @test J1 ≈ J_true
+        @test J2 ≈ J_true
+    end
     # Low-level
     y1, pb1 = @inferred rrule(ZygoteRuleConfig(), implicit, x)
     (y2, z2), pb2 = @inferred rrule(ZygoteRuleConfig(), implicit, x, ReturnByproduct())
-    @test y1 ≈ y_true
-    @test y2 ≈ y_true
     dy1 = zeros(eltype(y1), size(y1)...)
     dy2 = zeros(eltype(y2), size(y2)...)
     dz2 = nothing
     dimp1, dx1 = @inferred pb1(dy1)
     dimp2, dx2, drp = @inferred pb2((dy2, dz2))
-    @test size(dx1) == size(x)
-    @test size(dx2) == size(x)
+    @testset "Pullbacks" begin
+        @test y1 ≈ y_true
+        @test y2 ≈ y_true
+        @test size(dx1) == size(x)
+        @test size(dx2) == size(x)
+        @test dimp1 isa NoTangent
+        @test dimp2 isa NoTangent
+        @test drp isa NoTangent
+    end
+    @testset "Byproduct" begin
+        if handles_byproduct(implicit)
+            @test z2 == 2
+        else
+            @test z2 == 0
+        end
+    end
     if typeof(x) <: StaticArray
-        @test is_static_array(y1)
-        @test is_static_array(y2)
-        @test is_static_array(dx1)
-        @test is_static_array(dx2)
+        @testset "Static arrays" begin
+            @test is_static_array(y1)
+            @test is_static_array(y2)
+            @test is_static_array(dx1)
+            @test is_static_array(dx2)
+        end
     end
-    @test dimp1 isa NoTangent
-    @test dimp2 isa NoTangent
-    @test drp isa NoTangent
-    if handles_byproduct(implicit)
-        @test z2 == 2
-    else
-        @test z2 == 0
+    @testset "JET" begin
+        @test_skip @test_opt target_modules = (ImplicitDifferentiation,) rrule(
+            ZygoteRuleConfig(), implicit, x
+        )
+        @test_skip @test_opt target_modules = (ImplicitDifferentiation,) pb1(dy1)
+        @test_call target_modules = (ImplicitDifferentiation,) rrule(
+            ZygoteRuleConfig(), implicit, x
+        )
+        @test_call target_modules = (ImplicitDifferentiation,) pb1(dy1)
     end
-    @test_skip @test_opt target_modules = (ImplicitDifferentiation,) rrule(
-        ZygoteRuleConfig(), implicit, x
-    )
-    @test_skip @test_opt target_modules = (ImplicitDifferentiation,) pb1(dy1)
-    @test_call target_modules = (ImplicitDifferentiation,) rrule(
-        ZygoteRuleConfig(), implicit, x
-    )
-    @test_call target_modules = (ImplicitDifferentiation,) pb1(dy1)
-    # Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities
-    @test_skip test_rrule(implicit, x)
-    @test_skip test_rrule(implicit, x, ReturnByproduct())
+    @testset "ChainRulesTestUtils" begin
+        # Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities
+        @test_skip test_rrule(implicit, x)
+        @test_skip test_rrule(implicit, x, ReturnByproduct())
+    end
 end
 
 x_candidates = (
@@ -170,6 +197,7 @@ for linear_solver in linear_solver_candidates, x in x_candidates
     implicit_sqrt = make_implicit_sqrt(; linear_solver)
     implicit_sqrt_byproduct = make_implicit_sqrt_byproduct(; linear_solver)
 
+    @info "Systematic tests - $testsetname"
     @testset verbose = true "$testsetname" begin
         @testset "Call" begin
             test_implicit_call(implicit_sqrt, x; y_true)
@@ -183,16 +211,5 @@ for linear_solver in linear_solver_candidates, x in x_candidates
             test_implicit_reverse(implicit_sqrt, x; y_true, J_true)
             test_implicit_reverse(implicit_sqrt_byproduct, x; y_true, J_true)
         end
-    end
-end
-
-@testset "Correct by-product handling" begin
-    f = (_) -> [1.0, 2.0]
-    c = (_, _) -> [0.0, 0.0]
-    imf1 = ImplicitFunction(f, c, HandleByproduct())
-    f = (_) -> [1.0, 2.0, 3.0]
-    imf2 = ImplicitFunction(f, c, HandleByproduct())
-    for imf in (imf1, imf2)
-        @test_throws ArgumentError imf(zeros(2))
     end
 end

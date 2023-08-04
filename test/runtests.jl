@@ -65,6 +65,9 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
     @testset verbose = true "Systematic" begin
         include("systematic.jl")
     end
+    @testset verbose = true "Errors" begin
+        include("errors.jl")
+    end
     @testset verbose = true "Examples" begin
         for file in readdir(EXAMPLES_DIR_JL)
             path = joinpath(EXAMPLES_DIR_JL, file)
