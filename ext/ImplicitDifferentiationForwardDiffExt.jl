@@ -6,12 +6,13 @@ else
     using ..ForwardDiff: Dual, Partials, jacobian, partials, value
 end
 
-using AbstractDifferentiation:
-    AbstractDifferentiation, ForwardDiffBackend, pushforward_function
-using ImplicitDifferentiation:
-    ImplicitFunction, PushforwardMul!, ReturnByproduct, presolve, solve
+using AbstractDifferentiation: ForwardDiffBackend, pushforward_function
+using ImplicitDifferentiation: ImplicitFunction, PushforwardMul!, ReturnByproduct
+using ImplicitDifferentiation: DirectLinearSolver, IterativeLinearSolver
+using ImplicitDifferentiation: presolve, solve, identity_break_autodiff
 using LinearAlgebra: lmul!, mul!
 using LinearOperators: LinearOperator
+using PrecompileTools: @compile_workload
 using SimpleUnPack: @unpack
 
 """
@@ -68,6 +69,17 @@ function (implicit::ImplicitFunction)(
 ) where {T,R,N}
     y_and_dy, z = implicit(x_and_dx, ReturnByproduct(); kwargs...)
     return y_and_dy
+end
+
+@compile_workload begin
+    forward(x) = sqrt.(identity_break_autodiff(x))
+    conditions(x, y) = y .^ 2 .- x
+    for linear_solver in (DirectLinearSolver(), IterativeLinearSolver())
+        implicit = ImplicitFunction(forward, conditions; linear_solver)
+        x = rand(2)
+        implicit(x)
+        jacobian(implicit, x)
+    end
 end
 
 end

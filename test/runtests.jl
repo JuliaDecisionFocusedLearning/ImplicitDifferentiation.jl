@@ -1,15 +1,17 @@
 ## Imports
 
 using Aqua
+using Diffractor: Diffractor
 using Documenter
-using ForwardDiff
+using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using JET
 using JuliaFormatter
 using Pkg
 using Random
+using ReverseDiff: ReverseDiff
 using Test
-using Zygote
+using Zygote: Zygote
 
 DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
