@@ -6,7 +6,7 @@ else
     using ..ForwardDiff: Dual, Partials, jacobian, partials, value
 end
 
-using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend, pushforward_function
+using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend
 using ImplicitDifferentiation: ImplicitFunction, DirectLinearSolver, IterativeLinearSolver
 using ImplicitDifferentiation: forward_operators, solve, identity_break_autodiff
 using LinearAlgebra: lmul!, mul!
@@ -29,7 +29,7 @@ function (implicit::ImplicitFunction)(
     y_or_yz = implicit(x; kwargs...)
     y = _output(y_or_yz)
 
-    backend = ForwardDiffBackend()
+    backend = forward_conditions_backend(implicit)
     A_op, B_op = forward_operators(backend, implicit, x, y_or_yz; kwargs)
 
     dy = ntuple(Val(N)) do k
@@ -53,6 +53,16 @@ function (implicit::ImplicitFunction)(
     else
         return y_and_dy
     end
+end
+
+function forward_conditions_backend(::ImplicitFunction{F,C,L,Nothing}) where {F,C,L}
+    return ForwardDiffBackend()
+end
+
+function forward_conditions_backend(
+    implicit::ImplicitFunction{F,C,L,<:AbstractBackend}
+) where {F,C,L}
+    return implicit.conditions_backend
 end
 
 _output(y::AbstractArray) = y

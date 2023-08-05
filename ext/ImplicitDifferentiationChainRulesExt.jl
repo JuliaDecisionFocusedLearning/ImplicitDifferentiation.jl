@@ -1,6 +1,6 @@
 module ImplicitDifferentiationChainRulesExt
 
-using AbstractDifferentiation: ReverseRuleConfigBackend
+using AbstractDifferentiation: AbstractBackend, ReverseRuleConfigBackend
 using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, rrule, unthunk
 using ImplicitDifferentiation: ImplicitFunction, reverse_operators, solve
 using LinearAlgebra: lmul!, mul!
@@ -20,11 +20,23 @@ function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
 ) where {R}
     y_or_yz = implicit(x; kwargs...)
-    backend = ReverseRuleConfigBackend(rc)
+    backend = reverse_conditions_backend(rc, implicit)
     Aᵀ_op, Bᵀ_op = reverse_operators(backend, implicit, x, y_or_yz; kwargs)
     byproduct = y_or_yz isa Tuple
     implicit_pullback = ImplicitPullback{byproduct}(Aᵀ_op, Bᵀ_op, implicit.linear_solver, x)
     return y_or_yz, implicit_pullback
+end
+
+function reverse_conditions_backend(
+    rc::RuleConfig, ::ImplicitFunction{F,C,L,Nothing}
+) where {F,C,L}
+    return ReverseRuleConfigBackend(rc)
+end
+
+function reverse_conditions_backend(
+    ::RuleConfig, implicit::ImplicitFunction{F,C,L,<:AbstractBackend}
+) where {F,C,L}
+    return implicit.conditions_backend
 end
 
 struct ImplicitPullback{byproduct,A,B,L,X}
