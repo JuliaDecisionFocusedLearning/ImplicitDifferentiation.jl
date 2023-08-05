@@ -13,7 +13,7 @@ using LinearAlgebra: lmul!, mul!
 using PrecompileTools: @compile_workload
 
 """
-    implicit(x_and_dx::AbstractArray{<:Dual}; kwargs...)
+    implicit(x_and_dx::AbstractArray{<:Dual}, args...; kwargs...)
 
 Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with forward mode autodiff.
 
@@ -23,14 +23,14 @@ We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function (implicit::ImplicitFunction)(
-    x_and_dx::AbstractArray{Dual{T,R,N}}; kwargs...
+    x_and_dx::AbstractArray{Dual{T,R,N}}, args...; kwargs...
 ) where {T,R,N}
     x = value.(x_and_dx)
-    y_or_yz = implicit(x; kwargs...)
+    y_or_yz = implicit(x, args...; kwargs...)
     y = _output(y_or_yz)
 
     backend = forward_conditions_backend(implicit)
-    A_op, B_op = forward_operators(backend, implicit, x, y_or_yz; kwargs)
+    A_op, B_op = forward_operators(backend, implicit, x, y_or_yz, args; kwargs)
 
     dy = ntuple(Val(N)) do k
         dₖx_vec = vec(partials.(x_and_dx, k))

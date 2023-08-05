@@ -7,7 +7,7 @@ using LinearAlgebra: lmul!, mul!
 using SimpleUnPack: @unpack
 
 """
-    rrule(rc, implicit, x; kwargs...)
+    rrule(rc, implicit, x, args...; kwargs...)
 
 Custom reverse rule for an [`ImplicitFunction`](@ref), to ensure compatibility with reverse mode autodiff.
 
@@ -17,11 +17,11 @@ We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and settin
 Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
-    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}; kwargs...
+    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}, args...; kwargs...
 ) where {R}
-    y_or_yz = implicit(x; kwargs...)
+    y_or_yz = implicit(x, args...; kwargs...)
     backend = reverse_conditions_backend(rc, implicit)
-    Aᵀ_op, Bᵀ_op = reverse_operators(backend, implicit, x, y_or_yz; kwargs)
+    Aᵀ_op, Bᵀ_op = reverse_operators(backend, implicit, x, y_or_yz, args; kwargs)
     byproduct = y_or_yz isa Tuple
     implicit_pullback = ImplicitPullback{byproduct}(Aᵀ_op, Bᵀ_op, implicit.linear_solver, x)
     return y_or_yz, implicit_pullback

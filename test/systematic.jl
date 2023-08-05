@@ -6,7 +6,7 @@ using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction, identity_break_autodiff
 using ImplicitDifferentiation: DirectLinearSolver, IterativeLinearSolver
-using JET
+# using JET
 using LinearAlgebra
 using Random
 using ReverseDiff: ReverseDiff
@@ -14,14 +14,14 @@ using StaticArrays
 using Test
 using Zygote: Zygote, ZygoteRuleConfig
 
-@static if VERSION < v"1.9"
+# @static if VERSION < v"1.9"
     macro test_opt(x...)
         return :()
     end
     macro test_call(x...)
         return :()
     end
-end
+# end
 
 Random.seed!(63);
 
@@ -38,33 +38,33 @@ function mysqrt(x::AbstractArray)
     return sqrt.(identity_break_autodiff(x))
 end
 
-function make_implicit_sqrt(; kwargs...)
+function make_implicit_sqrt(args... ; kwargs...)
     forward(x) = mysqrt(x)
     conditions(x, y) = y .^ 2 .- x
-    implicit = ImplicitFunction(forward, conditions; kwargs...)
+    implicit = ImplicitFunction(forward, conditions, args...; kwargs...)
     return implicit
 end
 
-function make_implicit_sqrt_byproduct(; kwargs...)
+function make_implicit_sqrt_byproduct(args...; kwargs...)
     forward(x) = mysqrt(x), 0.5
     conditions(x, y, z) = y .^ (1 / z) .- x
-    implicit = ImplicitFunction(forward, conditions; kwargs...)
+    implicit = ImplicitFunction(forward, conditions, args...; kwargs...)
     return implicit
 end
 
-function make_implicit_power_kwargs(; kwargs...)
+function make_implicit_power_kwargs(args...; kwargs...)
     forward(x; p) = x .^ p
     conditions(x, y; p) = y .^ (1 / p) .- x
-    implicit = ImplicitFunction(forward, conditions; kwargs...)
+    implicit = ImplicitFunction(forward, conditions, args...; kwargs...)
     return implicit
 end
 
 ## Low level tests
 
-function test_implicit_call(x; kwargs...)
-    imf1 = make_implicit_sqrt(; kwargs...)
-    imf2 = make_implicit_sqrt_byproduct(; kwargs...)
-    imf3 = make_implicit_power_kwargs(; kwargs...)
+function test_implicit_call(x, args...; kwargs...)
+    imf1 = make_implicit_sqrt(args...; kwargs...)
+    imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
+    imf3 = make_implicit_power_kwargs(args...; kwargs...)
 
     y_true = sqrt.(x)
     y1 = @inferred imf1(x)
@@ -90,10 +90,10 @@ function test_implicit_call(x; kwargs...)
     end
 end
 
-function test_implicit_duals(x; kwargs...)
-    imf1 = make_implicit_sqrt(; kwargs...)
-    imf2 = make_implicit_sqrt_byproduct(; kwargs...)
-    imf3 = make_implicit_power_kwargs(; kwargs...)
+function test_implicit_duals(x, args...; kwargs...)
+    imf1 = make_implicit_sqrt(args...; kwargs...)
+    imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
+    imf3 = make_implicit_power_kwargs(args...; kwargs...)
 
     y_true = sqrt.(x)
     x_and_dx = ForwardDiff.Dual.(x, ((0, 1),))
@@ -124,10 +124,10 @@ function test_implicit_duals(x; kwargs...)
     end
 end
 
-function test_implicit_rrule(rc, x; kwargs...)
-    imf1 = make_implicit_sqrt(; kwargs...)
-    imf2 = make_implicit_sqrt_byproduct(; kwargs...)
-    imf3 = make_implicit_power_kwargs(; kwargs...)
+function test_implicit_rrule(rc, x, args...; kwargs...)
+    imf1 = make_implicit_sqrt(args...; kwargs...)
+    imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
+    imf3 = make_implicit_power_kwargs(args...; kwargs...)
 
     y_true = sqrt.(x)
     dy = rand(eltype(y_true), size(y_true)...)
@@ -180,10 +180,10 @@ end
 
 ## High-level tests per backend
 
-function test_implicit_forwarddiff(x; kwargs...)
-    imf1 = make_implicit_sqrt(; kwargs...)
-    imf2 = make_implicit_sqrt_byproduct(; kwargs...)
-    imf3 = make_implicit_power_kwargs(; kwargs...)
+function test_implicit_forwarddiff(x, args...; kwargs...)
+    imf1 = make_implicit_sqrt(args...; kwargs...)
+    imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
+    imf3 = make_implicit_power_kwargs(args...; kwargs...)
 
     J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
     J1 = ForwardDiff.jacobian(imf1, x)
@@ -198,10 +198,10 @@ function test_implicit_forwarddiff(x; kwargs...)
     return nothing
 end
 
-function test_implicit_zygote(x; kwargs...)
-    imf1 = make_implicit_sqrt(; kwargs...)
-    imf2 = make_implicit_sqrt_byproduct(; kwargs...)
-    imf3 = make_implicit_power_kwargs(; kwargs...)
+function test_implicit_zygote(x, args...; kwargs...)
+    imf1 = make_implicit_sqrt(args...; kwargs...)
+    imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
+    imf3 = make_implicit_power_kwargs(args...; kwargs...)
 
     J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
     J1 = Zygote.jacobian(imf1, x)[1]
@@ -216,18 +216,18 @@ function test_implicit_zygote(x; kwargs...)
     return nothing
 end
 
-function test_implicit(x; kwargs...)
+function test_implicit(x, args...; kwargs...)
     @testset "Call" begin
-        test_implicit_call(x; kwargs...)
+        test_implicit_call(x, args...; kwargs...)
     end
     @testset "ForwardDiff.jl" begin
-        test_implicit_forwarddiff(x; kwargs...)
-        test_implicit_duals(x; kwargs...)
+        test_implicit_forwarddiff(x, args...; kwargs...)
+        test_implicit_duals(x, args...; kwargs...)
     end
     @testset "Zygote.jl" begin
         rc = Zygote.ZygoteRuleConfig()
-        test_implicit_zygote(x; kwargs...)
-        test_implicit_rrule(rc, x; kwargs...)
+        test_implicit_zygote(x, args...; kwargs...)
+        test_implicit_rrule(rc, x, args...; kwargs...)
     end
     return nothing
 end
