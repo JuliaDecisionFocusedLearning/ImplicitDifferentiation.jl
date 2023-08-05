@@ -35,26 +35,26 @@ function is_static_array(a)
 end
 
 function mysqrt(x::AbstractArray)
-    return sqrt.(identity_break_autodiff(x))
+    return sqrt.(identity_break_autodiff(abs.(x)))
 end
 
 function make_implicit_sqrt(; kwargs...)
     forward(x) = mysqrt(x)
-    conditions(x, y) = y .^ 2 .- x
+    conditions(x, y) = y .^ 2 .- abs.(x)
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_sqrt_byproduct(; kwargs...)
     forward(x) = mysqrt(x), 0.5
-    conditions(x, y, z) = y .^ (1 / z) .- x
+    conditions(x, y, z) = y .^ (1 / z) .- abs.(x)
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_power_kwargs(; kwargs...)
-    forward(x; p) = x .^ p
-    conditions(x, y; p) = y .^ (1 / p) .- x
+    forward(x; p) = abs.(x) .^ p
+    conditions(x, y; p) = y .^ (1 / p) .- abs.(x)
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
@@ -137,18 +137,18 @@ function test_implicit_rrule(rc, x; kwargs...)
     (y2, z2), pb2 = @inferred rrule(rc, imf2, x)
     y3, pb3 = @inferred rrule(rc, imf3, x; p=0.5)
 
-    dimp1, dx1 = @inferred pb1(dy)
-    dimp2, dx2 = @inferred pb2((dy, dz))
-    dimp3, dx3 = @inferred pb3(dy)
+    dimf1, dx1 = @inferred pb1(dy)
+    dimf2, dx2 = @inferred pb2((dy, dz))
+    dimf3, dx3 = @inferred pb3(dy)
 
     @testset "Pullbacks" begin
         @test y1 ≈ y_true
         @test y2 ≈ y_true
         @test y3 ≈ y_true
         @test z2 ≈ 0.5
-        @test dimp1 isa NoTangent
-        @test dimp2 isa NoTangent
-        @test dimp3 isa NoTangent
+        @test dimf1 isa NoTangent
+        @test dimf2 isa NoTangent
+        @test dimf3 isa NoTangent
         @test size(dx1) == size(x)
         @test size(dx2) == size(x)
         @test size(dx3) == size(x)
@@ -173,8 +173,9 @@ function test_implicit_rrule(rc, x; kwargs...)
     end
 
     @testset "ChainRulesTestUtils" begin
-        # Skipped because of https://github.com/JuliaDiff/ChainRulesTestUtils.jl/issues/232 and because it detects weird type instabilities
-        @test_skip test_rrule(imf2, x)
+        test_rrule(rc, imf1, x; atol=1e-2)
+        test_rrule(rc, imf2, x; atol=1e-2)
+        test_rrule(rc, imf3, x; atol=1e-2, fkwargs=(p=0.5,))
     end
 end
 
@@ -239,10 +240,9 @@ x_candidates = (
 );
 
 linear_solver_candidates = (IterativeLinearSolver(), DirectLinearSolver())
-conditions_backend_candidates = (nothing, AD.ForwardDiffBackend());
-# conditions_backend_failing_candidates = (
-#     AD.ZygoteBackend(), AD.FiniteDifferencesBackend, AD.ReverseDiffBackend()()
-# )  # TODO: understand why
+conditions_backend_candidates = (
+    nothing, AD.ForwardDiffBackend(), AD.ZygoteBackend(), AD.ReverseDiffBackend()
+);
 
 for linear_solver in linear_solver_candidates,
     conditions_backend in conditions_backend_candidates,

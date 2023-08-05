@@ -42,9 +42,6 @@ This returns exactly `implicit.forward(x; kwargs...)`, which as we mentioned can
 - `conditions::C`
 - `linear_solver::L<:AbstractLinearSolver`
 - `conditions_backend::B<:Union{Nothing,AbstractBackend}`
-
-!!! warning "Warning"
-    At the moment, `conditions_backend` can only be `nothing` or `AD.ForwardDiffBackend()`. We are investigating why the other backends fail.
 """
 struct ImplicitFunction{F,C,L<:AbstractLinearSolver,B<:Union{Nothing,AbstractBackend}}
     forward::F
