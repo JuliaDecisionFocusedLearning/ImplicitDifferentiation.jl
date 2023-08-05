@@ -69,7 +69,7 @@ function _apply(implicit_pullback::ImplicitPullback, dy)
     mul!(dx_vec, Bᵀ_op, dF_vec)
     lmul!(-one(R), dx_vec)
     dx = reshape(dx_vec, size(x))
-    return (NoTangent(), dx, NoTangent())
+    return (NoTangent(), dx)
 end
 
 end
