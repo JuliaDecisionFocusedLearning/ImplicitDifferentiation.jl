@@ -87,8 +87,13 @@ function test_implicit_call(x; kwargs...)
     end
 
     @testset "JET" begin
+        @test_opt target_modules = (ID,) imf1(x)
         @test_opt target_modules = (ID,) imf2(x)
+        @test_opt target_modules = (ID,) imf3(x; p=0.5)
+
+        @test_call target_modules = (ID,) imf1(x)
         @test_call target_modules = (ID,) imf2(x)
+        @test_call target_modules = (ID,) imf3(x; p=0.5)
     end
 end
 
@@ -121,8 +126,13 @@ function test_implicit_duals(x; kwargs...)
     end
 
     @testset "JET" begin
+        @test_opt target_modules = (ID,) imf1(x_and_dx)
         @test_opt target_modules = (ID,) imf2(x_and_dx)
+        @test_opt target_modules = (ID,) imf3(x_and_dx; p=0.5)
+
+        @test_call target_modules = (ID,) imf1(x_and_dx)
         @test_call target_modules = (ID,) imf2(x_and_dx)
+        @test_call target_modules = (ID,) imf3(x_and_dx; p=0.5)
     end
 end
 
@@ -148,9 +158,11 @@ function test_implicit_rrule(rc, x; kwargs...)
         @test y2 ≈ y_true
         @test y3 ≈ y_true
         @test z2 ≈ 0.5
+
         @test dimf1 isa NoTangent
         @test dimf2 isa NoTangent
         @test dimf3 isa NoTangent
+
         @test size(dx1) == size(x)
         @test size(dx2) == size(x)
         @test size(dx3) == size(x)
@@ -161,6 +173,7 @@ function test_implicit_rrule(rc, x; kwargs...)
             @test is_static_array(y1)
             @test is_static_array(y2)
             @test is_static_array(y3)
+
             @test is_static_array(dx1)
             @test is_static_array(dx2)
             @test is_static_array(dx3)
@@ -168,10 +181,21 @@ function test_implicit_rrule(rc, x; kwargs...)
     end
 
     @testset "JET" begin
-        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf2, x)  # TODO: failing
-        @test_opt target_modules = (ID,) pb2(dy)
+        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf1, x)
+        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf2, x)
+        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf3, x; p=0.5)
+
+        @test_skip @test_opt target_modules = (ID,) pb1(dy)
+        @test_skip @test_opt target_modules = (ID,) pb2((dy, dz))
+        @test_skip @test_opt target_modules = (ID,) pb3(dy)
+
+        @test_call target_modules = (ID,) rrule(rc, imf1, x)
         @test_call target_modules = (ID,) rrule(rc, imf2, x)
-        @test_call target_modules = (ID,) pb2(dy)
+        @test_call target_modules = (ID,) rrule(rc, imf3, x; p=0.5)
+
+        @test_call target_modules = (ID,) pb1(dy)
+        @test_call target_modules = (ID,) pb2((dy, dz))
+        @test_call target_modules = (ID,) pb3(dy)
     end
 
     @testset "ChainRulesTestUtils" begin
@@ -237,17 +261,24 @@ end
 
 ## Actual loop
 
-x_candidates = (
-    rand(2), rand(2, 3, 4), SVector{2}(rand(2)), SArray{Tuple{2,3,4}}(rand(2, 3, 4))
-);
+linear_solver_candidates = (
+    IterativeLinearSolver(), #
+    DirectLinearSolver(), #
+)
 
-linear_solver_candidates = (IterativeLinearSolver(), DirectLinearSolver())
 conditions_backend_candidates = (
     nothing,  #
     AD.ForwardDiffBackend(),  #
     # AD.ZygoteBackend(),  # TODO: failing
     # AD.ReverseDiffBackend()  # TODO: failing
     # AD.FiniteDifferencesBackend()  # TODO: failing
+);
+
+x_candidates = (
+    rand(2), #
+    rand(2, 3, 4), #
+    SVector{2}(rand(2)), #
+    SArray{Tuple{2,3,4}}(rand(2, 3, 4)), #
 );
 
 for linear_solver in linear_solver_candidates,
