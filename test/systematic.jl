@@ -59,22 +59,32 @@ function make_implicit_power_kwargs(args...; kwargs...)
     return implicit
 end
 
+function make_implicit_power_args(args...; kwargs...)
+    forward(x, p) = x .^ p
+    conditions(x, y, p) = y .^ (1 / p) .- x
+    implicit = ImplicitFunction(forward, conditions, args...; kwargs...)
+    return implicit
+end
+
 ## Low level tests
 
 function test_implicit_call(x, args...; kwargs...)
     imf1 = make_implicit_sqrt(args...; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
     imf3 = make_implicit_power_kwargs(args...; kwargs...)
+    imf4 = make_implicit_power_args(args...; kwargs...)
 
     y_true = sqrt.(x)
     y1 = @inferred imf1(x)
     y2, z2 = @inferred imf2(x)
     y3 = @inferred imf3(x; p=0.5)
+    y4 = @inferred imf4(x, 0.5)
 
     @testset "Exact value" begin
         @test y1 ≈ y_true
         @test y2 ≈ y_true
         @test y3 ≈ y_true
+        @test y4 ≈ y_true
         @test z2 ≈ 0.5
     end
     if typeof(x) <: StaticArray
@@ -82,6 +92,7 @@ function test_implicit_call(x, args...; kwargs...)
             @test is_static_array(y1)
             @test is_static_array(y2)
             @test is_static_array(y3)
+            @test is_static_array(y4)
         end
     end
     @testset "JET" begin
@@ -94,6 +105,7 @@ function test_implicit_duals(x, args...; kwargs...)
     imf1 = make_implicit_sqrt(args...; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
     imf3 = make_implicit_power_kwargs(args...; kwargs...)
+    imf4 = make_implicit_power_args(args...; kwargs...)
 
     y_true = sqrt.(x)
     x_and_dx = ForwardDiff.Dual.(x, ((0, 1),))
@@ -102,11 +114,13 @@ function test_implicit_duals(x, args...; kwargs...)
     y_and_dy1 = @inferred imf1(x_and_dx)
     y_and_dy2, z2 = @inferred imf2(x_and_dx)
     y_and_dy3 = @inferred imf3(x_and_dx; p=0.5)
+    y_and_dy4 = @inferred imf4(x_and_dx, 0.5)
 
     @testset "Dual numbers" begin
         @test ForwardDiff.value.(y_and_dy1) ≈ y_true
         @test ForwardDiff.value.(y_and_dy2) ≈ y_true
         @test ForwardDiff.value.(y_and_dy3) ≈ y_true
+        @test ForwardDiff.value.(y_and_dy4) ≈ y_true
         @test z2 ≈ 0.5
     end
 
@@ -115,6 +129,7 @@ function test_implicit_duals(x, args...; kwargs...)
             @test is_static_array(y_and_dy1)
             @test is_static_array(y_and_dy2)
             @test is_static_array(y_and_dy3)
+            @test is_static_array(y_and_dy4)
         end
     end
 
@@ -128,6 +143,7 @@ function test_implicit_rrule(rc, x, args...; kwargs...)
     imf1 = make_implicit_sqrt(args...; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
     imf3 = make_implicit_power_kwargs(args...; kwargs...)
+    imf4 = make_implicit_power_args(args...; kwargs...)
 
     y_true = sqrt.(x)
     dy = rand(eltype(y_true), size(y_true)...)
@@ -136,22 +152,27 @@ function test_implicit_rrule(rc, x, args...; kwargs...)
     y1, pb1 = @inferred rrule(rc, imf1, x)
     (y2, z2), pb2 = @inferred rrule(rc, imf2, x)
     y3, pb3 = @inferred rrule(rc, imf3, x; p=0.5)
+    y4, pb4 = @inferred rrule(rc, imf4, x, 0.5)
 
     dimp1, dx1 = @inferred pb1(dy)
     dimp2, dx2 = @inferred pb2((dy, dz))
     dimp3, dx3 = @inferred pb3(dy)
+    dimp4, dx4 = @inferred pb4(dy)
 
     @testset "Pullbacks" begin
         @test y1 ≈ y_true
         @test y2 ≈ y_true
         @test y3 ≈ y_true
+        @test y4 ≈ y_true
         @test z2 ≈ 0.5
         @test dimp1 isa NoTangent
         @test dimp2 isa NoTangent
         @test dimp3 isa NoTangent
+        @test dimp4 isa NoTangent
         @test size(dx1) == size(x)
         @test size(dx2) == size(x)
         @test size(dx3) == size(x)
+        @test size(dx4) == size(x)
     end
 
     if typeof(x) <: StaticArray
@@ -159,9 +180,11 @@ function test_implicit_rrule(rc, x, args...; kwargs...)
             @test is_static_array(y1)
             @test is_static_array(y2)
             @test is_static_array(y3)
+            @test is_static_array(y4)
             @test is_static_array(dx1)
             @test is_static_array(dx2)
             @test is_static_array(dx3)
+            @test is_static_array(dx4)
         end
     end
 
@@ -184,16 +207,19 @@ function test_implicit_forwarddiff(x, args...; kwargs...)
     imf1 = make_implicit_sqrt(args...; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
     imf3 = make_implicit_power_kwargs(args...; kwargs...)
+    imf4 = make_implicit_power_args(args...; kwargs...)
 
     J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
     J1 = ForwardDiff.jacobian(imf1, x)
     J2 = ForwardDiff.jacobian(first ∘ imf2, x)
     J3 = ForwardDiff.jacobian(_x -> imf3(_x; p=0.5), x)
+    J4 = ForwardDiff.jacobian(_x -> imf4(_x, 0.5), x)
 
     @testset "Exact Jacobian" begin
         @test J1 ≈ J_true
         @test J2 ≈ J_true
         @test J3 ≈ J_true
+        @test J4 ≈ J_true
     end
     return nothing
 end
@@ -202,16 +228,19 @@ function test_implicit_zygote(x, args...; kwargs...)
     imf1 = make_implicit_sqrt(args...; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(args...; kwargs...)
     imf3 = make_implicit_power_kwargs(args...; kwargs...)
+    imf4 = make_implicit_power_args(args...; kwargs...)
 
     J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
     J1 = Zygote.jacobian(imf1, x)[1]
     J2 = Zygote.jacobian(first ∘ imf2, x)[1]
     J3 = Zygote.jacobian(_x -> imf3(_x; p=0.5), x)[1]
+    J4 = Zygote.jacobian(_x -> imf4(_x, 0.5), x)[1]
 
     @testset "Exact Jacobian" begin
         @test J1 ≈ J_true
         @test J2 ≈ J_true
         @test J3 ≈ J_true
+        @test J4 ≈ J_true
     end
     return nothing
 end

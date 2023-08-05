@@ -33,8 +33,8 @@ The forward mapping _and_ conditions need arrays: for example, instead of return
 
 ## Multiple inputs / outputs
 
-In this package, implicit functions can only take a single input array `x` and output a single output array `y` (plus the byproduct `z`).
-But sometimes, your forward mapping or conditions may require multiple input arrays, say `a` and `b`:
+Implicit functions have as their first positional argument an input array `x` which contains the elements to be differentiated. Implicit functions also accept further positional arguments and keyword arguments. The same goes for the conditions, as in their first two (three) positional arguments must be `x` and the output of the forward mapping  `y` (plus an optional byproduct `z`). The conditions must accept the same further positional (following the previously mentioned arguments) and keyword arguments as the forward mapping.
+But sometimes, your forward mapping or conditions may require multiple input arrays which are to be differentiated, say `a` and `b`:
 
 ```julia
 function f(a, b)
