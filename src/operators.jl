@@ -4,11 +4,16 @@ function forward_operators(
     backend::AbstractBackend,
     implicit::ImplicitFunction,
     x::AbstractArray,
-    y::AbstractArray;
+    y::AbstractArray,
+    args;
     kwargs,
 )
-    pfA = pushforward_function(backend, _y -> implicit.conditions(x, _y; kwargs...), y)
-    pfB = pushforward_function(backend, _x -> implicit.conditions(_x, y; kwargs...), x)
+    pfA = pushforward_function(
+        backend, _y -> implicit.conditions(x, _y, args...; kwargs...), y
+    )
+    pfB = pushforward_function(
+        backend, _x -> implicit.conditions(_x, y, args...; kwargs...), x
+    )
     return pushforwards_to_linops(implicit, x, y, pfA, pfB)
 end
 
@@ -16,12 +21,17 @@ function forward_operators(
     backend::AbstractBackend,
     implicit::ImplicitFunction,
     x::AbstractArray,
-    yz::Tuple;
+    yz::Tuple,
+    args;
     kwargs,
 )
     y, z = yz
-    pfA = pushforward_function(backend, _y -> implicit.conditions(x, _y, z; kwargs...), y)
-    pfB = pushforward_function(backend, _x -> implicit.conditions(_x, y, z; kwargs...), x)
+    pfA = pushforward_function(
+        backend, _y -> implicit.conditions(x, _y, z, args...; kwargs...), y
+    )
+    pfB = pushforward_function(
+        backend, _x -> implicit.conditions(_x, y, z, args...; kwargs...), x
+    )
     return pushforwards_to_linops(implicit, x, y, pfA, pfB)
 end
 
@@ -65,11 +75,16 @@ function reverse_operators(
     backend::AbstractBackend,
     implicit::ImplicitFunction,
     x::AbstractArray,
-    y::AbstractArray;
+    y::AbstractArray,
+    args;
     kwargs,
 )
-    pbAᵀ = pullback_function(backend, _y -> implicit.conditions(x, _y; kwargs...), y)
-    pbBᵀ = pullback_function(backend, _x -> implicit.conditions(_x, y; kwargs...), x)
+    pbAᵀ = pullback_function(
+        backend, _y -> implicit.conditions(x, _y, args...; kwargs...), y
+    )
+    pbBᵀ = pullback_function(
+        backend, _x -> implicit.conditions(_x, y, args...; kwargs...), x
+    )
     return pullbacks_to_linops(implicit, x, y, pbAᵀ, pbBᵀ)
 end
 
@@ -77,12 +92,17 @@ function reverse_operators(
     backend::AbstractBackend,
     implicit::ImplicitFunction,
     x::AbstractArray,
-    yz::Tuple;
+    yz::Tuple,
+    args;
     kwargs,
 )
     y, z = yz
-    pbAᵀ = pullback_function(backend, _y -> implicit.conditions(x, _y, z; kwargs...), y)
-    pbBᵀ = pullback_function(backend, _x -> implicit.conditions(_x, y, z; kwargs...), x)
+    pbAᵀ = pullback_function(
+        backend, _y -> implicit.conditions(x, _y, z, args...; kwargs...), y
+    )
+    pbBᵀ = pullback_function(
+        backend, _x -> implicit.conditions(_x, y, z, args...; kwargs...), x
+    )
     return pullbacks_to_linops(implicit, x, y, pbAᵀ, pbBᵀ)
 end
 

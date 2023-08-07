@@ -1,17 +1,12 @@
 # API reference
 
-## Public
+## Docstrings
 
-```@docs
-ImplicitFunction
-DirectLinearSolver
-IterativeLinearSolver
+```@autodocs
+Modules = [ImplicitDifferentiation]
 ```
 
-## Internals
-
 ```@docs
-ImplicitDifferentiation.AbstractLinearSolver
 ChainRulesCore.rrule
 ```
 
