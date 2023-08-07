@@ -1,7 +1,8 @@
 module ImplicitDifferentiationChainRulesExt
 
 using AbstractDifferentiation: AbstractBackend, ReverseRuleConfigBackend
-using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig, ZeroTangent, rrule, unthunk
+using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig
+using ChainRulesCore: rrule, unthunk, @not_implemented
 using ImplicitDifferentiation: ImplicitFunction, reverse_operators, solve
 using LinearAlgebra: lmul!, mul!
 using SimpleUnPack: @unpack
@@ -14,7 +15,7 @@ Custom reverse rule for an [`ImplicitFunction`](@ref), to ensure compatibility w
 This is only available if ChainRulesCore.jl is loaded (extension), except on Julia < 1.9 where it is always available.
 
 We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and setting `Jᵀv = -Bᵀu`.
-Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
+Positional and keyword arguments are passed to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray{R}, args...; kwargs...
@@ -23,7 +24,10 @@ function ChainRulesCore.rrule(
     backend = reverse_conditions_backend(rc, implicit)
     Aᵀ_op, Bᵀ_op = reverse_operators(backend, implicit, x, y_or_yz, args; kwargs)
     byproduct = y_or_yz isa Tuple
-    implicit_pullback = ImplicitPullback{byproduct}(Aᵀ_op, Bᵀ_op, implicit.linear_solver, x)
+    nbargs = length(args)
+    implicit_pullback = ImplicitPullback{byproduct,nbargs}(
+        Aᵀ_op, Bᵀ_op, implicit.linear_solver, x
+    )
     return y_or_yz, implicit_pullback
 end
 
@@ -39,16 +43,16 @@ function reverse_conditions_backend(
     return implicit.conditions_backend
 end
 
-struct ImplicitPullback{byproduct,A,B,L,X}
+struct ImplicitPullback{byproduct,nbargs,A,B,L,X}
     Aᵀ_op::A
     Bᵀ_op::B
     linear_solver::L
     x::X
 
-    function ImplicitPullback{byproduct}(
+    function ImplicitPullback{byproduct,nbargs}(
         Aᵀ_op::A, Bᵀ_op::B, linear_solver::L, x::X
-    ) where {byproduct,A,B,L,X}
-        return new{byproduct,A,B,L,X}(Aᵀ_op, Bᵀ_op, linear_solver, x)
+    ) where {byproduct,nbargs,A,B,L,X}
+        return new{byproduct,nbargs,A,B,L,X}(Aᵀ_op, Bᵀ_op, linear_solver, x)
     end
 end
 
@@ -60,7 +64,15 @@ function (implicit_pullback::ImplicitPullback{false})(dy)
     return _apply(implicit_pullback, dy)
 end
 
-function _apply(implicit_pullback::ImplicitPullback, dy)
+function unimplemented_tangent(i)
+    return @not_implemented(
+        "Tangents for positional arguments of an ImplicitFunction beyond x (the first one) are not implemented"
+    )
+end
+
+function _apply(
+    implicit_pullback::ImplicitPullback{byproduct,nbargs}, dy
+) where {byproduct,nbargs}
     @unpack Aᵀ_op, Bᵀ_op, linear_solver, x = implicit_pullback
     R = eltype(x)
     dy_vec = convert(AbstractVector{R}, vec(unthunk(dy)))
@@ -69,7 +81,7 @@ function _apply(implicit_pullback::ImplicitPullback, dy)
     mul!(dx_vec, Bᵀ_op, dF_vec)
     lmul!(-one(R), dx_vec)
     dx = reshape(dx_vec, size(x))
-    return (NoTangent(), dx, NoTangent())
+    return (NoTangent(), dx, ntuple(unimplemented_tangent, nbargs)...)
 end
 
 end

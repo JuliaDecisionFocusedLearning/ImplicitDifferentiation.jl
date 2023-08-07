@@ -20,7 +20,7 @@ Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility w
 This is only available if ForwardDiff.jl is loaded (extension).
 
 We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
-Keyword arguments are given to both `implicit.forward` and `implicit.conditions`.
+Positional and keyword arguments are passed to both `implicit.forward` and `implicit.conditions`.
 """
 function (implicit::ImplicitFunction)(
     x_and_dx::AbstractArray{Dual{T,R,N}}, args...; kwargs...
@@ -41,11 +41,8 @@ function (implicit::ImplicitFunction)(
         reshape(dₖy_vec, size(y))
     end
 
-    y_and_dy = let y = y, dy = dy
-        y_and_dy_vec = map(eachindex(y)) do i
-            Dual{T}(y[i], Partials(ntuple(k -> dy[k][i], Val(N))))
-        end
-        reshape(y_and_dy_vec, size(y))
+    y_and_dy = map(eachindex(IndexCartesian(), y)) do i
+        Dual{T}(y[i], Partials(ntuple(k -> dy[k][i], Val(N))))
     end
 
     if y_or_yz isa Tuple
