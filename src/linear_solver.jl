@@ -29,6 +29,7 @@ function solve(::IterativeLinearSolver, A, b)
     if stats.solved && !stats.inconsistent
         x_maybenan .= x
     else
+        @warn "IterativeLinearSolver failed, result contains NaNs"
         x_maybenan .= convert(T, NaN)
     end
     return x_maybenan
@@ -52,6 +53,7 @@ function solve(::DirectLinearSolver, A_lu, b)
     if issuccess(A_lu)
         x_maybenan .= A_lu \ b
     else
+        @warn "DirectLinearSolver failed, result contains NaNs"
         x_maybenan .= convert(T, NaN)
     end
     return x_maybenan

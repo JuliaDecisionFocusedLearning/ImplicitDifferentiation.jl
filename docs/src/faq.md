@@ -41,13 +41,13 @@ Well, it depends whether you want their derivatives or not.
 |                      | Derivatives needed                      | Derivatives not needed                  |
 | -------------------- | --------------------------------------- | --------------------------------------- |
 | **Multiple inputs**  | Make `x` a `ComponentVector`            | Supply `args` and `kwargs` to `forward` |
-| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `foward` return a byproduct         |
+| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `forward` return a byproduct         |
 
 We now detail each of these options.
 
 ### Multiple inputs or outputs | Derivatives needed
 
-Say your forward mapping requires multiple input arrays `(x1, x2, x3)` and returns multiple output arrays `(y4, y5)`.
+Say your forward mapping takes multiple input arrays `(x1, x2, x3)` and returns multiple output arrays `(y4, y5)`.
 And say that you want derivatives for all of them.
 
 ```julia
@@ -92,32 +92,39 @@ implicit(x)
 ```
 
 !!! warning "Warning"
-    You may run into issues trying to differentiate through the `ComponentVector` constructor, with an error message like `ERROR: Mutating arrays is not supported` for Zygote.jl.
-    Check out [this issue](https://github.com/gdalle/ImplicitDifferentiation.jl/issues/67) for a dirty workaround.
+    You may run into issues trying to differentiate through the `ComponentVector` constructor.
+    For instance, Zygote.jl will throw an error like `ERROR: Mutating arrays is not supported`. 
+    Check out [this issue](https://github.com/gdalle/ImplicitDifferentiation.jl/issues/67) for a dirty workaround involving custom chain rules for the constructor.
 
 ### Multiple inputs | Derivatives not needed
 
-If you have multiple inputs but you don't care about derivatives, then you can add further positional and keyword arguments beyond `x`.
-It is important to make sure that the forward mapping and conditions accept the same set of arguments, even if each of these functions only uses a subset.
+If your forward mapping (or conditions) takes multiple inputs but you don't care about derivatives, then you can add further positional and keyword arguments beyond `x`.
+It is important to make sure that the forward mapping and conditions accept the same set of arguments, even if each of these functions only uses a subset of them.
 
 ```julia
-forward(x, arg1, arg2; kwarg1, kwarg2) =  # do stuff, return y
-conditions(x, arg1, arg2; kwarg1, kwarg2) =  # do stuff, return y
+forward(x, arg1, arg2; kwarg1, kwarg2) = y
+conditions(x, arg1, arg2; kwarg1, kwarg2) = c
 ```
 
 All of the positional and keyword arguments apart from `x` will get zero tangents during differentiation of the implicit function.
 
 ## Multiple outputs | Derivatives not needed
 
-The same goes for the conditions, as in their first two (possibly three) positional arguments must be `x` and the output of the forward mapping  `y` (plus an optional byproduct `z`). The conditions must accept the same further positional (following the previously mentioned arguments) and keyword arguments as the forward mapping.
+The last and most tricky situation is when your forward mapping returns multiple outputs, but you only care about some of their derivatives.
+Then, you need to group the objects you don't want to differentiate into a "byproduct" `z`, returned alongside the actual output `y`.
 
+The signatures will look slightly different:
 
-Why would the forward mapping return a byproduct `z` in addition to `y`?
-It is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
-In that case, you may want to write the differentiation rules yourself for the conditions.
+```julia
+forward(x, arg1, arg2; kwarg1, kwarg2) = (y, z)
+conditions(x, y, z, arg1, arg2; kwarg1, kwarg2) =  c
+```
+
+This trick is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
+In that case, you may want to write the conditions differentiation rules yourself.
 A more advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
 
-Keep in mind that derivatives of `z` will not be computed: the byproduct is considered constant during differentiation (unlike the case of multiple outputs outlined above).
+Keep in mind that derivatives of `z` will not be computed: the byproduct is considered constant during differentiation.
 
 ## Modeling tips
 
