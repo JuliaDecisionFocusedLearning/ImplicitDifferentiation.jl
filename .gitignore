@@ -2,6 +2,7 @@
 *.jl.cov
 *.jl.mem
 /Manifest.toml
+docs/src/index.md
 /docs/build/
 docs/src/examples/*.md
 test/playground.jl
