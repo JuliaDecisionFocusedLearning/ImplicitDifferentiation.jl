@@ -21,7 +21,7 @@ include("implicit_function.jl")
 include("operators.jl")
 
 export ImplicitFunction
-export IterativeLinearSolver, DirectLinearSolver
+export AbstractLinearSolver, IterativeLinearSolver, DirectLinearSolver
 
 @static if !isdefined(Base, :get_extension)
     include("../ext/ImplicitDifferentiationChainRulesExt.jl")
