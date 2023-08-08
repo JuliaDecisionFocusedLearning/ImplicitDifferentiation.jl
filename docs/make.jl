@@ -12,6 +12,24 @@ DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
 )
 
+base_url = "https://github.com/gdalle/ImplicitDifferentiation.jl/blob/main/"
+
+open(joinpath(@__DIR__, "src", "index.md"), "w") do io
+    # Point to source license file
+    println(
+        io,
+        """
+        ```@meta
+        EditURL = "$(base_url)README.md"
+        ```
+        """,
+    )
+    # Write the contents out below the meta block
+    for line in eachline(joinpath(dirname(@__DIR__), "README.md"))
+        println(io, line)
+    end
+end
+
 function markdown_title(path)
     title = "?"
     open(path, "r") do file
@@ -90,8 +108,11 @@ makedocs(;
     format=fmt,
     pages=pages,
     linkcheck=true,
+    strict=true,
 )
 
 deploydocs(;
     repo="github.com/gdalle/ImplicitDifferentiation.jl", devbranch="main", push_preview=true
 )
+
+rm(joinpath(@__DIR__, "src", "index.md"))

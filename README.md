@@ -1,13 +1,58 @@
 # ImplicitDifferentiation.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://gdalle.github.io/ImplicitDifferentiation.jl/stable)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://gdalle.github.io/ImplicitDifferentiation.jl/dev)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://gdalle.github.io/ImplicitDifferentiation.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://gdalle.github.io/ImplicitDifferentiation.jl/dev/)
 [![Build Status](https://github.com/gdalle/ImplicitDifferentiation.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/gdalle/ImplicitDifferentiation.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/gdalle/ImplicitDifferentiation.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/gdalle/ImplicitDifferentiation.jl)
+[![Coverage](https://codecov.io/gh/gdalle/ImplicitDifferentiation.jl/branch/main/graph/badge.svg)](https://app.codecov.io/gh/gdalle/ImplicitDifferentiation.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Automatic differentiation of implicit functions.
+[ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly, i.e., _forward mappings_
 
-If you just need a quick introduction, check out our [JuliaCon 2022 talk](https://youtu.be/TkVDcujVNJ4) and the associated [Pluto notebook](https://gdalle.github.io/ImplicitDifferentiation-JuliaCon2022/).
-If you plan to use our package, see the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/dev) for details.
+```math
+x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
+```
+
+whose output is defined by _conditions_
+
+```math
+c(x,y(x)) = 0 \in \mathbb{R}^m
+```
+
+## Background
+
+Implicit differentiation is useful to differentiate through two types of functions:
+
+- Those for which automatic differentiation fails. Reasons can vary depending on your backend, but the most common include calls to external solvers, mutating operations or type restrictions.
+- Those for which automatic differentiation is very slow. A common example is iterative procedures like fixed point equations or optimization algorithms.
+
+If you just need a quick overview, check out our [JuliaCon 2022 talk](https://www.youtube.com/watch?v=TkVDcujVNJ4&feature=youtu.be).
+If you want a deeper dive into the theory, you can refer to the paper [_Efficient and modular implicit differentiation_](https://papers.nips.cc/paper_files/paper/2022/hash/228b9279ecf9bbafe582406850c57115-Abstract-Conference.html) by Blondel et al. (2022).
+
+## Getting started
+
+To install the stable version, open a Julia REPL and run:
+
+```julia
+julia> using Pkg; Pkg.add("ImplicitDifferentiation")
+```
+
+For the latest version, run this instead:
+
+```julia
+julia> using Pkg; Pkg.add(url="https://github.com/gdalle/ImplicitDifferentiation.jl")
+```
+
+Please read the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/stable/), especially the examples and FAQ.
+
+## Related projects
+
+In Julia:
+
+- [jump-dev/DiffOpt.jl](https://github.com/jump-dev/DiffOpt.jl): differentiation of convex optimization problems
+- [axelparmentier/InferOpt.jl](https://github.com/axelparmentier/InferOpt.jl): approximate differentiation of combinatorial optimization problems
+- [JuliaNonconvex/NonconvexUtils.jl](https://github.com/JuliaNonconvex/NonconvexUtils.jl): contains the original implementation from which this package drew inspiration
+
+In Python:
+
+- [google/jaxopt](https://github.com/google/jaxopt): hardware accelerated, batchable and differentiable optimizers in JAX
