@@ -256,11 +256,11 @@ function test_implicit_forwarddiff(x; kwargs...)
     imf3 = make_implicit_power_args(; kwargs...)
     imf4 = make_implicit_power_kwargs(; kwargs...)
 
-    J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
     J1 = ForwardDiff.jacobian(imf1, x)
     J2 = ForwardDiff.jacobian(first ∘ imf2, x)
     J3 = ForwardDiff.jacobian(_x -> imf3(_x, 0.5), x)
     J4 = ForwardDiff.jacobian(_x -> imf4(_x; p=0.5), x)
+    J_true = ForwardDiff.jacobian(_x -> sqrt.(_x), x)
 
     @testset "Exact Jacobian" begin
         @test J1 ≈ J_true
@@ -277,11 +277,11 @@ function test_implicit_zygote(x; kwargs...)
     imf3 = make_implicit_power_args(; kwargs...)
     imf4 = make_implicit_power_kwargs(; kwargs...)
 
-    J_true = Diagonal(0.5 ./ vec(sqrt.(x)))
     J1 = Zygote.jacobian(imf1, x)[1]
     J2 = Zygote.jacobian(first ∘ imf2, x)[1]
     J3 = Zygote.jacobian(imf3, x, 0.5)[1]
     J4 = Zygote.jacobian(_x -> imf4(_x; p=0.5), x)[1]
+    J_true = Zygote.jacobian(_x -> sqrt.(_x), x)[1]
 
     @testset "Exact Jacobian" begin
         @test J1 ≈ J_true
@@ -324,8 +324,12 @@ conditions_backend_candidates = (
 );
 
 x_candidates = (
+    rand(2), #
     rand(2, 3, 4), #
+    SVector{2}(rand(2)), #
     SArray{Tuple{2,3,4}}(rand(2, 3, 4)), #
+    # sprand(10, 0.5), # TODO: failing
+    # sprand(10, 10, 0.5), # TODO: failing
 );
 
 params_candidates = []

@@ -1,12 +1,13 @@
 module ImplicitDifferentiationStaticArraysExt
 
 @static if isdefined(Base, :get_extension)
-    using StaticArrays: StaticArray, MMatrix
+    using StaticArrays: StaticArray, MMatrix, StaticVector
 else
-    using ..StaticArrays: StaticArray, MMatrix
+    using ..StaticArrays: StaticArray, MMatrix, StaticVector
 end
 
 import ImplicitDifferentiation: ImplicitDifferentiation, DirectLinearSolver
+using Krylov: Krylov
 using LinearAlgebra: lu, mul!
 
 function ImplicitDifferentiation.presolve(::DirectLinearSolver, A, y::StaticArray)
@@ -21,5 +22,7 @@ function ImplicitDifferentiation.presolve(::DirectLinearSolver, A, y::StaticArra
     end
     return lu(A_static)
 end
+
+Krylov.ktypeof(::StaticVector{S,T}) where {S,T} = Vector{T}  # TODO: type piracy
 
 end
