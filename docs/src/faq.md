@@ -22,7 +22,6 @@ You can specify it with the `conditions_backend` keyword argument when construct
 ### Arrays
 
 Functions that eat or spit out arbitrary arrays are supported, as long as the forward mapping _and_ conditions return arrays of the same size.
-Beware however, sparse arrays will be densified in the differentiation process.
 
 If the output is a small array (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
 
@@ -31,6 +30,10 @@ If the output is a small array (say, less than 100 elements), consider using [St
 Functions that eat or spit out a single number are not supported.
 The forward mapping _and_ conditions need arrays: instead of returning `val` you should return `[val]` (a 1-element `Vector`).
 Or better yet, wrap it in a static vector: `SVector(val)`.
+
+### Sparse arrays
+
+Sparse arrays are not supported.
 
 ## Number of inputs and outputs
 
