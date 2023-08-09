@@ -14,7 +14,8 @@ function forward_operators(
     pfB = pushforward_function(
         backend, _x -> implicit.conditions(_x, y, args...; kwargs...), x
     )
-    return pushforwards_to_linops(implicit, x, y, pfA, pfB)
+    A_vec = pushforward_to_operator(implicit, y, pfA)
+    return A_vec, pfB
 end
 
 function forward_operators(
@@ -32,41 +33,29 @@ function forward_operators(
     pfB = pushforward_function(
         backend, _x -> implicit.conditions(_x, y, z, args...; kwargs...), x
     )
-    return pushforwards_to_linops(implicit, x, y, pfA, pfB)
+    A_vec = pushforward_to_operator(implicit, y, pfA)
+    return A_vec, pfB
 end
 
-function pushforwards_to_linops(
-    implicit::ImplicitFunction, x::AbstractArray{R}, y::AbstractArray, pfA, pfB
+struct PushforwardProd!{F,N}
+    pushforward::F
+    size::NTuple{N,Int}
+end
+
+function (pfp::PushforwardProd!)(dc_vec::AbstractVector, dy_vec::AbstractVector)
+    dy = reshape(dy_vec, pfp.size)
+    dc = only(pfp.pushforward(dy))
+    return dc_vec .= vec(dc)
+end
+
+function pushforward_to_operator(
+    implicit::ImplicitFunction, y::AbstractArray{R}, pfA
 ) where {R}
-    n, m = length(x), length(y)
-    A_op = LinearOperator(R, m, m, false, false, PushforwardMul!(pfA, size(y)))
-    B_op = LinearOperator(R, m, n, false, false, PushforwardMul!(pfB, size(x)))
-    A_op_presolved = presolve(implicit.linear_solver, A_op, y)
-    return A_op_presolved, B_op
-end
-
-"""
-    PushforwardMul!{P,N}
-
-Callable structure wrapping a pushforward with `N`-dimensional inputs into an in-place multiplication for vectors.
-
-# Fields
-- `pushforward::P`: the pushforward function
-- `input_size::NTuple{N,Int}`: the array size of the function input
-"""
-struct PushforwardMul!{P,N}
-    pushforward::P
-    input_size::NTuple{N,Int}
-end
-
-LinearOperators.get_nargs(pfm::PushforwardMul!) = 1
-
-function (pfm::PushforwardMul!)(res::AbstractVector, δinput_vec::AbstractVector)
-    δinput = reshape(δinput_vec, pfm.input_size)
-    δoutput = only(pfm.pushforward(δinput))
-    for i in eachindex(IndexLinear(), res, δoutput)
-        res[i] = δoutput[i]
-    end
+    m = length(y)
+    prod! = PushforwardProd!(pfA, size(y))
+    A_vec = LinearOperator(R, m, m, false, false, prod!)
+    A_vec_presolved = presolve(implicit.linear_solver, A_vec, y)
+    return A_vec_presolved
 end
 
 ## Reverse
@@ -85,7 +74,8 @@ function reverse_operators(
     pbBᵀ = pullback_function(
         backend, _x -> implicit.conditions(_x, y, args...; kwargs...), x
     )
-    return pullbacks_to_linops(implicit, x, y, pbAᵀ, pbBᵀ)
+    Aᵀ_vec = pullback_to_operator(implicit, y, pbAᵀ)
+    return Aᵀ_vec, pbBᵀ
 end
 
 function reverse_operators(
@@ -103,39 +93,27 @@ function reverse_operators(
     pbBᵀ = pullback_function(
         backend, _x -> implicit.conditions(_x, y, z, args...; kwargs...), x
     )
-    return pullbacks_to_linops(implicit, x, y, pbAᵀ, pbBᵀ)
+    Aᵀ_vec = pullback_to_operator(implicit, y, pbAᵀ)
+    return Aᵀ_vec, pbBᵀ
 end
 
-function pullbacks_to_linops(
-    implicit::ImplicitFunction, x::AbstractArray{R}, y::AbstractArray, pbAᵀ, pbBᵀ
+struct PullbackProd!{F,N}
+    pullback::F
+    size::NTuple{N,Int}
+end
+
+function (pbp::PullbackProd!)(dy_vec::AbstractVector, dc_vec::AbstractVector)
+    dc = reshape(dc_vec, pbp.size)
+    dy = only(pbp.pullback(dc))
+    return dy_vec .= vec(dy)
+end
+
+function pullback_to_operator(
+    implicit::ImplicitFunction, y::AbstractArray{R}, pbAᵀ
 ) where {R}
-    n, m = length(x), length(y)
-    Aᵀ_op = LinearOperator(R, m, m, false, false, PullbackMul!(pbAᵀ, size(y)))
-    Bᵀ_op = LinearOperator(R, n, m, false, false, PullbackMul!(pbBᵀ, size(y)))
-    Aᵀ_op_presolved = presolve(implicit.linear_solver, Aᵀ_op, y)
-    return Aᵀ_op_presolved, Bᵀ_op
-end
-
-"""
-    PullbackMul!{P,N}
-
-Callable structure wrapping a pullback with `N`-dimensional outputs into an in-place multiplication for vectors.
-
-# Fields
-- `pullback::P`: the pullback of the function
-- `output_size::NTuple{N,Int}`: the array size of the function output
-"""
-struct PullbackMul!{P,N}
-    pullback::P
-    output_size::NTuple{N,Int}
-end
-
-LinearOperators.get_nargs(pbm::PullbackMul!) = 1
-
-function (pbm::PullbackMul!)(res::AbstractVector, δoutput_vec::AbstractVector)
-    δoutput = reshape(δoutput_vec, pbm.output_size)
-    δinput = only(pbm.pullback(δoutput))
-    for i in eachindex(IndexLinear(), res, δinput)
-        res[i] = δinput[i]
-    end
+    m = length(y)
+    prod! = PullbackProd!(pbAᵀ, size(y))
+    Aᵀ_vec = LinearOperator(R, m, m, false, false, prod!)
+    Aᵀ_vec_presolved = presolve(implicit.linear_solver, Aᵀ_vec, y)
+    return Aᵀ_vec_presolved
 end

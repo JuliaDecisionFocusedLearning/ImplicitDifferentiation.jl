@@ -19,7 +19,7 @@ Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility w
 
 This is only available if ForwardDiff.jl is loaded (extension).
 
-We compute the Jacobian-vector product `Jv` by solving `Au = Bv` and setting `Jv = u`.
+We compute the Jacobian-vector product `Jv` by solving `Au = -Bv` and setting `Jv = u`.
 Positional and keyword arguments are passed to both `implicit.forward` and `implicit.conditions`.
 """
 function (implicit::ImplicitFunction)(
@@ -30,16 +30,13 @@ function (implicit::ImplicitFunction)(
     y = _output(y_or_yz)
 
     backend = forward_conditions_backend(implicit)
-    A_op, B_op = forward_operators(backend, implicit, x, y_or_yz, args; kwargs)
-
-    x_and_dx_vec = vec(x_and_dx)
+    A_vec, pfB = forward_operators(backend, implicit, x, y_or_yz, args; kwargs)
 
     dy = ntuple(Val(N)) do k
-        dₖx_vec = partials.(x_and_dx_vec, k)
-        Bdₖx = similar(vec(y))
-        mul!(Bdₖx, B_op, dₖx_vec)
-        dₖy_vec = solve(implicit.linear_solver, A_op, Bdₖx)
-        lmul!(-one(R), dₖy_vec)
+        dₖx = partials.(x_and_dx, k)
+        dₖc = only(pfB(dₖx))
+        dₖc_vec = vec(dₖc)
+        dₖy_vec = solve(implicit.linear_solver, A_vec, -dₖc_vec)
         reshape(dₖy_vec, size(y))
     end
 

@@ -7,7 +7,6 @@ else
 end
 
 import ImplicitDifferentiation: ImplicitDifferentiation, DirectLinearSolver
-using Krylov: Krylov
 using LinearAlgebra: lu, mul!
 
 function ImplicitDifferentiation.presolve(::DirectLinearSolver, A, y::StaticArray)
@@ -22,7 +21,5 @@ function ImplicitDifferentiation.presolve(::DirectLinearSolver, A, y::StaticArra
     end
     return lu(A_static)
 end
-
-Krylov.ktypeof(::StaticVector{S,T}) where {S,T} = Vector{T}  # TODO: type piracy
 
 end

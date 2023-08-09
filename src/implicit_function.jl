@@ -6,9 +6,9 @@ Wrapper for an implicit function defined by a forward mapping `y` and a set of c
 An `ImplicitFunction` object behaves like a function, and every call is differentiable with respect to the first argument `x`.
 When a derivative is queried, the Jacobian of `y` is computed using the implicit function theorem:
 
-    ∂/∂y c(x, y(x)) * -∂/∂x y(x) = -∂/∂x c(x, y(x))
+    ∂/∂y c(x, y(x)) * ∂/∂x y(x) = -∂/∂x c(x, y(x))
 
-This requires solving a linear system `A * J = -B`.
+This requires solving a linear system `A * J = -B` where `A = ∂c/∂y`, `B = ∂c/∂x` and `J = ∂y/∂x`.
 
 # Fields
 
