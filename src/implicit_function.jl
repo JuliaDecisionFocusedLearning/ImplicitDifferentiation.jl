@@ -80,3 +80,7 @@ function (implicit::ImplicitFunction)(x::AbstractArray, args...; kwargs...)
     end
     return y_or_yz
 end
+
+get_output(y::AbstractArray) = y
+get_output(yz::Tuple) = yz[1]
+get_byproduct(yz::Tuple) = yz[2]

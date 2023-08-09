@@ -8,8 +8,10 @@ end
 
 using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend
 using ImplicitDifferentiation: ImplicitFunction, DirectLinearSolver, IterativeLinearSolver
-using ImplicitDifferentiation: forward_operators, solve, identity_break_autodiff
-using LinearAlgebra: lmul!, mul!
+using ImplicitDifferentiation: conditions_pushforwards, pushforward_to_operator
+using ImplicitDifferentiation: get_output, get_byproduct, solve
+using ImplicitDifferentiation: identity_break_autodiff
+using LinearAlgebra: mul!
 using PrecompileTools: @compile_workload
 
 """
@@ -27,14 +29,15 @@ function (implicit::ImplicitFunction)(
 ) where {T,R,N}
     x = value.(x_and_dx)
     y_or_yz = implicit(x, args...; kwargs...)
-    y = _output(y_or_yz)
+    y = get_output(y_or_yz)
 
     backend = forward_conditions_backend(implicit)
-    A_vec, pfB = forward_operators(backend, implicit, x, y_or_yz, args; kwargs)
+    pfA, pfB = conditions_pushforwards(backend, implicit, x, y_or_yz, args; kwargs)
+    A_vec = pushforward_to_operator(implicit, y, pfA)
 
     dy = ntuple(Val(N)) do k
         dₖx = partials.(x_and_dx, k)
-        dₖc = only(pfB(dₖx))
+        dₖc = pfB(dₖx)
         dₖc_vec = vec(dₖc)
         dₖy_vec = solve(implicit.linear_solver, A_vec, -dₖc_vec)
         reshape(dₖy_vec, size(y))
@@ -45,7 +48,7 @@ function (implicit::ImplicitFunction)(
     end
 
     if y_or_yz isa Tuple
-        return y_and_dy, _byproduct(y_or_yz)
+        return y_and_dy, get_byproduct(y_or_yz)
     else
         return y_and_dy
     end
@@ -60,10 +63,6 @@ function forward_conditions_backend(
 ) where {F,C,L}
     return implicit.conditions_backend
 end
-
-_output(y::AbstractArray) = y
-_output(yz::Tuple) = yz[1]
-_byproduct(yz::Tuple) = yz[2]
 
 @compile_workload begin
     forward(x) = sqrt.(identity_break_autodiff(x))
