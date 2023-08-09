@@ -125,7 +125,9 @@ function test_implicit_duals(x::AbstractArray{T}; kwargs...) where {T}
     imf4 = make_implicit_power_kwargs(; kwargs...)
 
     y_true = sqrt.(x)
-    x_and_dx = ForwardDiff.Dual.(x, ((zero(T), one(T)),))
+    dx = similar(x)
+    dx .= one(T)
+    x_and_dx = ForwardDiff.Dual.(x, dx)
 
     y_true = sqrt.(x)
     y_and_dy1 = @inferred imf1(x_and_dx)
