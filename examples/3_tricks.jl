@@ -7,6 +7,7 @@ We demonstrate several features that may come in handy for some users.
 using ComponentArrays
 using ForwardDiff
 using ImplicitDifferentiation
+using Krylov
 using LinearAlgebra
 using Random
 using Test  #src
@@ -48,7 +49,11 @@ end
 
 implicit_components = ImplicitFunction(forward_components, conditions_components)
 
-# This is how it behaves.
+# Since `ComponentVector`s are not yet compatible with iterative solvers from Krylov.jl, we (temporarily) need a bit of type piracy to make it work
+
+Krylov.ktypeof(::ComponentVector{T,V}) where {T,V} = V
+
+# Now we're good to go.
 
 a, b, m = rand(2), rand(3), 7
 x = ComponentVector(; a=a, b=b, m=m)
