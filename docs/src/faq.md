@@ -33,7 +33,8 @@ Or better yet, wrap it in a static vector: `SVector(val)`.
 
 ### Sparse arrays
 
-Sparse arrays are not supported.
+!!! danger "Danger"
+    Sparse arrays are not supported and might give incorrect values or `NaN`s!
 
 ## Number of inputs and outputs
 
@@ -96,7 +97,7 @@ implicit(x)
 
 !!! warning "Warning"
     You may run into issues trying to differentiate through the `ComponentVector` constructor.
-    For instance, Zygote.jl will throw an error like `ERROR: Mutating arrays is not supported`. 
+    For instance, Zygote.jl will throw an error like `ERROR: Mutating arrays is not supported`.
     Check out [this issue](https://github.com/gdalle/ImplicitDifferentiation.jl/issues/67) for a dirty workaround involving custom chain rules for the constructor.
 
 ### Multiple inputs | Derivatives not needed
