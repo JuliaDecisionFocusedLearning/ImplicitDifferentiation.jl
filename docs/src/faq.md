@@ -51,53 +51,14 @@ We now detail each of these options.
 
 ### Multiple inputs or outputs | Derivatives needed
 
-Say your forward mapping takes multiple input arrays `(x1, x2, x3)` and returns multiple output arrays `(y4, y5)`.
-And say that you want derivatives for all of them.
-
-```julia
-function forward_aux(x1, x2, x3)
-    # do stuff
-    return y4, y5
-end
-
-function conditions_aux(x1, x2, x3, y4, y5)
-    # do stuff
-    return c4, c5
-end
-```
+Say your forward mapping takes multiple input arrays and returns multiple output arrays, such that you want derivatives for all of them.
 
 The trick is to leverage [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) to wrap all the inputs inside a single a `ComponentVector`, and do the same for all the outputs.
-
-```julia
-function forward(x::ComponentVector)
-    y4, y5 = forward_aux(x.x1, x.x2, x.x3)
-    y = ComponentVector(; y4=y4, y5=y5)
-    return y
-end
-
-function conditions(x::ComponentVector, y::ComponentVector)
-    c4, c5 = conditions_aux(x.x1, x.x2, x.x3, y.y4, y.y5)
-    c = ComponentVector(; c4=c4, c5=c5)
-    return c
-end
-```
-
-Then if you construct
-
-```julia
-implicit = ImplicitFunction(conditions, forward)
-```
-
-you can use it as follows:
-
-```julia
-x = ComponentVector(; x1=x1, x2=x2, x3=x3)
-implicit(x)
-```
+See the examples for a demonstration.
 
 !!! warning "Warning"
     You may run into issues trying to differentiate through the `ComponentVector` constructor.
-    For instance, Zygote.jl will throw an error like `ERROR: Mutating arrays is not supported`.
+    For instance, Zygote.jl will throw `ERROR: Mutating arrays is not supported`.
     Check out [this issue](https://github.com/gdalle/ImplicitDifferentiation.jl/issues/67) for a dirty workaround involving custom chain rules for the constructor.
 
 ### Multiple inputs | Derivatives not needed
@@ -116,19 +77,20 @@ All of the positional and keyword arguments apart from `x` will get zero tangent
 
 The last and most tricky situation is when your forward mapping returns multiple outputs, but you only care about some of their derivatives.
 Then, you need to group the objects you don't want to differentiate into a "byproduct" `z`, returned alongside the actual output `y`.
+This way, derivatives of `z` will not be computed: the byproduct is considered constant during differentiation.
 
-The signatures will look slightly different:
+The signatures of your functions will need to be be slightly different from the previous cases:
 
 ```julia
 forward(x, arg1, arg2; kwarg1, kwarg2) = (y, z)
 conditions(x, y, z, arg1, arg2; kwarg1, kwarg2) =  c
 ```
 
-This trick is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
+See the examples for a demonstration.
+
+This is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
 In that case, you may want to write the conditions differentiation rules yourself.
 A more advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
-
-Keep in mind that derivatives of `z` will not be computed: the byproduct is considered constant during differentiation.
 
 ## Modeling tips
 

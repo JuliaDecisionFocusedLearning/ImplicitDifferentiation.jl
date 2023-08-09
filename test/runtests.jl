@@ -62,14 +62,6 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
     @testset verbose = false "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
     end
-    @testset verbose = true "Systematic" begin
-        @info "Systematic tests"
-        include("systematic.jl")
-    end
-    @testset verbose = true "Errors" begin
-        @info "Error tests"
-        include("errors.jl")
-    end
     @testset verbose = true "Examples" begin
         @info "Example tests"
         for file in readdir(EXAMPLES_DIR_JL)
@@ -80,5 +72,13 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
                 include(path)
             end
         end
+    end
+    @testset verbose = true "Errors" begin
+        @info "Error tests"
+        include("errors.jl")
+    end
+    @testset verbose = true "Systematic" begin
+        @info "Systematic tests"
+        include("systematic.jl")
     end
 end

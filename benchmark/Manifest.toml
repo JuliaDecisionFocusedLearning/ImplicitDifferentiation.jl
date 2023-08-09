@@ -207,9 +207,9 @@ version = "1.5.0"
 
 [[deps.ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions"]
-git-tree-sha1 = "00e252f4d706b3d55a8863432e742bf5717b498d"
+git-tree-sha1 = "cf0fe81336da9fb90944683b8c41984b08793dad"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
-version = "0.10.35"
+version = "0.10.36"
 
     [deps.ForwardDiff.extensions]
     ForwardDiffStaticArraysExt = "StaticArrays"
@@ -246,13 +246,15 @@ uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.5.0-DEV"
 
     [deps.ImplicitDifferentiation.extensions]
-    ImplicitDifferentiationChainRulesExt = "ChainRulesCore"
+    ImplicitDifferentiationChainRulesCoreExt = "ChainRulesCore"
+    ImplicitDifferentiationComponentArraysExt = "ComponentArrays"
     ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
     ImplicitDifferentiationStaticArraysExt = "StaticArrays"
     ImplicitDifferentiationZygoteExt = "Zygote"
 
     [deps.ImplicitDifferentiation.weakdeps]
     ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
     ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
     StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
     Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"

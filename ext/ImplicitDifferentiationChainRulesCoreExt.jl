@@ -1,4 +1,4 @@
-module ImplicitDifferentiationChainRulesExt
+module ImplicitDifferentiationChainRulesCoreExt
 
 using AbstractDifferentiation: AbstractBackend, ReverseRuleConfigBackend
 using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig

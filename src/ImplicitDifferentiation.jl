@@ -24,8 +24,13 @@ export ImplicitFunction
 export AbstractLinearSolver, IterativeLinearSolver, DirectLinearSolver
 
 @static if !isdefined(Base, :get_extension)
-    include("../ext/ImplicitDifferentiationChainRulesExt.jl")
+    # Loaded unconditionally on Julia < 1.9
+    include("../ext/ImplicitDifferentiationChainRulesCoreExt.jl")
     function __init__()
+        # Loaded conditionally on Julia < 1.9
+        @require ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66" begin
+            include("../ext/ImplicitDifferentiationComponentArraysExt.jl")
+        end
         @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
             include("../ext/ImplicitDifferentiationForwardDiffExt.jl")
         end
