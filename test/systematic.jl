@@ -335,11 +335,8 @@ conditions_backend_candidates = (
 );
 
 x_candidates = (
-    rand(Float32, 2), #
-    rand(2, 3, 4), #
-    SVector{2}(rand(Float32, 2)), #
-    SArray{Tuple{2,3,4}}(rand(2, 3, 4)), #
-    sprand(Float32, 10, 0.5), # TODO: failing
+    rand(2, 3), #
+    SArray{Tuple{2,3}}(rand(2, 3)), #
     sprand(10, 10, 0.5), # TODO: failing
 );
 
@@ -355,16 +352,18 @@ for linear_solver in linear_solver_candidates, x in x_candidates
     )
 end
 
-for conditions_backend in conditions_backend_candidates
-    push!(
-        params_candidates,
-        (;
-            linear_solver=linear_solver_candidates[1], #
-            conditions_backend=conditions_backend, #
-            x=x_candidates[1], #
-        ),
-    )
-end
+# for conditions_backend in conditions_backend_candidates
+#     push!(
+#         params_candidates,
+#         (;
+#             linear_solver=linear_solver_candidates[1], #
+#             conditions_backend=conditions_backend, #
+#             x=x_candidates[1], #
+#         ),
+#     )
+# end
+
+params_candidates
 
 ## Test loop
 

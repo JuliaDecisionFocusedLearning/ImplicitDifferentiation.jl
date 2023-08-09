@@ -34,7 +34,7 @@ function (implicit::ImplicitFunction)(
 
     dy = ntuple(Val(N)) do k
         dₖx = partials.(x_and_dx, k)
-        dₖc = pfB(dₖx)
+        dₖc = only(pfB(dₖx))
         dₖc_vec = vec(dₖc)
         dₖy_vec = solve(implicit.linear_solver, A_vec, -dₖc_vec)
         reshape(dₖy_vec, size(y))
