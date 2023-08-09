@@ -38,8 +38,7 @@ function (implicit::ImplicitFunction)(
         dₖx_vec = partials.(x_and_dx_vec, k)
         Bdₖx = similar(vec(y))
         mul!(Bdₖx, B_op, dₖx_vec)
-        dₖy_vec = solve(implicit.linear_solver, A_op, Bdₖx)
-        lmul!(-one(R), dₖy_vec)
+        dₖy_vec = solve(implicit.linear_solver, A_op, -Bdₖx)
         reshape(dₖy_vec, size(y))
     end
 

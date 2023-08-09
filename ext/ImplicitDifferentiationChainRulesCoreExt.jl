@@ -78,8 +78,7 @@ function _apply(
     dy_vec = convert(AbstractVector{R}, vec(unthunk(dy)))
     dc_vec = solve(linear_solver, Aᵀ_op, dy_vec)
     dx_vec = similar(vec(x))
-    mul!(dx_vec, Bᵀ_op, dc_vec)
-    lmul!(-one(R), dx_vec)
+    mul!(dx_vec, Bᵀ_op, -dc_vec)
     dx = reshape(dx_vec, size(x))
     return (NoTangent(), dx, ntuple(unimplemented_tangent, nbargs)...)
 end

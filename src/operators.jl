@@ -64,9 +64,7 @@ LinearOperators.get_nargs(pfm::PushforwardMul!) = 1
 function (pfm::PushforwardMul!)(res::AbstractVector, δinput_vec::AbstractVector)
     δinput = reshape(δinput_vec, pfm.input_size)
     δoutput = only(pfm.pushforward(δinput))
-    for i in eachindex(IndexLinear(), res, δoutput)
-        res[i] = δoutput[i]
-    end
+    res .= vec(δoutput)
 end
 
 ## Reverse
@@ -135,7 +133,5 @@ LinearOperators.get_nargs(pbm::PullbackMul!) = 1
 function (pbm::PullbackMul!)(res::AbstractVector, δoutput_vec::AbstractVector)
     δoutput = reshape(δoutput_vec, pbm.output_size)
     δinput = only(pbm.pullback(δoutput))
-    for i in eachindex(IndexLinear(), res, δinput)
-        res[i] = δinput[i]
-    end
+    res .= vec(δinput)
 end
