@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "940bf8202d8d92679a5c39bca7eb79aaf1a39971"
+project_hash = "237e72a31eedf37d2697a165f32eb8d2aada085c"
 
 [[deps.AMD]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse_jll"]
@@ -54,10 +54,12 @@ deps = ["LinearAlgebra", "Requires"]
 git-tree-sha1 = "76289dc51920fdc6e0013c872ba9551d54961c24"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 version = "3.6.2"
-weakdeps = ["StaticArrays"]
 
     [deps.Adapt.extensions]
     AdaptStaticArraysExt = "StaticArrays"
+
+    [deps.Adapt.weakdeps]
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -268,10 +270,12 @@ deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "Lo
 git-tree-sha1 = "cf0fe81336da9fb90944683b8c41984b08793dad"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.36"
-weakdeps = ["StaticArrays"]
 
     [deps.ForwardDiff.extensions]
     ForwardDiffStaticArraysExt = "StaticArrays"
+
+    [deps.ForwardDiff.weakdeps]
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [[deps.Functors]]
 deps = ["LinearAlgebra"]
@@ -317,7 +321,6 @@ deps = ["AbstractDifferentiation", "Krylov", "LinearAlgebra", "LinearOperators",
 path = ".."
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 version = "0.5.0-DEV"
-weakdeps = ["ChainRulesCore", "ComponentArrays", "ForwardDiff", "StaticArrays", "Zygote"]
 
     [deps.ImplicitDifferentiation.extensions]
     ImplicitDifferentiationChainRulesCoreExt = "ChainRulesCore"
@@ -325,6 +328,13 @@ weakdeps = ["ChainRulesCore", "ComponentArrays", "ForwardDiff", "StaticArrays", 
     ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
     ImplicitDifferentiationStaticArraysExt = "StaticArrays"
     ImplicitDifferentiationZygoteExt = "Zygote"
+
+    [deps.ImplicitDifferentiation.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
+    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+    Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -650,16 +660,6 @@ version = "1.4.0"
     [deps.StaticArrayInterface.weakdeps]
     OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
     StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-
-[[deps.StaticArrays]]
-deps = ["LinearAlgebra", "Random", "StaticArraysCore"]
-git-tree-sha1 = "9cabadf6e7cd2349b6cf49f1915ad2028d65e881"
-uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.6.2"
-weakdeps = ["Statistics"]
-
-    [deps.StaticArrays.extensions]
-    StaticArraysStatisticsExt = "Statistics"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
