@@ -29,7 +29,7 @@ function conditions_components_aux(a, b, m, d, e)
     c_d = (d ./ m) .^ 2 .- a
     c_e = (e .^ 2) .- b
     return c_d, c_e
-end
+end;
 
 # You can use `ComponentVector` as an intermediate storage.
 
@@ -43,11 +43,11 @@ function conditions_components(x::ComponentVector, y::ComponentVector)
     c_d, c_e = conditions_components_aux(x.a, x.b, x.m, y.d, y.e)
     c = ComponentVector(; c_d=c_d, c_e=c_e)
     return c
-end
+end;
 
 # And build your implicit function like so.
 
-implicit_components = ImplicitFunction(forward_components, conditions_components)
+implicit_components = ImplicitFunction(forward_components, conditions_components);
 
 # Since `ComponentVector`s are not yet compatible with iterative solvers from Krylov.jl, we (temporarily) need a bit of type piracy to make it work
 
@@ -61,8 +61,8 @@ implicit_components(x)
 
 # And it works with ForwardDiff.jl but not Zygote.jl (see documentation).
 
-J = ForwardDiff.jacobian(forward_components, x)  #src
 ForwardDiff.jacobian(implicit_components, x)
+J = ForwardDiff.jacobian(forward_components, x)  #src
 @test ForwardDiff.jacobian(implicit_components, x) ≈ J  #src
 @test_broken Zygote.jacobian(implicit_components, x)[1] ≈ J  #src
 
@@ -72,7 +72,7 @@ function full_pipeline(a, b, m)
     x = ComponentVector(; a=a, b=b, m=m)
     y = implicit_components(x)
     return y.d, y.e
-end
+end;
 
 # ## Byproducts
 
@@ -87,11 +87,11 @@ end
 function conditions_byproduct(x, y, z)
     c = y .^ z .- x
     return c
-end
+end;
 
 # The syntax for building the implicit function is the same.
 
-implicit_byproduct = ImplicitFunction(forward_byproduct, conditions_byproduct)
+implicit_byproduct = ImplicitFunction(forward_byproduct, conditions_byproduct);
 
 # But this time the return value is a tuple `(y, z)`
 
@@ -100,8 +100,11 @@ implicit_byproduct(x)
 
 # And it works with both ForwardDiff.jl and Zygote.jl
 
-J = ForwardDiff.jacobian(first ∘ forward_byproduct, x)  #src
 ForwardDiff.jacobian(first ∘ implicit_byproduct, x)
+J = ForwardDiff.jacobian(first ∘ forward_byproduct, x)  #src
 @test ForwardDiff.jacobian(first ∘ implicit_byproduct, x) ≈ J  #src
+
+#-
+
 Zygote.jacobian(first ∘ implicit_byproduct, x)[1]
 @test Zygote.jacobian(first ∘ implicit_byproduct, x)[1] ≈ J  #src

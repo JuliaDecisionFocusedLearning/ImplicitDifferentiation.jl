@@ -55,7 +55,7 @@ function create_benchmarkable(;
     if scenario_symbol == :jacobian
         x = rand(input_size...)
         implicit = ImplicitFunction(forward, conditions; linear_solver, conditions_backend)
-    elseif scenario_symbol == :pullback
+    elseif scenario_symbol in (:rrule, :pullback)
         x = rand(input_size...)
         implicit = ImplicitFunction(
             forward_sum, conditions_sum; linear_solver, conditions_backend
@@ -72,21 +72,23 @@ function create_benchmarkable(;
         )
     end
 
-    x_and_dx = Dual.(x, (one(eltype(x)),))
+    dx = similar(x)
+    dx .= one(eltype(x))
+    x_and_dx = Dual.(x, dx)
     y = implicit(x)
     dy = zero(y)
+    _, back = Zygote.pullback(implicit, x)
 
     if scenario_symbol == :jacobian && backend_symbol == :ForwardDiff
-        return @benchmarkable ForwardDiff.jacobian($implicit, $x) seconds = 1
+        return @benchmarkable ForwardDiff.jacobian($implicit, $x)
     elseif scenario_symbol == :jacobian && backend_symbol == :Zygote
-        return @benchmarkable Zygote.jacobian($implicit, $x) seconds = 1
+        return @benchmarkable Zygote.jacobian($implicit, $x)
+    elseif scenario_symbol == :rrule && backend_symbol == :Zygote
+        return @benchmarkable Zygote.pullback($implicit, $x)
     elseif scenario_symbol == :pullback && backend_symbol == :Zygote
-        return @benchmarkable begin
-            _, back = Zygote.pullback($implicit, $x)
-            back($dy)
-        end seconds = 1
+        return @benchmarkable ($back)($dy)
     elseif scenario_symbol == :pushforward && backend_symbol == :ForwardDiff
-        return @benchmarkable $implicit($x_and_dx) seconds = 1
+        return @benchmarkable $implicit($x_and_dx)
     else
         return nothing
     end
@@ -231,11 +233,11 @@ function plot_results(
     return pl
 end
 
-scenario_symbols = (:jacobian, :pullback, :pushforward)
+scenario_symbols = (:jacobian, :rrule, :pullback)
 linear_solver_symbols = (:direct, :iterative)
 backend_symbols = (:Zygote, :ForwardDiff)
-conditions_backend_symbols = (:nothing, :ForwardDiff)
-input_sizes = [(n,) for n in (1, 10, 100, 1_000, 10_000)]
+conditions_backend_symbols = (:nothing,)
+input_sizes = [(n,) for n in floor.(Int, 10 .^ (0:0.5:5))]
 
 SUITE = make_suite(;
     scenario_symbols,
@@ -245,21 +247,41 @@ SUITE = make_suite(;
     input_sizes,
 )
 
-results = run(SUITE; verbose=true, evals=1)
+do_stuff = false
 
-# data = export_results(
-#     results;
-#     scenario_symbols,
-#     linear_solver_symbols,
-#     backend_symbols,
-#     conditions_backend_symbols,
-#     input_sizes,
-# )
+if do_stuff
+    results = BenchmarkTools.run(SUITE; verbose=true, evals=1, seconds=1)
 
-# plot_results(
-#     data;
-#     scenario_symbols=[:pullback],
-#     linear_solver_symbols=[:direct, :iterative],
-#     backend_symbols=[:FowardDiff, :Zygote],
-#     conditions_backend_symbols=[:nothing],
-# )
+    data = export_results(
+        results;
+        scenario_symbols,
+        linear_solver_symbols,
+        backend_symbols,
+        conditions_backend_symbols,
+        input_sizes,
+    )
+
+    plot_results(
+        data;
+        scenario_symbols=[:pullback],
+        linear_solver_symbols=[:direct, :iterative],
+        backend_symbols=[:FowardDiff, :Zygote],
+        conditions_backend_symbols=[:nothing, :ForwardDiff],
+    )
+
+    plot_results(
+        data;
+        scenario_symbols=[:rrule],
+        linear_solver_symbols=[:direct, :iterative],
+        backend_symbols=[:FowardDiff, :Zygote],
+        conditions_backend_symbols=[:nothing, :ForwardDiff],
+    )
+
+    plot_results(
+        data;
+        scenario_symbols=[:jacobian],
+        linear_solver_symbols=[:direct, :iterative],
+        backend_symbols=[:FowardDiff, :Zygote],
+        conditions_backend_symbols=[:nothing, :ForwardDiff],
+    )
+end

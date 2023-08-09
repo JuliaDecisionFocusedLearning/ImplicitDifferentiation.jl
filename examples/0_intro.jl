@@ -22,7 +22,7 @@ Random.seed!(63);
 While they are very generic, there are simple language constructs that they cannot differentiate through.
 =#
 
-function mysqrt(x::AbstractArray)
+function badsqrt(x::AbstractArray)
     a = [0.0]
     a[1] = first(x)
     return sqrt.(x)
@@ -34,8 +34,8 @@ We can check that it does what it's supposed to do.
 =#
 
 x = rand(2)
-mysqrt(x) ≈ sqrt.(x)
-@test mysqrt(x) ≈ sqrt.(x)  #src
+badsqrt(x) ≈ sqrt.(x)
+@test badsqrt(x) ≈ sqrt.(x)  #src
 
 #=
 Of course the Jacobian has an explicit formula.
@@ -48,22 +48,22 @@ However, things start to go wrong when we compute it with autodiff, due to the [
 =#
 
 try
-    ForwardDiff.jacobian(mysqrt, x)
+    ForwardDiff.jacobian(badsqrt, x)
 catch e
     e
 end
-@test_throws MethodError ForwardDiff.jacobian(mysqrt, x)  #src
+@test_throws MethodError ForwardDiff.jacobian(badsqrt, x)  #src
 
 #=
-ForwardDiff.jl throws an error because it tries to call `mysqrt` with an array of dual numbers, and cannot use one of these numbers to fill `a` (which has element type `Float64`).
+ForwardDiff.jl throws an error because it tries to call `badsqrt` with an array of dual numbers, and cannot use one of these numbers to fill `a` (which has element type `Float64`).
 =#
 
 try
-    Zygote.jacobian(mysqrt, x)
+    Zygote.jacobian(badsqrt, x)
 catch e
     e
 end
-@test_throws ErrorException Zygote.jacobian(mysqrt, x)  #src
+@test_throws ErrorException Zygote.jacobian(badsqrt, x)  #src
 
 #=
 Zygote.jl also throws an error because it cannot handle mutation.
@@ -90,7 +90,7 @@ It returns the actual output $y(x)$ of the function, and can be thought of as a 
 Importantly, this Julia callable _doesn't need to be differentiable by automatic differentiation packages but the underlying function still needs to be mathematically differentiable_.
 =#
 
-forward(x) = mysqrt(x)
+forward(x) = badsqrt(x)
 
 #=
 Then we define `conditions` $c(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
