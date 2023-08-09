@@ -7,3 +7,5 @@ docs/src/index.md
 docs/src/examples/*.md
 test/playground.jl
 *.csv
+*.png
+*.pdf
