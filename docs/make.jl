@@ -1,4 +1,5 @@
 using ChainRulesCore: ChainRulesCore
+using ComponentArrays
 using Documenter
 using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
