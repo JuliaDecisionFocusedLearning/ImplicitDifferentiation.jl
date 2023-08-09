@@ -87,6 +87,7 @@ fmt = Documenter.HTML(;
 if isdefined(Base, :get_extension)
     extension_modules = [
         Base.get_extension(ID, :ImplicitDifferentiationChainRulesCoreExt),
+        Base.get_extension(ID, :ImplicitDifferentiationComponentArraysExt),
         Base.get_extension(ID, :ImplicitDifferentiationForwardDiffExt),
         Base.get_extension(ID, :ImplicitDifferentiationStaticArraysExt),
         Base.get_extension(ID, :ImplicitDifferentiationZygoteExt),
@@ -94,6 +95,7 @@ if isdefined(Base, :get_extension)
 else
     extension_modules = [
         ID.ImplicitDifferentiationChainRulesCoreExt,
+        ID.ImplicitDifferentiationComponentArraysExt,
         ID.ImplicitDifferentiationForwardDiffExt,
         ID.ImplicitDifferentiationStaticArraysExt,
         ID.ImplicitDifferentiationZygoteExt,

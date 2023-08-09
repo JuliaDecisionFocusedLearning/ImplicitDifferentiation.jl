@@ -8,6 +8,12 @@ end
 
 using Krylov: Krylov
 
+"""
+    Krylov.ktypeof(::ComponentVector)
+
+!!! danger "Danger"
+    This is type piracy.
+"""
 Krylov.ktypeof(::ComponentVector{T,V}) where {T,V} = V  # TODO: type piracy
 
 end

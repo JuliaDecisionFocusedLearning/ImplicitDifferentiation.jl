@@ -23,6 +23,12 @@ function ImplicitDifferentiation.presolve(::DirectLinearSolver, A, y::StaticArra
     return lu(A_static)
 end
 
+"""
+    Krylov.ktypeof(::StaticVector)
+
+!!! danger "Danger"
+    This is type piracy.
+"""
 Krylov.ktypeof(::StaticVector{S,T}) where {S,T} = Vector{T}  # TODO: type piracy
 
 end
