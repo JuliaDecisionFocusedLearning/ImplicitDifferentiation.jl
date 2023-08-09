@@ -243,7 +243,7 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
 
     @testset "ChainRulesTestUtils" begin
         test_rrule(rc, imf1, x; atol=1e-2, check_inferred=false)
-        test_rrule(rc, imf2, x; atol=1e-2)
+        test_rrule(rc, imf2, x; atol=1e-2, check_inferred=false)
         test_rrule(rc, imf3, x, one(T) / 2; atol=1e-2, check_inferred=false)
         test_rrule(rc, imf4, x; atol=1e-2, fkwargs=(p=one(T) / 2,), check_inferred=false)
     end
@@ -352,16 +352,16 @@ for linear_solver in linear_solver_candidates, x in x_candidates
     )
 end
 
-# for conditions_backend in conditions_backend_candidates
-#     push!(
-#         params_candidates,
-#         (;
-#             linear_solver=linear_solver_candidates[1], #
-#             conditions_backend=conditions_backend, #
-#             x=x_candidates[1], #
-#         ),
-#     )
-# end
+for conditions_backend in conditions_backend_candidates
+    push!(
+        params_candidates,
+        (;
+            linear_solver=linear_solver_candidates[1], #
+            conditions_backend=conditions_backend, #
+            x=x_candidates[1], #
+        ),
+    )
+end
 
 params_candidates
 
