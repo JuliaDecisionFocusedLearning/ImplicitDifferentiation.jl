@@ -32,11 +32,13 @@ function (implicit::ImplicitFunction)(
     backend = forward_conditions_backend(implicit)
     A_op, B_op = forward_operators(backend, implicit, x, y_or_yz, args; kwargs)
 
+    x_and_dx_vec = vec(x_and_dx)
+
     dy = ntuple(Val(N)) do k
-        dₖx_vec = vec(partials.(x_and_dx, k))
-        Bdx = vec(similar(y))
-        mul!(Bdx, B_op, dₖx_vec)
-        dₖy_vec = solve(implicit.linear_solver, A_op, Bdx)
+        dₖx_vec = partials.(x_and_dx_vec, k)
+        Bdₖx = similar(vec(y))
+        mul!(Bdₖx, B_op, dₖx_vec)
+        dₖy_vec = solve(implicit.linear_solver, A_op, Bdₖx)
         lmul!(-one(R), dₖy_vec)
         reshape(dₖy_vec, size(y))
     end

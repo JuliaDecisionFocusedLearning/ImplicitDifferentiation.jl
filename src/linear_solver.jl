@@ -25,12 +25,10 @@ presolve(::IterativeLinearSolver, A, y) = A
 function solve(::IterativeLinearSolver, A, b)
     T = float(promote_type(eltype(A), eltype(b)))
     x, stats = gmres(A, b)
-    x_maybenan = similar(x, T)
-    if stats.solved && !stats.inconsistent
-        x_maybenan .= x
-    else
+    x_maybenan = T.(x)
+    if !stats.solved || stats.inconsistent
         @warn "IterativeLinearSolver failed, result contains NaNs"
-        x_maybenan .= convert(T, NaN)
+        x_maybenan .= NaN
     end
     return x_maybenan
 end
@@ -47,14 +45,11 @@ function presolve(::DirectLinearSolver, A, y)
 end
 
 function solve(::DirectLinearSolver, A_lu, b)
-    # workaround for https://github.com/JuliaArrays/StaticArrays.jl/issues/1190
     T = float(promote_type(eltype(A_lu.L), eltype(A_lu.U), eltype(b)))
-    x_maybenan = Vector{T}(undef, size(A_lu.L, 2))
-    if issuccess(A_lu)
-        x_maybenan .= A_lu \ b
-    else
+    x_maybenan = T.(A_lu \ b)
+    if !issuccess(A_lu)
         @warn "DirectLinearSolver failed, result contains NaNs"
-        x_maybenan .= convert(T, NaN)
+        x_maybenan .= NaN
     end
     return x_maybenan
 end

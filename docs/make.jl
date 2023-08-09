@@ -3,7 +3,6 @@ using Documenter
 using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using Literate
-using StaticArrays: StaticArrays
 using Zygote: Zygote
 
 const ID = ImplicitDifferentiation
@@ -72,9 +71,9 @@ end
 
 pages = [
     "Home" => "index.md",
+    "FAQ" => "faq.md",
     "Examples" => example_pages,
     "API reference" => "api.md",
-    "FAQ" => "faq.md",
 ]
 
 fmt = Documenter.HTML(;
@@ -86,17 +85,13 @@ fmt = Documenter.HTML(;
 
 if isdefined(Base, :get_extension)
     extension_modules = [
-        Base.get_extension(ID, :ImplicitDifferentiationChainRulesExt),
+        Base.get_extension(ID, :ImplicitDifferentiationChainRulesCoreExt),
         Base.get_extension(ID, :ImplicitDifferentiationForwardDiffExt),
-        Base.get_extension(ID, :ImplicitDifferentiationStaticArraysExt),
-        Base.get_extension(ID, :ImplicitDifferentiationZygoteExt),
     ]
 else
     extension_modules = [
-        ID.ImplicitDifferentiationChainRulesExt,
+        ID.ImplicitDifferentiationChainRulesCoreExt,
         ID.ImplicitDifferentiationForwardDiffExt,
-        ID.ImplicitDifferentiationStaticArraysExt,
-        ID.ImplicitDifferentiationZygoteExt,
     ]
 end
 
