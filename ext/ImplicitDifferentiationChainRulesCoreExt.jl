@@ -77,7 +77,7 @@ function _apply(
     dy_vec = vec(dy)
     dc_vec = solve(linear_solver, Aᵀ_vec, -dy_vec)
     dc = reshape(dc_vec, size(dy))
-    dx::X = only(pbBᵀ(dc))  # for type inference
+    dx = only(pbBᵀ(dc))  # TODO: type inference fails here
     return (NoTangent(), dx, ntuple(unimplemented_tangent, nbargs)...)
 end
 

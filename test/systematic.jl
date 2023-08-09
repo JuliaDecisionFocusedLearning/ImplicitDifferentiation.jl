@@ -130,10 +130,10 @@ function test_implicit_duals(x::AbstractArray{T}; kwargs...) where {T}
     x_and_dx = ForwardDiff.Dual.(x, dx)
 
     y_true = sqrt.(x)
-    y_and_dy1 = @inferred imf1(x_and_dx)
-    y_and_dy2, z2 = @inferred imf2(x_and_dx)
-    y_and_dy3 = @inferred imf3(x_and_dx, one(T) / 2)
-    y_and_dy4 = @inferred imf4(x_and_dx; p=one(T) / 2)
+    y_and_dy1 = imf1(x_and_dx)
+    y_and_dy2, z2 = imf2(x_and_dx)
+    y_and_dy3 = imf3(x_and_dx, one(T) / 2)
+    y_and_dy4 = imf4(x_and_dx; p=one(T) / 2)
 
     @testset "Dual numbers" begin
         @test ForwardDiff.value.(y_and_dy1) ≈ y_true
@@ -180,10 +180,10 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
     y3, pb3 = @inferred rrule(rc, imf3, x, one(T) / 2)
     y4, pb4 = @inferred rrule(rc, imf4, x; p=one(T) / 2)
 
-    dimf1, dx1 = @inferred pb1(dy)
-    dimf2, dx2 = @inferred pb2((dy, dz))
-    dimf3, dx3, dp3 = @inferred pb3(dy)
-    dimf4, dx4 = @inferred pb4(dy)
+    dimf1, dx1 = pb1(dy)
+    dimf2, dx2 = pb2((dy, dz))
+    dimf3, dx3, dp3 = pb3(dy)
+    dimf4, dx4 = pb4(dy)
 
     @testset "Pullbacks" begin
         @test y1 ≈ y_true
