@@ -33,19 +33,21 @@ function is_static_array(a)
     )
 end
 
-function mysqrt(x::AbstractArray)
-    return sqrt.(identity_break_autodiff(abs.(x)))
+remove_col(x::AbstractMatrix) = x[:, 2:end]
+
+function mysqrt(x::AbstractMatrix)
+    return identity_break_autodiff(sqrt.(abs.(remove_col(x))))
 end
 
-function mypower(x::AbstractArray, p)
-    return identity_break_autodiff(abs.(x)) .^ p
+function mypower(x::AbstractMatrix, p)
+    return identity_break_autodiff(abs.(remove_col(x)) .^ p)
 end
 
 ## Various signatures
 
 function make_implicit_sqrt(; kwargs...)
     forward(x) = mysqrt(x)
-    conditions(x, y) = y .^ 2 .- abs.(x)
+    conditions(x, y) = y .^ 2 .- abs.(remove_col(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
@@ -55,21 +57,21 @@ function make_implicit_sqrt_byproduct(; kwargs...)
         z = one(eltype(x)) / 2
         return mypower(x, z), z
     end
-    conditions(x, y, z) = y .^ inv(z) .- x
+    conditions(x, y, z) = y .^ inv(z) .- abs.(remove_col(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_power_args(; kwargs...)
     forward(x, p) = mypower(x, p)
-    conditions(x, y, p) = y .^ inv(p) .- abs.(x)
+    conditions(x, y, p) = y .^ inv(p) .- abs.(remove_col(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_power_kwargs(; kwargs...)
     forward(x; p) = mypower(x, p)
-    conditions(x, y; p) = y .^ inv(p) .- abs.(x)
+    conditions(x, y; p) = y .^ inv(p) .- abs.(remove_col(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
@@ -172,7 +174,8 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
     imf4 = make_implicit_power_kwargs(; kwargs...)
 
     y_true = sqrt.(x)
-    dy = rand(eltype(y_true), size(y_true)...)
+    dy = similar(y_true)
+    dy .= one(eltype(y_true))
     dz = nothing
 
     y1, pb1 = @inferred rrule(rc, imf1, x)
@@ -335,9 +338,9 @@ conditions_backend_candidates = (
 );
 
 x_candidates = (
-    rand(2, 3), #
-    SArray{Tuple{2,3}}(rand(2, 3)), #
-    sprand(10, 10, 0.5), # TODO: failing
+    rand(Float32, 2, 3), #
+    sprand(rand(Float32, 2, 3)), # TODO: failing
+    SArray{Tuple{2,3}}(rand(Float32, 2, 3)), #
 );
 
 params_candidates = []
