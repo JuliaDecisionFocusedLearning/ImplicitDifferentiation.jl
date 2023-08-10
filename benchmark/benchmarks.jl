@@ -13,8 +13,8 @@ using Zygote: Zygote
 
 using ImplicitDifferentiation
 
-forward(x, output_size) = fill(sqrt(sum(x)), output_size...)
-conditions(x, y, output_size) = abs2.(y) .- sum(x)
+forward(x; output_size) = fill(sqrt(sum(x)), output_size...)
+conditions(x, y; output_size) = abs2.(y) .- sum(x)
 
 function get_linear_solver(linear_solver_symbol::Symbol)
     if linear_solver_symbol == :direct
@@ -49,8 +49,8 @@ function create_benchmarkable(;
 
     x = rand(input_size...)
     implicit = ImplicitFunction(
-        x -> forward(x, output_size),
-        (x, y) -> conditions(x, y, output_size);
+        x -> forward(x; output_size),
+        (x, y) -> conditions(x, y; output_size);
         linear_solver,
         conditions_backend,
     )
