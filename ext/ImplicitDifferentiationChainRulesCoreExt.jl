@@ -84,7 +84,7 @@ function apply_implicit_pullback(
     dy = unthunk(dy_thunk)
     dy_vec = vec(dy)
     dc_vec = solve(linear_solver, Aᵀ_vec, -dy_vec)
-    dc = reshape(dc_vec, x_size)
+    dc = reshape(dc_vec, size(dy))
     dx = pbBᵀ(dc)
     return (NoTangent(), dx, ntuple(unimplemented_tangent, nbargs)...)
 end
