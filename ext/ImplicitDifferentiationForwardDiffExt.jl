@@ -8,7 +8,7 @@ end
 
 using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend
 using ImplicitDifferentiation: ImplicitFunction, DirectLinearSolver, IterativeLinearSolver
-using ImplicitDifferentiation: conditions_pushforwards, pushforward_to_operator
+using ImplicitDifferentiation: conditions_pushforwards, pushforwards_to_operators
 using ImplicitDifferentiation: get_output, get_byproduct, solve
 using ImplicitDifferentiation: identity_break_autodiff
 using LinearAlgebra: mul!
@@ -30,15 +30,17 @@ function (implicit::ImplicitFunction)(
     x = value.(x_and_dx)
     y_or_yz = implicit(x, args...; kwargs...)
     y = get_output(y_or_yz)
+    y_vec = vec(y)
 
     backend = forward_conditions_backend(implicit)
     pfA, pfB = conditions_pushforwards(backend, implicit, x, y_or_yz, args; kwargs)
-    A_vec = pushforward_to_operator(implicit, y, pfA)
+    A_vec, B_vec = pushforwards_to_operators(implicit, x, y, pfA, pfB)
 
     dy = ntuple(Val(N)) do k
         dₖx = partials.(x_and_dx, k)
-        dₖc = pfB(dₖx)
-        dₖc_vec = vec(dₖc)
+        dₖx_vec = vec(dₖx)
+        dₖc_vec = similar(y_vec)
+        mul!(dₖc_vec, B_vec, dₖx_vec)
         dₖy_vec = solve(implicit.linear_solver, A_vec, -dₖc_vec)
         reshape(dₖy_vec, size(y))
     end

@@ -5,7 +5,7 @@
 docs/src/index.md
 /docs/build/
 docs/src/examples/*.md
-test/playground.jl
+*/playground.jl
 *.csv
 *.png
 *.pdf
