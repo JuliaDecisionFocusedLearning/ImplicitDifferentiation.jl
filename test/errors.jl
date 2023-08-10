@@ -65,7 +65,7 @@ end
     implicit = ImplicitFunction(forward, conditions)
     y, z = implicit(x)
     dy = similar(y)
-
+    rc = Zygote.ZygoteRuleConfig()
     test_rrule(rc, implicit, x; atol=1e-2, output_tangent=(dy, 0))
     @test_skip test_rrule(rc, implicit, x; atol=1e-2, output_tangent=(dy, NoTangent()))
 end
