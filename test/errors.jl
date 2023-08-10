@@ -1,3 +1,5 @@
+using ChainRulesCore
+using ChainRulesTestUtils
 using ForwardDiff
 using ImplicitDifferentiation
 using Test
@@ -54,4 +56,16 @@ end
             end
         end
     end
+end
+
+@testset "Weird ChainRulesTestUtils behavior" begin
+    x = rand(2, 3)
+    forward(x) = sqrt.(abs.(x)), 2
+    conditions(x, y, z) = abs.(y) .^ z .- abs.(x)
+    implicit = ImplicitFunction(forward, conditions)
+    y, z = implicit(x)
+    dy = similar(y)
+
+    test_rrule(rc, implicit, x; atol=1e-2, output_tangent=(dy, 0))
+    @test_skip test_rrule(rc, implicit, x; atol=1e-2, output_tangent=(dy, NoTangent()))
 end
