@@ -367,6 +367,13 @@ end
 
 for (linear_solver, conditions_backend, x) in params_candidates
     testsetname = "$(typeof(linear_solver)) - $(typeof(conditions_backend)) - $(typeof(x))"
+    if (
+        linear_solver isa DirectLinearSolver &&
+        x isa AbstractSparseArray &&
+        VERSION < v"1.9"
+    )  # missing linalg function for sparse arrays in 1.6
+        continue
+    end
     @info "$testsetname"
     @testset verbose = true "$testsetname" begin
         test_implicit(x; linear_solver, conditions_backend)
