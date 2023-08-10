@@ -46,7 +46,7 @@ function make_implicit_sqrt(; kwargs...)
 end
 
 function make_implicit_sqrt_byproduct(; kwargs...)
-    forward(x) = mysqrt(x), 2.0  # fails rrule tests with 2 integer, probably due to https://juliadiff.org/ChainRulesTestUtils.jl/dev/index.html#Specifying-Tangents
+    forward(x) = mysqrt(x), eltype(x)(2)  # fails rrule tests with 2 integer, probably due to https://juliadiff.org/ChainRulesTestUtils.jl/dev/index.html#Specifying-Tangents
     conditions(x, y, z::Number) = y .^ z .- abs.(change_shape(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
