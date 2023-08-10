@@ -263,7 +263,7 @@ function test_implicit_forwarddiff(x::AbstractArray{T}; kwargs...) where {T}
     J2 = ForwardDiff.jacobian(first ∘ imf2, x)
     J3 = ForwardDiff.jacobian(_x -> imf3(_x, one(T) / 2), x)
     J4 = ForwardDiff.jacobian(_x -> imf4(_x; p=one(T) / 2), x)
-    J_true = ForwardDiff.jacobian(_x -> sqrt.(_x), x)
+    J_true = ForwardDiff.jacobian(_x -> sqrt.(remove_col(_x)), x)
 
     @testset "Exact Jacobian" begin
         @test J1 ≈ J_true
@@ -289,7 +289,7 @@ function test_implicit_zygote(x::AbstractArray{T}; kwargs...) where {T}
     J2 = Zygote.jacobian(first ∘ imf2, x)[1]
     J3 = Zygote.jacobian(imf3, x, one(T) / 2)[1]
     J4 = Zygote.jacobian(_x -> imf4(_x; p=one(T) / 2), x)[1]
-    J_true = Zygote.jacobian(_x -> sqrt.(_x), x)[1]
+    J_true = Zygote.jacobian(_x -> sqrt.(remove_col(_x)), x)[1]
 
     @testset "Exact Jacobian" begin
         @test J1 ≈ J_true
