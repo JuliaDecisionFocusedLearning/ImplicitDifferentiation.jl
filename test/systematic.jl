@@ -339,7 +339,7 @@ conditions_backend_candidates = (
 
 x_candidates = (
     rand(Float32, 2, 3), #
-    sprand(rand(Float32, 2, 3)), # TODO: failing
+    sparse(rand(Float32, 2, 3)), # TODO: failing
     SArray{Tuple{2,3}}(rand(Float32, 2, 3)), #
 );
 
