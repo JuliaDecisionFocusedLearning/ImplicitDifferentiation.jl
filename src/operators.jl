@@ -1,25 +1,3 @@
-struct PushforwardProd!{F,N}
-    pushforward::F
-    size::NTuple{N,Int}
-end
-
-function (pfp::PushforwardProd!)(dc_vec::AbstractVector, dy_vec::AbstractVector)
-    dy = reshape(dy_vec, pfp.size)
-    dc = pfp.pushforward(dy)
-    return dc_vec .= vec(dc)
-end
-
-struct PullbackProd!{F,N}
-    pullback::F
-    size::NTuple{N,Int}
-end
-
-function (pbp::PullbackProd!)(dy_vec::AbstractVector, dc_vec::AbstractVector)
-    dc = reshape(dc_vec, pbp.size)
-    dy = pbp.pullback(dc)
-    return dy_vec .= vec(dy)
-end
-
 ## Forward
 
 function conditions_pushforwards(
@@ -49,6 +27,17 @@ function conditions_pushforwards(
     pfA = only ∘ pushforward_function(ba, _y -> conditions(x, _y, z, args...; kwargs...), y)
     pfB = only ∘ pushforward_function(ba, _x -> conditions(_x, y, z, args...; kwargs...), x)
     return pfA, pfB
+end
+
+struct PushforwardProd!{F,N}
+    pushforward::F
+    size::NTuple{N,Int}
+end
+
+function (pfp::PushforwardProd!)(dc_vec::AbstractVector, dy_vec::AbstractVector)
+    dy = reshape(dy_vec, pfp.size)
+    dc = pfp.pushforward(dy)
+    return dc_vec .= vec(dc)
 end
 
 function pushforwards_to_operators(x::AbstractArray, y::AbstractArray, pfA, pfB)
@@ -96,6 +85,17 @@ function conditions_pullbacks(
     pbAᵀ = only ∘ pullback_function(ba, _y -> conditions(x, _y, z, args...; kwargs...), y)
     pbBᵀ = only ∘ pullback_function(ba, _x -> conditions(_x, y, z, args...; kwargs...), x)
     return pbAᵀ, pbBᵀ
+end
+
+struct PullbackProd!{F,N}
+    pullback::F
+    size::NTuple{N,Int}
+end
+
+function (pbp::PullbackProd!)(dy_vec::AbstractVector, dc_vec::AbstractVector)
+    dc = reshape(dc_vec, pbp.size)
+    dy = pbp.pullback(dc)
+    return dy_vec .= vec(dy)
 end
 
 function pullbacks_to_operators(x::AbstractArray, y::AbstractArray, pbAᵀ, pbBᵀ)

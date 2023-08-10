@@ -19,7 +19,7 @@ using SimpleUnPack: @unpack
 include("utils.jl")
 include("linear_solver.jl")
 include("implicit_function.jl")
-include("lazy_operators.jl")
+include("operators.jl")
 # include("dense_operators.jl")  # type unstable
 
 export ImplicitFunction
