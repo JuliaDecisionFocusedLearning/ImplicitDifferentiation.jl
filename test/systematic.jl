@@ -336,6 +336,7 @@ conditions_backend_candidates = (
 x_candidates = (
     rand(Float32, 2, 3, 2), #
     SArray{Tuple{2,3,2}}(rand(Float32, 2, 3, 2)), #
+    sparse(rand(Float32, 2)), #
     sparse(rand(Float32, 2, 3)), #
 );
 
