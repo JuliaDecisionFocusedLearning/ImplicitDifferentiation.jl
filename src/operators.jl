@@ -45,9 +45,8 @@ function pushforwards_to_operators(
 )
     n, m = length(x), length(y)
     A_vec = LinearOperator(eltype(y), m, m, false, false, PushforwardProd!(pfA, size(y)))
-    B_vec = LinearOperator(eltype(x), m, n, false, false, PushforwardProd!(pfB, size(x)))
     A_vec_presolved = presolve(implicit.linear_solver, A_vec, y)
-    return A_vec_presolved, B_vec
+    return A_vec_presolved, pfB
 end
 
 ## Reverse
@@ -97,7 +96,6 @@ function pullbacks_to_operators(
 )
     n, m = length(x), length(y)
     Aᵀ_vec = LinearOperator(eltype(y), m, m, false, false, PullbackProd!(pbAᵀ, size(y)))
-    Bᵀ_vec = LinearOperator(eltype(y), n, m, false, false, PullbackProd!(pbBᵀ, size(y)))
     Aᵀ_vec_presolved = presolve(implicit.linear_solver, Aᵀ_vec, y)
-    return Aᵀ_vec_presolved, Bᵀ_vec
+    return Aᵀ_vec_presolved, pbBᵀ
 end

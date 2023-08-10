@@ -30,17 +30,15 @@ function (implicit::ImplicitFunction)(
     x = value.(x_and_dx)
     y_or_yz = implicit(x, args...; kwargs...)
     y = get_output(y_or_yz)
-    y_vec = vec(y)
 
     backend = forward_conditions_backend(implicit)
     pfA, pfB = conditions_pushforwards(backend, implicit, x, y_or_yz, args; kwargs)
-    A_vec, B_vec = pushforwards_to_operators(implicit, x, y, pfA, pfB)
+    A_vec, pfB = pushforwards_to_operators(implicit, x, y, pfA, pfB)
 
     dy = ntuple(Val(N)) do k
         dₖx = partials.(x_and_dx, k)
-        dₖx_vec = vec(dₖx)
-        dₖc_vec = similar(y_vec)
-        mul!(dₖc_vec, B_vec, dₖx_vec)
+        dₖc = pfB(dₖx)
+        dₖc_vec = vec(dₖc)
         dₖy_vec = solve(implicit.linear_solver, A_vec, -dₖc_vec)
         reshape(dₖy_vec, size(y))
     end
