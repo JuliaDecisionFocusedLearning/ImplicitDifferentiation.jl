@@ -17,39 +17,48 @@ abstract type AbstractLinearSolver end
     IterativeLinearSolver
 
 An implementation of `AbstractLinearSolver` using `Krylov.gmres`.
+
+# Fields
+
+- `verbose::Bool`: Whether to throw a warning when the solver fails (defaults to `true`)
 """
-struct IterativeLinearSolver <: AbstractLinearSolver end
+Base.@kwdef struct IterativeLinearSolver <: AbstractLinearSolver
+    verbose::Bool = true
+end
 
 presolve(::IterativeLinearSolver, A, y) = A
 
-function solve(::IterativeLinearSolver, A, b)
-    T = float(promote_type(eltype(A), eltype(b)))
+function solve(sol::IterativeLinearSolver, A, b)
     x, stats = gmres(A, b)
-    x_maybenan = T.(x)
     if !stats.solved || stats.inconsistent
-        @warn "IterativeLinearSolver failed, result contains NaNs"
-        x_maybenan .= NaN
+        sol.verbose && @warn "IterativeLinearSolver failed, result contains NaNs"
+        x .= NaN
     end
-    return x_maybenan
+    return x
 end
 
 """
     DirectLinearSolver
 
 An implementation of `AbstractLinearSolver` using the built-in backslash operator.
+
+# Fields
+
+- `verbose::Bool`: Whether to throw a warning when the solver fails (defaults to `true`)
 """
-struct DirectLinearSolver <: AbstractLinearSolver end
+Base.@kwdef struct DirectLinearSolver <: AbstractLinearSolver
+    verbose::Bool = true
+end
 
 function presolve(::DirectLinearSolver, A, y)
     return lu(Matrix(A); check=false)
 end
 
-function solve(::DirectLinearSolver, A_lu, b)
-    T = float(promote_type(eltype(A_lu.L), eltype(A_lu.U), eltype(b)))
-    x_maybenan = T.(A_lu \ b)
+function solve(sol::DirectLinearSolver, A_lu, b)
+    x = A_lu \ b
     if !issuccess(A_lu)
-        @warn "DirectLinearSolver failed, result contains NaNs"
-        x_maybenan .= NaN
+        sol.verbose && @warn "DirectLinearSolver failed, result contains NaNs"
+        x .= NaN
     end
-    return x_maybenan
+    return x
 end

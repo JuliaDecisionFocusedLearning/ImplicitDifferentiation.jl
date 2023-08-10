@@ -68,13 +68,14 @@ This call is differentiable.
 """
 function (implicit::ImplicitFunction)(x::AbstractArray, args...; kwargs...)
     y_or_yz = implicit.forward(x, args...; kwargs...)
-    if !(
+    valid = (
         y_or_yz isa AbstractArray ||  # 
         (y_or_yz isa Tuple && length(y_or_yz) == 2 && y_or_yz[1] isa AbstractArray)
     )
+    if !valid
         throw(
             DimensionMismatch(
-                "The forward mapping must return an array `y` or a tuple `(y, z)`"
+                "The forward mapping must return an array `y` or a tuple `(y, z)` where `y` is an array",
             ),
         )
     end
