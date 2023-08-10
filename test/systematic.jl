@@ -46,22 +46,22 @@ function make_implicit_sqrt(; kwargs...)
 end
 
 function make_implicit_sqrt_byproduct(; kwargs...)
-    forward(x) = mysqrt(x), 2
-    conditions(x, y, z) = y .^ z .- abs.(change_shape(x))
+    forward(x) = mysqrt(x), 2.0  # fails rrule tests with 2 integer, not sure why
+    conditions(x, y, z::Number) = y .^ z .- abs.(change_shape(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_power_args(; kwargs...)
-    forward(x, p) = mypower(x, one(eltype(x)) / p)
-    conditions(x, y, p) = y .^ p .- abs.(change_shape(x))
+    forward(x, p::Number) = mypower(x, one(eltype(x)) / p)
+    conditions(x, y, p::Number) = y .^ p .- abs.(change_shape(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_power_kwargs(; kwargs...)
-    forward(x; p) = mypower(x, one(eltype(x)) / p)
-    conditions(x, y; p) = y .^ p .- abs.(change_shape(x))
+    forward(x; p::Number) = mypower(x, one(eltype(x)) / p)
+    conditions(x, y; p::Number) = y .^ p .- abs.(change_shape(x))
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end

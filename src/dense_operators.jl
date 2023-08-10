@@ -1,3 +1,5 @@
+#=
+
 struct VecPartialConditions{whicharg,C,X,YZ,A,K}
     conditions::C
     x::X
@@ -107,3 +109,5 @@ function conditions_reverse_operators(
     B_vec = only(jacobian(ba, conditions_xvec, vec(x)))
     return transpose(A_vec), transpose(B_vec)
 end
+
+=#
