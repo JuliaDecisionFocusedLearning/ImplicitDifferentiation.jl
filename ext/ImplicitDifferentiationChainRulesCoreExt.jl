@@ -5,7 +5,7 @@ using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig
 using ChainRulesCore: rrule, rrule_via_ad, unthunk, @not_implemented
 using ImplicitDifferentiation: ImplicitDifferentiation
 using ImplicitDifferentiation: ImplicitFunction
-using ImplicitDifferentiation: conditions_pullbacks, pullbacks_to_operators
+using ImplicitDifferentiation: conditions_reverse_operators
 using ImplicitDifferentiation: get_output, solve
 using LinearAlgebra: mul!
 using SimpleUnPack: @unpack
@@ -24,10 +24,10 @@ function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::X, args...; kwargs...
 ) where {R,X<:AbstractArray{R}}
     y_or_yz = implicit(x, args...; kwargs...)
-    y = get_output(y_or_yz)
     backend = reverse_conditions_backend(rc, implicit)
-    pbAᵀ, pbBᵀ = conditions_pullbacks(backend, implicit, x, y_or_yz, args; kwargs)
-    Aᵀ_vec, Bᵀ_vec = pullbacks_to_operators(implicit, x, y, pbAᵀ, pbBᵀ)
+    Aᵀ_vec, Bᵀ_vec = conditions_reverse_operators(
+        backend, implicit, x, y_or_yz, args; kwargs
+    )
 
     byproduct = y_or_yz isa Tuple
     nbargs = length(args)

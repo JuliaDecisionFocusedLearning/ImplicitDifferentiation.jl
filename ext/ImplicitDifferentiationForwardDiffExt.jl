@@ -8,7 +8,7 @@ end
 
 using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend
 using ImplicitDifferentiation: ImplicitFunction, DirectLinearSolver, IterativeLinearSolver
-using ImplicitDifferentiation: conditions_pushforwards, pushforwards_to_operators
+using ImplicitDifferentiation: conditions_forward_operators
 using ImplicitDifferentiation: get_output, get_byproduct, solve
 using ImplicitDifferentiation: identity_break_autodiff
 using LinearAlgebra: mul!
@@ -33,8 +33,7 @@ function (implicit::ImplicitFunction)(
     y_vec = vec(y)
 
     backend = forward_conditions_backend(implicit)
-    pfA, pfB = conditions_pushforwards(backend, implicit, x, y_or_yz, args; kwargs)
-    A_vec, B_vec = pushforwards_to_operators(implicit, x, y, pfA, pfB)
+    A_vec, B_vec = conditions_forward_operators(backend, implicit, x, y, args; kwargs)
 
     dy = ntuple(Val(N)) do k
         dₖx = partials.(x_and_dx, k)
@@ -66,15 +65,15 @@ function forward_conditions_backend(
     return implicit.conditions_backend
 end
 
-@compile_workload begin
-    forward(x) = sqrt.(identity_break_autodiff(x))
-    conditions(x, y) = y .^ 2 .- x
-    for linear_solver in (DirectLinearSolver(), IterativeLinearSolver())
-        implicit = ImplicitFunction(forward, conditions; linear_solver)
-        x = rand(2)
-        implicit(x)
-        jacobian(implicit, x)
-    end
-end
+# @compile_workload begin
+#     forward(x) = sqrt.(identity_break_autodiff(x))
+#     conditions(x, y) = y .^ 2 .- x
+#     for linear_solver in (DirectLinearSolver(), IterativeLinearSolver())
+#         implicit = ImplicitFunction(forward, conditions; linear_solver)
+#         x = rand(2)
+#         implicit(x)
+#         jacobian(implicit, x)
+#     end
+# end
 
 end
