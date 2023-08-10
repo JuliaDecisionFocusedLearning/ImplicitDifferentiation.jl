@@ -26,7 +26,7 @@ Random.seed!(63);
 
 ## Utils
 
-change_shape(x::AbstractArray{T,3}) where {T} = selectdim(x, 3, 1)
+change_shape(x::AbstractArray{T,3}) where {T} = x[:, :, 1]
 
 function mysqrt(x::AbstractArray)
     return identity_break_autodiff(sqrt.(abs.(change_shape(x))))
@@ -333,8 +333,8 @@ conditions_backend_candidates = (
 );
 
 x_candidates = (
-    rand(Float32, 2, 3, 4), #
-    SArray{Tuple{2,3,4}}(rand(Float32, 2, 3, 4)), #
+    rand(Float32, 2, 3, 2), #
+    SArray{Tuple{2,3,2}}(rand(Float32, 2, 3, 2)), #
 );
 
 params_candidates = []
