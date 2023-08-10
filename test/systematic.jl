@@ -84,7 +84,7 @@ function test_implicit_call(x::AbstractArray{T}; kwargs...) where {T}
     imf3 = make_implicit_power_args(; kwargs...)
     imf4 = make_implicit_power_kwargs(; kwargs...)
 
-    y_true = sqrt.(x)
+    y_true = mysqrt(x)
     y1 = @inferred imf1(x)
     y2, z2 = @inferred imf2(x)
     y3 = @inferred imf3(x, one(T) / 2)
@@ -126,12 +126,11 @@ function test_implicit_duals(x::AbstractArray{T}; kwargs...) where {T}
     imf3 = make_implicit_power_args(; kwargs...)
     imf4 = make_implicit_power_kwargs(; kwargs...)
 
-    y_true = sqrt.(x)
+    y_true = mysqrt(x)
     dx = similar(x)
     dx .= one(T)
     x_and_dx = ForwardDiff.Dual.(x, dx)
 
-    y_true = sqrt.(x)
     y_and_dy1 = @inferred imf1(x_and_dx)
     y_and_dy2, z2 = @inferred imf2(x_and_dx)
     y_and_dy3 = @inferred imf3(x_and_dx, one(T) / 2)
@@ -173,7 +172,7 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
     imf3 = make_implicit_power_args(; kwargs...)
     imf4 = make_implicit_power_kwargs(; kwargs...)
 
-    y_true = sqrt.(x)
+    y_true = mysqrt(x)
     dy = similar(y_true)
     dy .= one(eltype(y_true))
     dz = nothing
