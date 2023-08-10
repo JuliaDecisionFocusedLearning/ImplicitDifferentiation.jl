@@ -3,15 +3,15 @@ Pkg.activate(@__DIR__)
 
 using AbstractDifferentiation: ForwardDiffBackend
 using BenchmarkTools
-using CSV
-using DataFrames
 using ForwardDiff: ForwardDiff, Dual
-using Plots
+using ProgressMeter
 using Random
 using SimpleUnPack
 using Zygote: Zygote
 
 using ImplicitDifferentiation
+
+## Benchmark definition
 
 forward(x; output_size) = fill(sqrt(sum(x)), output_size...)
 conditions(x, y; output_size) = abs2.(y) .- sum(x)
@@ -63,16 +63,16 @@ function create_benchmarkable(;
     dy .= one(eltype(y))
 
     if scenario_symbol == :jacobian && backend_symbol == :ForwardDiff
-        return @benchmarkable ForwardDiff.jacobian($implicit, $x)
+        return @benchmarkable ForwardDiff.jacobian($implicit, $x) seconds = 1 samples = 100
     elseif scenario_symbol == :jacobian && backend_symbol == :Zygote
-        return @benchmarkable Zygote.jacobian($implicit, $x)
+        return @benchmarkable Zygote.jacobian($implicit, $x) seconds = 1 samples = 100
     elseif scenario_symbol == :rrule && backend_symbol == :Zygote
-        return @benchmarkable Zygote.pullback($implicit, $x)
+        return @benchmarkable Zygote.pullback($implicit, $x) seconds = 1 samples = 100
     elseif scenario_symbol == :pullback && backend_symbol == :Zygote
         _, back = Zygote.pullback(implicit, x)
-        return @benchmarkable ($back)($dy)
+        return @benchmarkable ($back)($dy) seconds = 1 samples = 100
     elseif scenario_symbol == :pushforward && backend_symbol == :ForwardDiff
-        return @benchmarkable $implicit($x_and_dx)
+        return @benchmarkable $implicit($x_and_dx) seconds = 1 samples = 100
     else
         return nothing
     end
@@ -125,6 +125,30 @@ function make_suite(;
     end
     return SUITE
 end
+
+scenario_symbols = (:jacobian, :rrule, :pullback, :pushforward)
+linear_solver_symbols = (:direct, :iterative)
+backend_symbols = (:Zygote, :ForwardDiff)
+conditions_backend_symbols = (:nothing, :ForwardDiff)
+input_sizes = [(n,) for n in floor.(Int, 10 .^ (0:0.5:3))];
+output_sizes = [(n,) for n in floor.(Int, 10 .^ (0:0.5:3))];
+
+SUITE = make_suite(;
+    scenario_symbols,
+    linear_solver_symbols,
+    backend_symbols,
+    conditions_backend_symbols,
+    input_sizes,
+    output_sizes,
+)
+
+BenchmarkTools.save(joinpath(@__DIR__, "tune.json"), params(SUITE));
+
+## Benchmark analysis
+
+using CSV
+using DataFrames
+using Plots
 
 function export_results(
     results;
@@ -255,22 +279,6 @@ function plot_results(
     end
     return pl
 end
-
-scenario_symbols = (:jacobian, :rrule, :pullback, :pushforward)
-linear_solver_symbols = (:direct, :iterative)
-backend_symbols = (:Zygote, :ForwardDiff)
-conditions_backend_symbols = (:nothing, :ForwardDiff)
-input_sizes = [(n,) for n in floor.(Int, 10 .^ (0:0.5:3))];
-output_sizes = [(n,) for n in floor.(Int, 10 .^ (0:0.5:3))];
-
-SUITE = make_suite(;
-    scenario_symbols,
-    linear_solver_symbols,
-    backend_symbols,
-    conditions_backend_symbols,
-    input_sizes,
-    output_sizes,
-)
 
 # results = BenchmarkTools.run(SUITE; verbose=true, evals=1, seconds=1)
 
