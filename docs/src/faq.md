@@ -23,7 +23,7 @@ You can specify it with the `conditions_backend` keyword argument when construct
 
 Functions that eat or spit out arbitrary arrays are supported, as long as the forward mapping _and_ conditions return arrays of the same size.
 
-If the output is a small array (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
+If you deal with small arrays (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
 
 ### Scalars
 
@@ -34,7 +34,10 @@ Or better yet, wrap it in a static vector: `SVector(val)`.
 ### Sparse arrays
 
 !!! danger "Danger"
-    Sparse arrays are not supported and might give incorrect values or `NaN`s!
+    Sparse arrays are not officially supported and might give incorrect values or `NaN`s!
+
+With ForwardDiff.jl, differentiation of sparse arrays will always give wrong results due to [sparsity pattern cancellation](https://github.com/JuliaDiff/ForwardDiff.jl/issues/658).
+With Zygote.jl it appears to work, but this functionality is considered experimental and might evolve.
 
 ## Number of inputs and outputs
 
@@ -45,7 +48,7 @@ Well, it depends whether you want their derivatives or not.
 |                      | Derivatives needed                      | Derivatives not needed                  |
 | -------------------- | --------------------------------------- | --------------------------------------- |
 | **Multiple inputs**  | Make `x` a `ComponentVector`            | Supply `args` and `kwargs` to `forward` |
-| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `forward` return a byproduct         |
+| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `forward` return a byproduct        |
 
 We now detail each of these options.
 
