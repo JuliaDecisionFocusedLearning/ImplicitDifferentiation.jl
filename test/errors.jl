@@ -59,9 +59,9 @@ end
 end
 
 @testset "Weird ChainRulesTestUtils behavior" begin
-    x = rand(2, 3)
-    forward(x) = sqrt.(abs.(x)), 2
-    conditions(x, y, z) = abs.(y) .^ z .- abs.(x)
+    x = rand(3)
+    forward(x) = sqrt.(abs.(x)), 1
+    conditions(x, y, z) = abs.(y ./ z) .- abs.(x)
     implicit = ImplicitFunction(forward, conditions)
     y, z = implicit(x)
     dy = similar(y)
