@@ -130,8 +130,8 @@ scenario_symbols = (:jacobian, :rrule, :pullback, :pushforward)
 linear_solver_symbols = (:direct, :iterative)
 backend_symbols = (:Zygote, :ForwardDiff)
 conditions_backend_symbols = (:nothing, :ForwardDiff)
-input_sizes = [(n,) for n in floor.(Int, 10 .^ (0:0.5:3))];
-output_sizes = [(n,) for n in floor.(Int, 10 .^ (0:0.5:3))];
+input_sizes = [(n,) for n in floor.(Int, 10 .^ (0:1:3))];
+output_sizes = [(n,) for n in floor.(Int, 10 .^ (0:1:3))];
 
 SUITE = make_suite(;
     scenario_symbols,

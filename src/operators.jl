@@ -40,14 +40,20 @@ function (pfp::PushforwardProd!)(dc_vec::AbstractVector, dy_vec::AbstractVector)
     return dc_vec .= vec(dc)
 end
 
-function pushforwards_to_operators(
-    implicit::ImplicitFunction, x::AbstractArray, y::AbstractArray, pfA, pfB
-)
+function pushforwards_to_operators(x::AbstractArray, y::AbstractArray, pfA, pfB)
     n, m = length(x), length(y)
     A_vec = LinearOperator(eltype(y), m, m, false, false, PushforwardProd!(pfA, size(y)))
     B_vec = LinearOperator(eltype(x), m, n, false, false, PushforwardProd!(pfB, size(x)))
-    A_vec_presolved = presolve(implicit.linear_solver, A_vec, y)
-    return A_vec_presolved, B_vec
+    return A_vec, B_vec
+end
+
+function conditions_forward_operators(
+    backend::AbstractBackend, implicit::ImplicitFunction, x, y_or_yz, args; kwargs
+)
+    y = get_output(y_or_yz)
+    pfA, pfB = conditions_pushforwards(backend, implicit, x, y_or_yz, args; kwargs)
+    A_vec, B_vec = pushforwards_to_operators(x, y, pfA, pfB)
+    return A_vec, B_vec
 end
 
 ## Reverse
@@ -92,12 +98,18 @@ function (pbp::PullbackProd!)(dy_vec::AbstractVector, dc_vec::AbstractVector)
     return dy_vec .= vec(dy)
 end
 
-function pullbacks_to_operators(
-    implicit::ImplicitFunction, x::AbstractArray, y::AbstractArray, pbAᵀ, pbBᵀ
-)
+function pullbacks_to_operators(x::AbstractArray, y::AbstractArray, pbAᵀ, pbBᵀ)
     n, m = length(x), length(y)
     Aᵀ_vec = LinearOperator(eltype(y), m, m, false, false, PullbackProd!(pbAᵀ, size(y)))
     Bᵀ_vec = LinearOperator(eltype(y), n, m, false, false, PullbackProd!(pbBᵀ, size(y)))
-    Aᵀ_vec_presolved = presolve(implicit.linear_solver, Aᵀ_vec, y)
-    return Aᵀ_vec_presolved, Bᵀ_vec
+    return Aᵀ_vec, Bᵀ_vec
+end
+
+function conditions_reverse_operators(
+    backend::AbstractBackend, implicit::ImplicitFunction, x, y_or_yz, args; kwargs
+)
+    y = get_output(y_or_yz)
+    pbAᵀ, pbBᵀ = conditions_pullbacks(backend, implicit, x, y_or_yz, args; kwargs)
+    Aᵀ_vec, Bᵀ_vec = pullbacks_to_operators(x, y, pbAᵀ, pbBᵀ)
+    return Aᵀ_vec, Bᵀ_vec
 end

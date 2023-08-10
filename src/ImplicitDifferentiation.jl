@@ -7,7 +7,8 @@ Its main export is the type [`ImplicitFunction`](@ref).
 """
 module ImplicitDifferentiation
 
-using AbstractDifferentiation: AbstractBackend, pushforward_function, pullback_function
+using AbstractDifferentiation: AbstractBackend
+using AbstractDifferentiation: pushforward_function, pullback_function, jacobian
 using Krylov: gmres
 using LinearOperators: LinearOperators, LinearOperator
 using LinearAlgebra: issuccess, lu
@@ -19,6 +20,7 @@ include("utils.jl")
 include("linear_solver.jl")
 include("implicit_function.jl")
 include("operators.jl")
+# include("dense_operators.jl")  # type unstable
 
 export ImplicitFunction
 export AbstractLinearSolver, IterativeLinearSolver, DirectLinearSolver

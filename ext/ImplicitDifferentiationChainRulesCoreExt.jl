@@ -5,8 +5,8 @@ using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig
 using ChainRulesCore: rrule, rrule_via_ad, unthunk, @not_implemented
 using ImplicitDifferentiation: ImplicitDifferentiation
 using ImplicitDifferentiation: ImplicitFunction
-using ImplicitDifferentiation: conditions_pullbacks, pullbacks_to_operators
-using ImplicitDifferentiation: get_output, solve
+using ImplicitDifferentiation: conditions_reverse_operators
+using ImplicitDifferentiation: get_output, presolve, solve
 using LinearAlgebra: mul!
 using SimpleUnPack: @unpack
 
@@ -23,16 +23,18 @@ Positional and keyword arguments are passed to both `implicit.forward` and `impl
 function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::X, args...; kwargs...
 ) where {R,X<:AbstractArray{R}}
+    linear_solver = implicit.linear_solver
     y_or_yz = implicit(x, args...; kwargs...)
-    y = get_output(y_or_yz)
     backend = reverse_conditions_backend(rc, implicit)
-    pbAᵀ, pbBᵀ = conditions_pullbacks(backend, implicit, x, y_or_yz, args; kwargs)
-    Aᵀ_vec, Bᵀ_vec = pullbacks_to_operators(implicit, x, y, pbAᵀ, pbBᵀ)
+    Aᵀ_vec, Bᵀ_vec = conditions_reverse_operators(
+        backend, implicit, x, y_or_yz, args; kwargs
+    )
+    Aᵀ_vec_presolved = presolve(linear_solver, Aᵀ_vec, get_output(y_or_yz))
 
     byproduct = y_or_yz isa Tuple
     nbargs = length(args)
     implicit_pullback = ImplicitPullback{byproduct,nbargs}(
-        Aᵀ_vec, Bᵀ_vec, implicit.linear_solver, vec(x), size(x)
+        Aᵀ_vec_presolved, Bᵀ_vec, linear_solver, vec(x), size(x)
     )
     return y_or_yz, implicit_pullback
 end
