@@ -8,7 +8,7 @@ Check out the source code of `IterativeLinearSolver` and `DirectLinearSolver` fo
 
 # Required methods
 
-- `presolve(linear_solver, A, y)`: Returns a matrix-like object `A` for which it is cheaper to solve several linear systems with different vectors `b` (a typical example would be to perform LU factorization).
+- `presolve(linear_solver, A)`: Returns a matrix-like object `A` for which it is cheaper to solve several linear systems with different vectors `b` (a typical example would be to perform LU factorization).
 - `solve(linear_solver, A, b)`: Returns a vector `x` satisfying `Ax = b`. If the linear system has not been solved to satisfaction, every element of `x` should be a `NaN` of the appropriate floating point type.
 """
 abstract type AbstractLinearSolver end

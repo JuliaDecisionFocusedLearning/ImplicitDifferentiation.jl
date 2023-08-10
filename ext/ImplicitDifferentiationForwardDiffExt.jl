@@ -9,7 +9,7 @@ end
 using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend
 using ImplicitDifferentiation: ImplicitFunction, DirectLinearSolver, IterativeLinearSolver
 using ImplicitDifferentiation: conditions_forward_operators
-using ImplicitDifferentiation: get_output, get_byproduct, solve
+using ImplicitDifferentiation: get_output, get_byproduct, presolve, solve
 using ImplicitDifferentiation: identity_break_autodiff
 using LinearAlgebra: mul!
 using PrecompileTools: @compile_workload
@@ -27,20 +27,23 @@ Positional and keyword arguments are passed to both `implicit.forward` and `impl
 function (implicit::ImplicitFunction)(
     x_and_dx::AbstractArray{Dual{T,R,N}}, args...; kwargs...
 ) where {T,R,N}
+    linear_solver = implicit.linear_solver
+
     x = value.(x_and_dx)
     y_or_yz = implicit(x, args...; kwargs...)
     y = get_output(y_or_yz)
     y_vec = vec(y)
 
     backend = forward_conditions_backend(implicit)
-    A_vec, B_vec = conditions_forward_operators(backend, implicit, x, y, args; kwargs)
+    A_vec, B_vec = conditions_forward_operators(backend, implicit, x, y_or_yz, args; kwargs)
+    A_vec_presolved = presolve(linear_solver, A_vec, y)
 
     dy = ntuple(Val(N)) do k
         dₖx = partials.(x_and_dx, k)
         dₖx_vec = vec(dₖx)
         dₖc_vec = similar(y_vec)
         mul!(dₖc_vec, B_vec, dₖx_vec)
-        dₖy_vec = solve(implicit.linear_solver, A_vec, -dₖc_vec)
+        dₖy_vec = solve(implicit.linear_solver, A_vec_presolved, -dₖc_vec)
         reshape(dₖy_vec, size(y))
     end
 
@@ -65,15 +68,15 @@ function forward_conditions_backend(
     return implicit.conditions_backend
 end
 
-# @compile_workload begin
-#     forward(x) = sqrt.(identity_break_autodiff(x))
-#     conditions(x, y) = y .^ 2 .- x
-#     for linear_solver in (DirectLinearSolver(), IterativeLinearSolver())
-#         implicit = ImplicitFunction(forward, conditions; linear_solver)
-#         x = rand(2)
-#         implicit(x)
-#         jacobian(implicit, x)
-#     end
-# end
+@compile_workload begin
+    forward(x) = sqrt.(identity_break_autodiff(x))
+    conditions(x, y) = y .^ 2 .- x
+    for linear_solver in (DirectLinearSolver(), IterativeLinearSolver())
+        implicit = ImplicitFunction(forward, conditions; linear_solver)
+        x = rand(2)
+        implicit(x)
+        jacobian(implicit, x)
+    end
+end
 
 end
