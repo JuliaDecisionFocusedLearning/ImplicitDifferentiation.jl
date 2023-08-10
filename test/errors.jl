@@ -4,23 +4,29 @@ using Test
 using Zygote
 
 @testset "Byproduct handling" begin
-    f = (_) -> (1, 2)
-    c = (_, _) -> [0.0]
-    imf1 = ImplicitFunction(f, c)
-    @test_throws DimensionMismatch imf1(zeros(2))
+    f1 = (_) -> (1, 2)
+    f2 = (_) -> ([1.0], 2, 3)
+    c = nothing
+    imf1 = ImplicitFunction(f1, c)
+    imf2 = ImplicitFunction(f2, c)
+    @test_throws DimensionMismatch imf1(zeros(1))
+    @test_throws DimensionMismatch imf2(zeros(1))
 end
 
 @testset "Only accept one array" begin
-    f = (_) -> [1.0]
-    c = (_, _) -> [0.0]
+    f = identity
+    c = nothing
     imf = ImplicitFunction(f, c)
-    @test_throws MethodError imf("hello")
+    @test_throws MethodError imf((1.0,))
     @test_throws MethodError imf([1.0], [1.0])
 end
 
 @testset verbose = true "Derivative NaNs" begin
     x = zeros(Float32, 2)
-    linear_solvers = (IterativeLinearSolver(), DirectLinearSolver())
+    linear_solvers = (
+        IterativeLinearSolver(; verbose=false), DirectLinearSolver(; verbose=false)
+    )
+
     @testset "Infinite derivative" begin
         f = x -> sqrt.(x)  # nondifferentiable at 0
         c = (x, y) -> y .^ 2 .- x
