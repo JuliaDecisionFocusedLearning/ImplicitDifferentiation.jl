@@ -85,7 +85,7 @@ We represent it using a type called `ImplicitFunction`, which you will see in ac
 =#
 
 #=
-First we define a forward mapping correponding to the function we consider.
+First we define a forward mapping corresponding to the function we consider.
 It returns the actual output $y(x)$ of the function, and can be thought of as a black box solver.
 Importantly, this Julia callable _doesn't need to be differentiable by automatic differentiation packages but the underlying function still needs to be mathematically differentiable_.
 =#
@@ -121,7 +121,7 @@ implicit(x) ≈ sqrt.(x)
 @test implicit(x) ≈ sqrt.(x)  #src
 
 #=
-And when we try to compute its Jacobian, the [implicit function theorem](https://en.wikipedia.org/wiki/Implicit_function_theorem) is applied in the background to circumvent the lack of differentiablility of the forward mapping.
+And when we try to compute its Jacobian, the [implicit function theorem](https://en.wikipedia.org/wiki/Implicit_function_theorem) is applied in the background to circumvent the lack of differentiability of the forward mapping.
 =#
 
 # ## Forward and reverse mode autodiff
