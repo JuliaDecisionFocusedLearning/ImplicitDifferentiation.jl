@@ -20,18 +20,24 @@ An implementation of `AbstractLinearSolver` using `Krylov.gmres`.
 
 # Fields
 
-- `verbose::Bool`: Whether to throw a warning when the solver fails (defaults to `true`)
+- `verbose::Bool(toget)`: Whether to display a warning when the solver fails and returns `NaN`s (defaults to `true`)
+- `accept_inconsistent::Bool`: Whether to return approximate least squares solutions for inconsistent systems, or return `NaN`s (defaults to `false`)
 """
 Base.@kwdef struct IterativeLinearSolver <: AbstractLinearSolver
     verbose::Bool = true
+    accept_inconsistent::Bool = false
 end
 
 presolve(::IterativeLinearSolver, A, y) = A
 
 function solve(sol::IterativeLinearSolver, A, b)
     x, stats = gmres(A, b)
-    if !stats.solved || stats.inconsistent
-        sol.verbose && @warn "IterativeLinearSolver failed, result contains NaNs"
+    failed = !stats.solved || (stats.inconsistent && !sol.accept_inconsistent)
+    if failed
+        if sol.verbose
+            @warn "IterativeLinearSolver failed, result contains NaNs"
+            @show stats
+        end
         x .= NaN
     end
     return x
