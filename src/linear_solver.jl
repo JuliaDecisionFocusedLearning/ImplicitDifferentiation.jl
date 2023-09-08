@@ -20,7 +20,7 @@ An implementation of `AbstractLinearSolver` using `Krylov.gmres`.
 
 # Fields
 
-- `verbose::Bool(toget)`: Whether to display a warning when the solver fails and returns `NaN`s (defaults to `true`)
+- `verbose::Bool`: Whether to display a warning when the solver fails and returns `NaN`s (defaults to `true`)
 - `accept_inconsistent::Bool`: Whether to return approximate least squares solutions for inconsistent systems, or return `NaN`s (defaults to `false`)
 """
 Base.@kwdef struct IterativeLinearSolver <: AbstractLinearSolver
