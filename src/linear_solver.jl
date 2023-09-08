@@ -32,8 +32,8 @@ presolve(::IterativeLinearSolver, A, y) = A
 
 function solve(sol::IterativeLinearSolver, A, b)
     x, stats = gmres(A, b)
-    failed = !stats.solved || (stats.inconsistent && !sol.accept_inconsistent)
-    if failed
+    success = stats.solved || (stats.inconsistent && sol.accept_inconsistent)
+    if !success
         if sol.verbose
             @warn "IterativeLinearSolver failed, result contains NaNs"
             @show stats
