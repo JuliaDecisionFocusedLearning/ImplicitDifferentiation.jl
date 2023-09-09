@@ -16,12 +16,16 @@ abstract type AbstractLinearSolver end
 """
     IterativeLinearSolver
 
-An implementation of `AbstractLinearSolver` using `Krylov.gmres`.
+An implementation of `AbstractLinearSolver` using `Krylov.gmres`, set as the default for `ImplicitFunction`.
 
 # Fields
 
 - `verbose::Bool`: Whether to display a warning when the solver fails and returns `NaN`s (defaults to `true`)
-- `accept_inconsistent::Bool`: Whether to return approximate least squares solutions for inconsistent systems, or return `NaN`s (defaults to `false`)
+- `accept_inconsistent::Bool`: Whether to accept approximate least squares solutions for inconsistent systems, or fail and return `NaN`s (defaults to `false`)
+
+!!! note
+    If you find that your implicit gradients contains `NaN`s, try using this solver with `accept_inconsistent=true`.
+    However, beware that the implicit function theorem does not cover the case of inconsistent linear systems `AJ = B`, so it is unclear what the result will mean.
 """
 Base.@kwdef struct IterativeLinearSolver <: AbstractLinearSolver
     verbose::Bool = true
@@ -32,7 +36,11 @@ presolve(::IterativeLinearSolver, A, y) = A
 
 function solve(sol::IterativeLinearSolver, A, b)
     x, stats = gmres(A, b)
-    success = stats.solved || (stats.inconsistent && sol.accept_inconsistent)
+    if sol.accept_inconsistent
+        success = stats.solved || stats.inconsistent
+    else
+        success = stats.solved && !stats.inconsistent
+    end
     if !success
         if sol.verbose
             @warn "IterativeLinearSolver failed, result contains NaNs"

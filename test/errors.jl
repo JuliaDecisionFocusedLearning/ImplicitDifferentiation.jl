@@ -26,8 +26,13 @@ end
 @testset verbose = true "Derivative NaNs" begin
     x = zeros(Float32, 2)
     linear_solvers = (
-        IterativeLinearSolver(; verbose=false), DirectLinearSolver(; verbose=false)
+        IterativeLinearSolver(; verbose=false),  #
+        IterativeLinearSolver(; verbose=false, accept_inconsistent=true),  #
+        DirectLinearSolver(; verbose=false),  #
     )
+    function should_give_nan(linear_solver)
+        return linear_solver isa DirectLinearSolver || !linear_solver.accept_inconsistent
+    end
 
     @testset "Infinite derivative" begin
         f = x -> sqrt.(x)  # nondifferentiable at 0
@@ -37,8 +42,10 @@ end
                 implicit = ImplicitFunction(f, c; linear_solver)
                 J1 = ForwardDiff.jacobian(implicit, x)
                 J2 = Zygote.jacobian(implicit, x)[1]
-                @test all(isnan, J1) && eltype(J1) == Float32
-                @test all(isnan, J2) && eltype(J2) == Float32
+                @test all(isnan, J1) == should_give_nan(linear_solver)
+                @test all(isnan, J2) == should_give_nan(linear_solver)
+                @test eltype(J1) == Float32
+                @test eltype(J2) == Float32
             end
         end
     end
@@ -51,8 +58,10 @@ end
                 implicit = ImplicitFunction(f, c; linear_solver)
                 J1 = ForwardDiff.jacobian(implicit, x)
                 J2 = Zygote.jacobian(implicit, x)[1]
-                @test all(isnan, J1) && eltype(J1) == Float32
-                @test all(isnan, J2) && eltype(J2) == Float32
+                @test all(isnan, J1) == should_give_nan(linear_solver)
+                @test all(isnan, J2) == should_give_nan(linear_solver)
+                @test eltype(J1) == Float32
+                @test eltype(J2) == Float32
             end
         end
     end
