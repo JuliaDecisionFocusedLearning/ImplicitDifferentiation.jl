@@ -12,7 +12,7 @@ using ImplicitDifferentiation:
 using JET
 using LinearAlgebra
 using Random
-using ReverseDiff: ReverseDiff, @grad_from_chainrules
+using ReverseDiff: ReverseDiff, @grad_from_chainrules, TrackedArray
 using SparseArrays
 using StaticArrays
 using Test
