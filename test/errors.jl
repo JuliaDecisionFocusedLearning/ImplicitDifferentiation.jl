@@ -2,6 +2,7 @@ using ChainRulesCore
 using ChainRulesTestUtils
 using ForwardDiff
 using ImplicitDifferentiation
+using ImplicitDifferentiation: call_implicit_function
 using Test
 using Zygote
 
@@ -75,6 +76,13 @@ end
     y, z = implicit(x)
     dy = similar(y)
     rc = Zygote.ZygoteRuleConfig()
-    test_rrule(rc, implicit, x; atol=1e-2, output_tangent=(dy, 0))
-    @test_skip test_rrule(rc, implicit, x; atol=1e-2, output_tangent=(dy, NoTangent()))
+    test_rrule(rc, call_implicit_function, implicit, x; atol=1e-2, output_tangent=(dy, 0))
+    @test_skip test_rrule(
+        rc,
+        call_implicit_function,
+        implicit,
+        x;
+        atol=1e-2,
+        output_tangent=(dy, NoTangent()),
+    )
 end
