@@ -7,7 +7,7 @@ To differentiate an `ImplicitFunction`, the following backends are supported.
 | Backend                                                                | Forward mode | Reverse mode |
 | ---------------------------------------------------------------------- | ------------ | ------------ |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
-| [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | yes          | soon         |
+| [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | soon          | yes         |
 | [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | someday      | someday      |
 
 By default, the conditions are differentiated with the same backend as the `ImplicitFunction` that contains them.
