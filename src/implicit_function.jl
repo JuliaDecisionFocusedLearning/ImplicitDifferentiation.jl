@@ -67,7 +67,24 @@ Return `implicit.forward(x, args...; kwargs...)`, which can be either an array `
 This call is differentiable.
 """
 function (implicit::ImplicitFunction)(x::AbstractArray, args...; kwargs...)
+    return call_implicit_function(implicit, x, args...; kwargs...)
+end
+
+"""
+    call_implicit_function(implicit::ImplicitFunction, x::AbstractArray, args...; kwargs...)
+
+Under the hood, that is what `implicit(x, args...; kwargs...)` calls.
+
+This is relevant for users who need to avoid callable structs, e.g. when working with ReverseDiff.jl.
+"""
+function call_implicit_function(
+    implicit::ImplicitFunction, x::AbstractArray, args...; kwargs...
+)
     y_or_yz = implicit.forward(x, args...; kwargs...)
+    return check_valid_output(y_or_yz)
+end
+
+function check_valid_output(y_or_yz)
     valid = (
         y_or_yz isa AbstractArray ||  # 
         (y_or_yz isa Tuple && length(y_or_yz) == 2 && y_or_yz[1] isa AbstractArray)
@@ -85,3 +102,5 @@ end
 get_output(y::AbstractArray) = y
 get_output(yz::Tuple) = yz[1]
 get_byproduct(yz::Tuple) = yz[2]
+
+function reverse_conditions_backend end

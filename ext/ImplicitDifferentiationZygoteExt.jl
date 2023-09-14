@@ -6,8 +6,8 @@ else
     using ..Zygote: jacobian
 end
 
-using ImplicitDifferentiation: ImplicitFunction, identity_break_autodiff
-using ImplicitDifferentiation: DirectLinearSolver, IterativeLinearSolver
+using ImplicitDifferentiation:
+    ImplicitFunction, identity_break_autodiff, DirectLinearSolver, IterativeLinearSolver
 using PrecompileTools: @compile_workload
 
 @compile_workload begin

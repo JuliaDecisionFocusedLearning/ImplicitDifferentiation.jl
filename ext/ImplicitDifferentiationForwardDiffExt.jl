@@ -7,15 +7,22 @@ else
 end
 
 using AbstractDifferentiation: AbstractBackend, ForwardDiffBackend
-using ImplicitDifferentiation: ImplicitFunction, DirectLinearSolver, IterativeLinearSolver
-using ImplicitDifferentiation: conditions_forward_operators
-using ImplicitDifferentiation: get_output, get_byproduct, presolve, solve
-using ImplicitDifferentiation: identity_break_autodiff
+using ImplicitDifferentiation:
+    ImplicitDifferentiation,
+    ImplicitFunction,
+    DirectLinearSolver,
+    IterativeLinearSolver,
+    conditions_forward_operators,
+    identity_break_autodiff,
+    get_output,
+    get_byproduct,
+    presolve,
+    solve
 using LinearAlgebra: mul!
 using PrecompileTools: @compile_workload
 
 """
-    implicit(x_and_dx::AbstractArray{<:Dual}, args...; kwargs...)
+    call_implicit_function(implicit, x_and_dx::AbstractArray{<:Dual}, args...; kwargs...)
 
 Overload an [`ImplicitFunction`](@ref) on dual numbers to ensure compatibility with forward mode autodiff.
 
@@ -24,8 +31,8 @@ This is only available if ForwardDiff.jl is loaded (extension).
 We compute the Jacobian-vector product `Jv` by solving `Au = -Bv` and setting `Jv = u`.
 Positional and keyword arguments are passed to both `implicit.forward` and `implicit.conditions`.
 """
-function (implicit::ImplicitFunction)(
-    x_and_dx::AbstractArray{Dual{T,R,N}}, args...; kwargs...
+function ImplicitDifferentiation.call_implicit_function(
+    implicit::ImplicitFunction, x_and_dx::AbstractArray{Dual{T,R,N}}, args...; kwargs...
 ) where {T,R,N}
     linear_solver = implicit.linear_solver
 

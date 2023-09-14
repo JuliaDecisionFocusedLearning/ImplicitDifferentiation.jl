@@ -1,12 +1,17 @@
 module ImplicitDifferentiationChainRulesCoreExt
 
 using AbstractDifferentiation: AbstractBackend, ReverseRuleConfigBackend, ruleconfig
-using ChainRulesCore: ChainRulesCore, NoTangent, RuleConfig
-using ChainRulesCore: rrule, rrule_via_ad, unthunk, @not_implemented
-using ImplicitDifferentiation: ImplicitDifferentiation
-using ImplicitDifferentiation: ImplicitFunction
-using ImplicitDifferentiation: conditions_reverse_operators
-using ImplicitDifferentiation: get_output, presolve, solve
+using ChainRulesCore:
+    ChainRulesCore, NoTangent, RuleConfig, rrule, rrule_via_ad, unthunk, @not_implemented
+using ImplicitDifferentiation:
+    ImplicitDifferentiation,
+    ImplicitFunction,
+    call_implicit_function,
+    conditions_reverse_operators,
+    get_output,
+    presolve,
+    reverse_conditions_backend,
+    solve
 using LinearAlgebra: mul!
 using SimpleUnPack: @unpack
 
@@ -21,8 +26,13 @@ We compute the vector-Jacobian product `Jᵀv` by solving `Aᵀu = v` and settin
 Positional and keyword arguments are passed to both `implicit.forward` and `implicit.conditions`.
 """
 function ChainRulesCore.rrule(
-    rc::RuleConfig, implicit::ImplicitFunction, x::X, args...; kwargs...
-) where {R,X<:AbstractArray{R}}
+    rc::RuleConfig,
+    ::typeof(call_implicit_function),
+    implicit::ImplicitFunction,
+    x::AbstractArray,
+    args...;
+    kwargs...,
+)
     linear_solver = implicit.linear_solver
     y_or_yz = implicit(x, args...; kwargs...)
     backend = reverse_conditions_backend(rc, implicit)
@@ -39,13 +49,13 @@ function ChainRulesCore.rrule(
     return y_or_yz, implicit_pullback
 end
 
-function reverse_conditions_backend(
+function ImplicitDifferentiation.reverse_conditions_backend(
     rc::RuleConfig, ::ImplicitFunction{F,C,L,Nothing}
 ) where {F,C,L}
     return ReverseRuleConfigBackend(rc)
 end
 
-function reverse_conditions_backend(
+function ImplicitDifferentiation.reverse_conditions_backend(
     ::RuleConfig, implicit::ImplicitFunction{F,C,L,<:AbstractBackend}
 ) where {F,C,L}
     return implicit.conditions_backend
@@ -88,8 +98,11 @@ function apply_implicit_pullback(
     dc_vec = solve(linear_solver, Aᵀ_vec, -dy_vec)
     dx_vec = similar(x_vec)
     mul!(dx_vec, Bᵀ_vec, dc_vec)
+    dcall = NoTangent()
+    dimplicit = NoTangent()
     dx = reshape(dx_vec, x_size)
-    return (NoTangent(), dx, ntuple(unimplemented_tangent, nbargs)...)
+    dargs = ntuple(unimplemented_tangent, nbargs)
+    return (dcall, dimplicit, dx, dargs...)
 end
 
 end

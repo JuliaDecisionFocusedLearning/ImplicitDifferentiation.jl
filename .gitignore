@@ -1,4 +1,5 @@
-*playground.jl
+playground.jl
+scratchpad.jl
 *.csv
 *.png
 *.pdf

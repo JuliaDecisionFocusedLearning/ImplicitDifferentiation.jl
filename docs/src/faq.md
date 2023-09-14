@@ -2,13 +2,34 @@
 
 ## Supported autodiff backends
 
+### For the function itself
+
 To differentiate an `ImplicitFunction`, the following backends are supported.
 
 | Backend                                                                | Forward mode | Reverse mode |
 | ---------------------------------------------------------------------- | ------------ | ------------ |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
-| [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | soon          | yes         |
+| [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | soon         | yes          |
 | [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | someday      | someday      |
+
+If you want to use [ReverseDiff.jl](https://github.com/JuliaDiff/ReverseDiff.jl), you cannot differentiate the callable `ImplicitFunction` object, which is why we provide a workaround with `call_implicit_function`.
+In addition, you have to declare the custom chain rule to ReverseDiff.jl beforehand.
+You can adjust the following syntax depending on the additional `args` and `kwargs` of your special case:
+
+```julia
+import ImplicitDifferentiation as ID
+
+ReverseDiff.@grad_from_chainrules ID.call_implicit_function(
+    implicit::ImplicitFunction, x::TrackedArray, arg1, arg2; kwarg1, kwarg2
+)
+
+# this will fail
+ReverseDiff.jacobian(implicit, x, arg1, arg2; kwarg1, kwarg2)
+# this will work
+ReverseDiff.jacobian(_x -> ID.call_implicit_function(implicit, _x, arg1, arg2; kwarg1, kwarg2), x)
+```
+
+### For the conditions
 
 By default, the conditions are differentiated with the same backend as the `ImplicitFunction` that contains them.
 However, this can be switched to any backend compatible with [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl) (i.e. a subtype of `AD.AbstractBackend`).

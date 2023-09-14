@@ -33,6 +33,11 @@ export AbstractLinearSolver, IterativeLinearSolver, DirectLinearSolver
         @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" begin
             include("../ext/ImplicitDifferentiationForwardDiffExt.jl")
         end
+        @require ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267" begin
+            @require ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4" begin
+                include("../ext/ImplicitDifferentiationReverseDiffExt.jl")
+            end
+        end
         @require StaticArrays = "90137ffa-7385-5640-81b9-e52037218182" begin
             include("../ext/ImplicitDifferentiationStaticArraysExt.jl")
         end

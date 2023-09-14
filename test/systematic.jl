@@ -3,11 +3,16 @@ using ChainRulesCore
 using ChainRulesTestUtils
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
-using ImplicitDifferentiation: ImplicitFunction, identity_break_autodiff
-using ImplicitDifferentiation: DirectLinearSolver, IterativeLinearSolver
+using ImplicitDifferentiation:
+    ImplicitFunction,
+    identity_break_autodiff,
+    DirectLinearSolver,
+    IterativeLinearSolver,
+    call_implicit_function
 using JET
 using LinearAlgebra
 using Random
+using ReverseDiff: ReverseDiff
 using SparseArrays
 using StaticArrays
 using Test
@@ -174,15 +179,15 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
     dy .= one(eltype(y_true))
     dz = nothing
 
-    y1, pb1 = @inferred rrule(rc, imf1, x)
-    (y2, z2), pb2 = @inferred rrule(rc, imf2, x)
-    y3, pb3 = @inferred rrule(rc, imf3, x, 1)
-    y4, pb4 = @inferred rrule(rc, imf4, x; p=1)
+    y1, pb1 = @inferred rrule(rc, call_implicit_function, imf1, x)
+    (y2, z2), pb2 = @inferred rrule(rc, call_implicit_function, imf2, x)
+    y3, pb3 = @inferred rrule(rc, call_implicit_function, imf3, x, 1)
+    y4, pb4 = @inferred rrule(rc, call_implicit_function, imf4, x; p=1)
 
-    dimf1, dx1 = @inferred pb1(dy)
-    dimf2, dx2 = @inferred pb2((dy, dz))
-    dimf3, dx3, dp3 = @inferred pb3(dy)
-    dimf4, dx4 = @inferred pb4(dy)
+    dcall1, dimf1, dx1 = @inferred pb1(dy)
+    dcall2, dimf2, dx2 = @inferred pb2((dy, dz))
+    dcall3, dimf3, dx3, dp3 = @inferred pb3(dy)
+    dcall4, dimf4, dx4 = @inferred pb4(dy)
 
     @testset "Pullbacks" begin
         @test y1 ≈ y_true
@@ -190,6 +195,11 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
         @test y3 ≈ y_true
         @test y4 ≈ y_true
         @test z2 ≈ 1
+
+        @test dcall1 isa NoTangent
+        @test dcall2 isa NoTangent
+        @test dcall3 isa NoTangent
+        @test dcall4 isa NoTangent
 
         @test dimf1 isa NoTangent
         @test dimf2 isa NoTangent
@@ -239,10 +249,10 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
     end
 
     @testset "ChainRulesTestUtils" begin
-        test_rrule(rc, imf1, x; atol=1e-2)
-        test_rrule(rc, imf2, x; atol=5e-2, output_tangent=(dy, 0)) # see issue https://github.com/gdalle/ImplicitDifferentiation.jl/issues/112
-        test_rrule(rc, imf3, x, 1; atol=1e-2)
-        test_rrule(rc, imf4, x; atol=1e-2, fkwargs=(p=1,))
+        test_rrule(rc, call_implicit_function, imf1, x; atol=1e-2)
+        test_rrule(rc, call_implicit_function, imf2, x; atol=5e-2, output_tangent=(dy, 0)) # see issue https://github.com/gdalle/ImplicitDifferentiation.jl/issues/112
+        test_rrule(rc, call_implicit_function, imf3, x, 1; atol=1e-2)
+        test_rrule(rc, call_implicit_function, imf4, x; atol=1e-2, fkwargs=(p=1,))
     end
 end
 
@@ -300,6 +310,43 @@ function test_implicit_zygote(x::AbstractArray{T}; kwargs...) where {T}
     return nothing
 end
 
+@grad_from_chainrules ImplicitDifferentiation.call_implicit_function(
+    implicit::ImplicitFunction, x::TrackedArray
+)
+@grad_from_chainrules ImplicitDifferentiation.call_implicit_function(
+    implicit::ImplicitFunction, x::TrackedArray, p
+)
+@grad_from_chainrules ImplicitDifferentiation.call_implicit_function(
+    implicit::ImplicitFunction, x::TrackedArray; p
+)
+
+function test_implicit_reversediff(x::AbstractArray{T}; kwargs...) where {T}
+    imf1 = make_implicit_sqrt(; kwargs...)
+    imf2 = make_implicit_sqrt_byproduct(; kwargs...)
+    imf3 = make_implicit_sqrt_args(; kwargs...)
+    imf4 = make_implicit_sqrt_kwargs(; kwargs...)
+
+    J1 = ReverseDiff.jacobian(_x -> call_implicit_function(imf1, _x), x)
+    # TODO: ReverseDiff doesn't like the tuple output
+    # J2 = ReverseDiff.jacobian(_x -> (first ∘ call_implicit_function)(imf2, _x), x)
+    J3 = ReverseDiff.jacobian(_x -> call_implicit_function(imf3, _x, 1), x)
+    J4 = ReverseDiff.jacobian(_x -> call_implicit_function(imf4, _x; p=1), x)
+    J_true = ReverseDiff.jacobian(_x -> sqrt.(change_shape(_x)), x)
+
+    @testset "Exact Jacobian" begin
+        @test J1 ≈ J_true
+        # @test J2 ≈ J_true
+        @test J3 ≈ J_true
+        @test J4 ≈ J_true
+
+        @test eltype(J1) == eltype(x)
+        # @test eltype(J2) == eltype(x)
+        @test eltype(J3) == eltype(x)
+        @test eltype(J4) == eltype(x)
+    end
+    return nothing
+end
+
 function test_implicit(x; kwargs...)
     @testset verbose = true "Call" begin
         test_implicit_call(x; kwargs...)
@@ -314,6 +361,9 @@ function test_implicit(x; kwargs...)
         rc = Zygote.ZygoteRuleConfig()
         test_implicit_zygote(x; kwargs...)
         test_implicit_rrule(rc, x; kwargs...)
+    end
+    @testset verbose = true "ReverseDiff.jl" begin
+        test_implicit_reversediff(x; kwargs...)
     end
     return nothing
 end
