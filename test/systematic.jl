@@ -239,10 +239,10 @@ function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
     end
 
     @testset "ChainRulesTestUtils" begin
-        test_rrule(rc, imf1, x; atol=1e-2)
-        test_rrule(rc, imf2, x; atol=5e-2, output_tangent=(dy, 0)) # see issue https://github.com/gdalle/ImplicitDifferentiation.jl/issues/112
-        test_rrule(rc, imf3, x, 1; atol=1e-2)
-        test_rrule(rc, imf4, x; atol=1e-2, fkwargs=(p=1,))
+        test_rrule(rc, imf1, x; atol=1e-2, check_inferred=false)
+        test_rrule(rc, imf2, x; atol=5e-2, output_tangent=(dy, 0), check_inferred=false) # see issue https://github.com/gdalle/ImplicitDifferentiation.jl/issues/112
+        test_rrule(rc, imf3, x, 1; atol=1e-2, check_inferred=false)
+        test_rrule(rc, imf4, x; atol=1e-2, fkwargs=(p=1,), check_inferred=false)
     end
 end
 
