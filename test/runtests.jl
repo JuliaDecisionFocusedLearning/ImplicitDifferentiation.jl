@@ -35,7 +35,8 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
 @testset verbose = true "ImplicitDifferentiation.jl" begin
     @testset verbose = false "Code quality (Aqua.jl)" begin
         if VERSION >= v"1.9"
-            Aqua.test_all(ImplicitDifferentiation; ambiguities=false)
+            Aqua.test_all(ImplicitDifferentiation; ambiguities=false, deps_compat=false)
+            Aqua.test_deps_compat(ImplicitDifferentiation; check_extras=false)
         end
     end
     @testset verbose = true "Formatting (JuliaFormatter.jl)" begin

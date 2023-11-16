@@ -398,7 +398,7 @@ for (linear_solver, conditions_backend, x) in params_candidates
         continue
     end
     @info "$testsetname"
-    @testset verbose = true "$testsetname" begin
+    @testset "$testsetname" begin
         test_implicit(x; linear_solver, conditions_backend)
     end
 end
