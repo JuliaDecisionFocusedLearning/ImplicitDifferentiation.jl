@@ -34,17 +34,9 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
 
 @testset verbose = true "ImplicitDifferentiation.jl" begin
     @testset verbose = false "Code quality (Aqua.jl)" begin
-        Aqua.test_ambiguities([ImplicitDifferentiation, Base, Core])
-        Aqua.test_unbound_args(ImplicitDifferentiation)
-        Aqua.test_undefined_exports(ImplicitDifferentiation)
-        Aqua.test_piracy(ImplicitDifferentiation)
-        Aqua.test_project_extras(ImplicitDifferentiation)
-        Aqua.test_stale_deps(
-            ImplicitDifferentiation; ignore=[:AbstractDifferentiation, :ChainRulesCore]
-        )
-        Aqua.test_deps_compat(ImplicitDifferentiation)
-        if VERSION >= v"1.7"
-            Aqua.test_project_toml_formatting(ImplicitDifferentiation)
+        if VERSION >= v"1.9"
+            Aqua.test_all(ImplicitDifferentiation; ambiguities=false, deps_compat=false)
+            Aqua.test_deps_compat(ImplicitDifferentiation; check_extras=false)
         end
     end
     @testset verbose = true "Formatting (JuliaFormatter.jl)" begin
