@@ -103,7 +103,6 @@ makedocs(;
     format=fmt,
     pages=pages,
     linkcheck=true,
-    strict=true,
 )
 
 deploydocs(;
