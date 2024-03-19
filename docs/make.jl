@@ -98,7 +98,7 @@ end
 makedocs(;
     modules=vcat([ImplicitDifferentiation], extension_modules),
     authors="Guillaume Dalle, Mohamed Tarek and contributors",
-    repo="https://github.com/gdalle/ImplicitDifferentiation.jl/blob/{commit}{path}#{line}",
+    repo=Documenter.Remotes.GitHub("gdalle", "ImplicitDifferentiation.jl"),
     sitename="ImplicitDifferentiation.jl",
     format=fmt,
     pages=pages,
