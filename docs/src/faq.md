@@ -122,5 +122,6 @@ For instance, this is relevant when calculating large Jacobians with forward dif
 Packages such as [Memoize.jl](https://github.com/JuliaCollections/Memoize.jl) and [Memoization.jl](https://github.com/marius311/Memoization.jl) are useful for defining a memoized version of `forward`:
 
 ```julia
+using Memoize
 @memoize Dict forward(x, args...; kwargs...) = y
 ```
