@@ -76,7 +76,7 @@ conditions(x, arg1, arg2; kwarg1, kwarg2) = c
 
 All of the positional and keyword arguments apart from `x` will get zero tangents during differentiation of the implicit function.
 
-## Multiple outputs | Derivatives not needed
+### Multiple outputs | Derivatives not needed
 
 The last and most tricky situation is when your forward mapping returns multiple outputs, but you only care about some of their derivatives.
 Then, you need to group the objects you don't want to differentiate into a "byproduct" `z`, returned alongside the actual output `y`.
