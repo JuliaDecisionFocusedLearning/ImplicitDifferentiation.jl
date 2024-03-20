@@ -59,12 +59,12 @@ a, b, m = rand(2), rand(3), 7
 x = ComponentVector(; a=a, b=b, m=m)
 implicit_components(x)
 
-# And it works with ForwardDiff.jl but not Zygote.jl (see documentation).
+# And it works with both ForwardDiff.jl and Zygote.jl
 
 ForwardDiff.jacobian(implicit_components, x)
 J = ForwardDiff.jacobian(forward_components, x)  #src
 @test ForwardDiff.jacobian(implicit_components, x) ≈ J  #src
-@test_broken Zygote.jacobian(implicit_components, x)[1] ≈ J  #src
+@test Zygote.jacobian(implicit_components, x)[1] ≈ J  #src
 
 #- The full differentiable pipeline looks like this
 
