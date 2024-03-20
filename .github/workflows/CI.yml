@@ -37,7 +37,7 @@ jobs:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
-  documentation:
+  docs:
     permissions:
       contents: write
       statuses: write
