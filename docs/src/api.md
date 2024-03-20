@@ -1,4 +1,5 @@
 ```@meta
+CurrentModule = ImplicitDifferentiation
 CollapsedDocStrings = true
 ```
 
@@ -11,20 +12,9 @@ Modules = [ImplicitDifferentiation]
 Private = false
 ```
 
-## Internal
-
-### Main package
+## Internals
 
 ```@autodocs
 Modules = [ImplicitDifferentiation]
 Public = false
-```
-
-### Extensions
-
-```@docs
-Modules = [
-    Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationChainRulesCoreExt),
-    Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationForwardDiffExt)
-]
 ```
