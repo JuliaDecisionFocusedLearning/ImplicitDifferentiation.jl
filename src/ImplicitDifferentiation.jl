@@ -20,7 +20,6 @@ include("utils.jl")
 include("linear_solver.jl")
 include("implicit_function.jl")
 include("operators.jl")
-# include("dense_operators.jl")  # type unstable
 
 export ImplicitFunction
 export AbstractLinearSolver, IterativeLinearSolver, DirectLinearSolver

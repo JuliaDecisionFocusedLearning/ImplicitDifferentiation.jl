@@ -1,16 +1,31 @@
-# API reference
-
-## Index
-
-```@index
+```@meta
+CurrentModule = DifferentiationInterface
+CollapsedDocStrings = true
 ```
 
-## Docstrings
+# API reference
+
+## Public
 
 ```@autodocs
 Modules = [ImplicitDifferentiation]
+Private = false
 ```
 
+## Internal
+
+### Main package
+
+```@autodocs
+Modules = [ImplicitDifferentiation]
+Public = false
+```
+
+### Extensions
+
 ```@docs
-ChainRulesCore.rrule
+Modules = [
+    Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationChainRulesCoreExt),
+    Base.get_extension(ImplicitDifferentiation, :ImplicitDifferentiationForwardDiffExt)
+]
 ```
