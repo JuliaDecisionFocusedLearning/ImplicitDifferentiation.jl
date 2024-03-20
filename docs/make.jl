@@ -96,7 +96,7 @@ else
 end
 
 makedocs(;
-    modules=vcat([ImplicitDifferentiation], extension_modules),
+    modules=[ImplicitDifferentiation],
     authors="Guillaume Dalle, Mohamed Tarek and contributors",
     repo=Documenter.Remotes.GitHub("gdalle", "ImplicitDifferentiation.jl"),
     sitename="ImplicitDifferentiation.jl",

@@ -64,6 +64,10 @@ implicit_components(x)
 ForwardDiff.jacobian(implicit_components, x)
 J = ForwardDiff.jacobian(forward_components, x)  #src
 @test ForwardDiff.jacobian(implicit_components, x) ≈ J  #src
+
+#-
+
+Zygote.jacobian(implicit_components, x)[1]
 @test Zygote.jacobian(implicit_components, x)[1] ≈ J  #src
 
 #- The full differentiable pipeline looks like this
