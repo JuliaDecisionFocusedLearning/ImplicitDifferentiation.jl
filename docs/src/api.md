@@ -1,16 +1,20 @@
-# API reference
-
-## Index
-
-```@index
+```@meta
+CurrentModule = ImplicitDifferentiation
+CollapsedDocStrings = true
 ```
 
-## Docstrings
+# API reference
+
+## Public
 
 ```@autodocs
 Modules = [ImplicitDifferentiation]
+Private = false
 ```
 
-```@docs
-ChainRulesCore.rrule
+## Internals
+
+```@autodocs
+Modules = [ImplicitDifferentiation]
+Public = false
 ```

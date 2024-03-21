@@ -96,14 +96,13 @@ else
 end
 
 makedocs(;
-    modules=vcat([ImplicitDifferentiation], extension_modules),
+    modules=[ImplicitDifferentiation],
     authors="Guillaume Dalle, Mohamed Tarek and contributors",
-    repo="https://github.com/gdalle/ImplicitDifferentiation.jl/blob/{commit}{path}#{line}",
+    repo=Documenter.Remotes.GitHub("gdalle", "ImplicitDifferentiation.jl"),
     sitename="ImplicitDifferentiation.jl",
     format=fmt,
     pages=pages,
     linkcheck=true,
-    strict=true,
 )
 
 deploydocs(;
