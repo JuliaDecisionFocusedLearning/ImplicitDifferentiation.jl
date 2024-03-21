@@ -114,3 +114,14 @@ In case these operators are too complicated to code them yourself, here are a fe
 - [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl)
 
 An alternative is differentiating through the KKT conditions, which is exactly what [DiffOpt.jl](https://github.com/jump-dev/DiffOpt.jl) does for JuMP models.
+
+### Memoization
+
+In some cases, performance might be increased by using memoization to prevent redundant calls to `forward`.
+For instance, this is relevant when calculating large Jacobians with forward differentiation, where the computation happens in [chunks](https://juliadiff.org/ForwardDiff.jl/stable/user/advanced/#Configuring-Chunk-Size).
+Packages such as [Memoize.jl](https://github.com/JuliaCollections/Memoize.jl) and [Memoization.jl](https://github.com/marius311/Memoization.jl) are useful for defining a memoized version of `forward`:
+
+```julia
+using Memoize
+@memoize Dict forward(x, args...; kwargs...) = y
+```
