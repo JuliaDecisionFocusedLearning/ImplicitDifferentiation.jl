@@ -13,15 +13,6 @@ using StaticArrays
 using Test
 using Zygote: Zygote, ZygoteRuleConfig
 
-@static if VERSION < v"1.9"
-    macro test_opt(x...)
-        return :()
-    end
-    macro test_call(x...)
-        return :()
-    end
-end
-
 Random.seed!(63);
 
 ## Utils

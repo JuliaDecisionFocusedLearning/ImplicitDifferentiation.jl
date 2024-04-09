@@ -74,7 +74,7 @@ end
 We now have all the ingredients to construct our implicit function.
 =#
 
-implicit_optim = ImplicitFunction(forward_optim, conditions_optim)
+implicit_optim = ImplicitFunction(forward=forward_optim, conditions=conditions_optim)
 
 # And indeed, it behaves as it should when we call it:
 
@@ -90,7 +90,7 @@ ForwardDiff.jacobian(_x -> implicit_optim(_x; method=LBFGS()), x)
 In this instance, we could use ForwardDiff.jl directly on the solver, but it returns the wrong result (not sure why).
 =#
 
-ForwardDiff.jacobian(_x -> forward_optim(x; method=LBFGS()), x)
+ForwardDiff.jacobian(_x -> forward_optim(_x; method=LBFGS()), x)
 
 # Reverse mode autodiff
 
@@ -102,7 +102,7 @@ In this instance, we cannot use Zygote.jl directly on the solver (due to unsuppo
 =#
 
 try
-    Zygote.jacobian(_x -> forward_optim(x; method=LBFGS()), x)[1]
+    Zygote.jacobian(_x -> forward_optim(_x; method=LBFGS()), x)[1]
 catch e
     e
 end

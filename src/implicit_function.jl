@@ -1,5 +1,5 @@
 """
-    ImplicitFunction{F,C,L,B}
+    ImplicitFunction
 
 Wrapper for an implicit function defined by a forward mapping `y` and a set of conditions `c`.
 
@@ -12,10 +12,11 @@ This requires solving a linear system `A * J = -B` where `A = ∂c/∂y`, `B = �
 
 # Fields
 
-- `forward::F`: a callable, does not need to be compatible with automatic differentiation
-- `conditions::C`: a callable, must be compatible with automatic differentiation
-- `linear_solver::L`: a subtype of `AbstractLinearSolver`, defines how the linear system will be solved
-- `conditions_backend::B`: either `nothing` or a subtype of `AbstractDifferentiation.AbstractBackend`, defines how the conditions will be differentiated within the implicit function theorem 
+- `forward`: a callable, does not need to be compatible with automatic differentiation
+- `conditions`: a callable, must be compatible with automatic differentiation
+- `linear_solver`: a subtype of `AbstractLinearSolver`, defines how the linear system will be solved
+- `conditions_x_backend`: either `nothing` or a subtype of `ADTypes.AbstractADType`, defines how the conditions will be differentiated with respect to the first argument `x` 
+- `conditions_y_backend`: same for the second argument `y`
 
 There are two possible signatures for `forward` and `conditions`, which must be consistent with one another:
     
@@ -29,33 +30,26 @@ The positional arguments `args...` and keyword arguments `kwargs...` must be the
 !!! warning "Warning"
     The byproduct `z` and the other positional arguments `args...` beyond `x` are considered constant for differentiation purposes.
 """
-struct ImplicitFunction{F,C,L<:AbstractLinearSolver,B<:Union{Nothing,AbstractBackend}}
+@kwdef struct ImplicitFunction{
+    F,C,L,B1<:Union{Nothing,AbstractADType},B2<:Union{Nothing,AbstractADType}
+}
     forward::F
     conditions::C
-    linear_solver::L
-    conditions_backend::B
+    linear_solver::L = first ∘ gmres
+    conditions_x_backend::B1 = nothing
+    conditions_y_backend::B2 = nothing
 end
 
-"""
-    ImplicitFunction(
-        forward,
-        conditions;
-        linear_solver=IterativeLinearSolver(),
-        conditions_backend=nothing,
-    )
-
-Construct an `ImplicitFunction` with default parameters.
-"""
-function ImplicitFunction(
-    forward, conditions; linear_solver=IterativeLinearSolver(), conditions_backend=nothing
-)
-    return ImplicitFunction(forward, conditions, linear_solver, conditions_backend)
+function ImplicitFunction(forward, conditions; kwargs...)
+    return ImplicitFunction(; forward, conditions, kwargs...)
 end
 
 function Base.show(io::IO, implicit::ImplicitFunction)
-    @unpack forward, conditions, linear_solver, conditions_backend = implicit
+    (; forward, conditions, linear_solver, conditions_x_backend, conditions_y_backend) =
+        implicit
     return print(
-        io, "ImplicitFunction($forward, $conditions, $linear_solver, $conditions_backend)"
+        io,
+        "ImplicitFunction($forward, $conditions, $linear_solver, $conditions_x_backend, $conditions_y_backend)",
     )
 end
 
@@ -64,24 +58,19 @@ end
 
 Return `implicit.forward(x, args...; kwargs...)`, which can be either an array `y` or a tuple `(y, z)`.
 
-This call is differentiable.
+This call is differentiable (except for `z`).
 """
-function (implicit::ImplicitFunction)(x::AbstractArray, args...; kwargs...)
+function (implicit::ImplicitFunction)(x::AbstractVector, args...; kwargs...)
     y_or_yz = implicit.forward(x, args...; kwargs...)
-    valid = (
-        y_or_yz isa AbstractArray ||  # 
-        (y_or_yz isa Tuple && length(y_or_yz) == 2 && y_or_yz[1] isa AbstractArray)
-    )
-    if !valid
-        throw(
-            DimensionMismatch(
-                "The forward mapping must return an array `y` or a tuple `(y, z)` where `y` is an array",
-            ),
+    if !(y_or_yz isa Union{AbstractArray,Tuple{<:AbstractVector,<:Any}})
+        error(
+            "The forward mapping must return a vector `y` or a tuple `(y, z)` where `y` is a vector",
         )
     end
     return y_or_yz
 end
 
-get_output(y::AbstractArray) = y
-get_output(yz::Tuple) = yz[1]
-get_byproduct(yz::Tuple) = yz[2]
+get_output(y::AbstractVector) = y
+get_byproduct(y::AbstractVector) = error("No byproduct")
+get_output(yz::Tuple{<:AbstractVector,<:Any}) = yz[1]
+get_byproduct(yz::Tuple{<:AbstractVector,<:Any}) = yz[2]

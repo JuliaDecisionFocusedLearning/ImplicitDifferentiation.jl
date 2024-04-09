@@ -55,7 +55,7 @@ Krylov.ktypeof(::ComponentVector{T,V}) where {T,V} = V
 
 # Now we're good to go.
 
-a, b, m = rand(2), rand(3), 7
+a, b, m = rand(2), rand(3), 7.0
 x = ComponentVector(; a=a, b=b, m=m)
 implicit_components(x)
 

@@ -4,7 +4,6 @@
 We explain the basics of our package on a simple function that is not amenable to naive automatic differentiation.
 =#
 
-using ChainRulesCore  #src
 using ForwardDiff
 using ImplicitDifferentiation
 using JET  #src
@@ -139,23 +138,3 @@ And so does Zygote.jl. Hurray!
 
 Zygote.jacobian(implicit, x)[1] ≈ J
 @test Zygote.jacobian(implicit, x)[1] ≈ J  #src
-
-# ## Second derivative
-
-#=
-We can even go higher-order by mixing the two packages (forward-over-reverse mode).
-The only technical requirement is to switch the linear solver to something that can handle dual numbers:
-=#
-
-implicit_higher_order = ImplicitFunction(
-    forward, conditions; linear_solver=DirectLinearSolver()
-)
-
-#=
-Then the Jacobian itself is differentiable.
-=#
-
-h = rand(2)
-J_Z(t) = Zygote.jacobian(implicit_higher_order, x .+ t .* h)[1]
-ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))
-@test ForwardDiff.derivative(J_Z, 0) ≈ Diagonal((-0.25 .* h) ./ (x .^ 1.5))  #src

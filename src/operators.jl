@@ -1,115 +1,194 @@
-## Forward
+## Partial conditions
 
-function conditions_pushforwards(
-    ba::AbstractBackend,
-    implicit::ImplicitFunction,
-    x::AbstractArray,
-    y::AbstractArray,
-    args;
-    kwargs,
-)
-    conditions = implicit.conditions
-    pfA = only ∘ pushforward_function(ba, _y -> conditions(x, _y, args...; kwargs...), y)
-    pfB = only ∘ pushforward_function(ba, _x -> conditions(_x, y, args...; kwargs...), x)
-    return pfA, pfB
+struct ConditionsXNoByproduct{C,Y,A,K}
+    conditions::C
+    y::Y
+    args::A
+    kwargs::K
 end
 
-function conditions_pushforwards(
-    ba::AbstractBackend,
-    implicit::ImplicitFunction,
-    x::AbstractArray,
-    yz::Tuple,
-    args;
-    kwargs,
-)
-    conditions = implicit.conditions
-    y, z = yz
-    pfA = only ∘ pushforward_function(ba, _y -> conditions(x, _y, z, args...; kwargs...), y)
-    pfB = only ∘ pushforward_function(ba, _x -> conditions(_x, y, z, args...; kwargs...), x)
-    return pfA, pfB
+function (conditions_x_nobyproduct::ConditionsXNoByproduct)(x::AbstractVector)
+    (; conditions, y, args, kwargs) = conditions_x_nobyproduct
+    return conditions(x, y, args...; kwargs...)
 end
 
-struct PushforwardProd!{F,N}
-    pushforward::F
-    size::NTuple{N,Int}
+struct ConditionsYNoByproduct{C,X,A,K}
+    conditions::C
+    x::X
+    args::A
+    kwargs::K
 end
 
-function (pfp::PushforwardProd!)(dc_vec::AbstractVector, dy_vec::AbstractVector)
-    dy = reshape(dy_vec, pfp.size)
-    dc = pfp.pushforward(dy)
-    return dc_vec .= vec(dc)
+function (conditions_y_nobyproduct::ConditionsYNoByproduct)(y::AbstractVector)
+    (; conditions, x, args, kwargs) = conditions_y_nobyproduct
+    return conditions(x, y, args...; kwargs...)
 end
 
-function pushforwards_to_operators(x::AbstractArray, y::AbstractArray, pfA, pfB)
-    n, m = length(x), length(y)
-    A_vec = LinearOperator(eltype(y), m, m, false, false, PushforwardProd!(pfA, size(y)))
-    B_vec = LinearOperator(eltype(x), m, n, false, false, PushforwardProd!(pfB, size(x)))
-    return A_vec, B_vec
+struct ConditionsXByproduct{C,Y,Z,A,K}
+    conditions::C
+    y::Y
+    z::Z
+    args::A
+    kwargs::K
 end
 
-function conditions_forward_operators(
-    backend::AbstractBackend, implicit::ImplicitFunction, x, y_or_yz, args; kwargs
-)
+function (conditions_x_byproduct::ConditionsXByproduct)(x::AbstractVector)
+    (; conditions, y, z, args, kwargs) = conditions_x_byproduct
+    return conditions(x, y, z, args...; kwargs...)
+end
+
+struct ConditionsYByproduct{C,X,Z,A,K}
+    conditions::C
+    x::X
+    z::Z
+    args::A
+    kwargs::K
+end
+
+function (conditions_y_byproduct::ConditionsYByproduct)(y::AbstractVector)
+    (; conditions, x, z, args, kwargs) = conditions_y_byproduct
+    return conditions(x, y, z, args...; kwargs...)
+end
+
+function ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
     y = get_output(y_or_yz)
-    pfA, pfB = conditions_pushforwards(backend, implicit, x, y_or_yz, args; kwargs)
-    A_vec, B_vec = pushforwards_to_operators(x, y, pfA, pfB)
-    return A_vec, B_vec
+    if y_or_yz isa Tuple
+        z = get_byproduct(y_or_yz)
+        return ConditionsXByproduct(conditions, y, z, args, kwargs)
+    else
+        return ConditionsXNoByproduct(conditions, y, args, kwargs)
+    end
 end
 
-## Reverse
+function ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
+    if y_or_yz isa Tuple
+        z = get_byproduct(y_or_yz)
+        return ConditionsYByproduct(conditions, x, z, args, kwargs)
+    else
+        return ConditionsYNoByproduct(conditions, x, args, kwargs)
+    end
+end
 
-function conditions_pullbacks(
-    ba::AbstractBackend,
+## Lazy operators
+
+function build_A(
     implicit::ImplicitFunction,
-    x::AbstractArray,
-    y::AbstractArray,
-    args;
-    kwargs,
+    x::AbstractVector,
+    y_or_yz,
+    args...;
+    suggested_backend,
+    kwargs...,
 )
-    conditions = implicit.conditions
-    pbAᵀ = only ∘ pullback_function(ba, _y -> conditions(x, _y, args...; kwargs...), y)
-    pbBᵀ = only ∘ pullback_function(ba, _x -> conditions(_x, y, args...; kwargs...), x)
-    return pbAᵀ, pbBᵀ
-end
-
-function conditions_pullbacks(
-    ba::AbstractBackend,
-    implicit::ImplicitFunction,
-    x::AbstractArray,
-    yz::Tuple,
-    args;
-    kwargs,
-)
-    conditions = implicit.conditions
-    y, z = yz
-    pbAᵀ = only ∘ pullback_function(ba, _y -> conditions(x, _y, z, args...; kwargs...), y)
-    pbBᵀ = only ∘ pullback_function(ba, _x -> conditions(_x, y, z, args...; kwargs...), x)
-    return pbAᵀ, pbBᵀ
-end
-
-struct PullbackProd!{F,N}
-    pullback::F
-    size::NTuple{N,Int}
-end
-
-function (pbp::PullbackProd!)(dy_vec::AbstractVector, dc_vec::AbstractVector)
-    dc = reshape(dc_vec, pbp.size)
-    dy = pbp.pullback(dc)
-    return dy_vec .= vec(dy)
-end
-
-function pullbacks_to_operators(x::AbstractArray, y::AbstractArray, pbAᵀ, pbBᵀ)
-    n, m = length(x), length(y)
-    Aᵀ_vec = LinearOperator(eltype(y), m, m, false, false, PullbackProd!(pbAᵀ, size(y)))
-    Bᵀ_vec = LinearOperator(eltype(y), n, m, false, false, PullbackProd!(pbBᵀ, size(y)))
-    return Aᵀ_vec, Bᵀ_vec
-end
-
-function conditions_reverse_operators(
-    backend::AbstractBackend, implicit::ImplicitFunction, x, y_or_yz, args; kwargs
-)
+    (; conditions, linear_solver, conditions_y_backend) = implicit
     y = get_output(y_or_yz)
-    pbAᵀ, pbBᵀ = conditions_pullbacks(backend, implicit, x, y_or_yz, args; kwargs)
-    Aᵀ_vec, Bᵀ_vec = pullbacks_to_operators(x, y, pbAᵀ, pbBᵀ)
-    return Aᵀ_vec, Bᵀ_vec
+    n, m = length(x), length(y)
+    back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
+    cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
+    if linear_solver isa typeof(\)
+        A = factorize(jacobian(cond_y, back_y, y))
+    else
+        extras = prepare_pushforward(cond_y, back_y, y)
+        A = LinearOperator(
+            eltype(y),
+            m,
+            m,
+            false,
+            false,
+            (res, v) -> res .= pushforward!!(cond_y, res, back_y, y, v, extras),
+            typeof(y),
+        )
+    end
+    return A
+end
+
+function build_Aᵀ(
+    implicit::ImplicitFunction,
+    x::AbstractVector,
+    y_or_yz,
+    args...;
+    suggested_backend,
+    kwargs...,
+)
+    (; conditions, linear_solver, conditions_y_backend) = implicit
+    y = get_output(y_or_yz)
+    n, m = length(x), length(y)
+    back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
+    cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
+    if linear_solver isa typeof(\)
+        Aᵀ = factorize(transpose(jacobian(cond_y, back_y, y)))
+    else
+        extras = prepare_pullback(cond_y, back_y, y)
+        _, pullbackfunc!! = value_and_pullback!!_split(cond_y, back_y, y, extras)
+        Aᵀ = LinearOperator(
+            eltype(y),
+            m,
+            m,
+            false,
+            false,
+            (res, v) -> res .= pullbackfunc!!(res, v),
+            typeof(y),
+        )
+    end
+    return Aᵀ
+end
+
+function build_B(
+    implicit::ImplicitFunction,
+    x::AbstractVector,
+    y_or_yz,
+    args...;
+    suggested_backend,
+    kwargs...,
+)
+    (; conditions, linear_solver, conditions_x_backend) = implicit
+    y = get_output(y_or_yz)
+    n, m = length(x), length(y)
+    back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
+    cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
+    if linear_solver isa typeof(\)
+        B = factorize(transpose(jacobian(cond_x, back_x, x)))
+    else
+        extras = prepare_pushforward(cond_x, back_x, x)
+        B = LinearOperator(
+            eltype(y),
+            m,
+            n,
+            false,
+            false,
+            (res, v) -> res .= pushforward!!(cond_x, res, back_x, x, v, extras),
+            typeof(x),
+        )
+    end
+    return B
+end
+
+function build_Bᵀ(
+    implicit::ImplicitFunction,
+    x::AbstractVector,
+    y_or_yz,
+    args...;
+    suggested_backend,
+    kwargs...,
+)
+    (; conditions, linear_solver, conditions_x_backend) = implicit
+    y = get_output(y_or_yz)
+    n, m = length(x), length(y)
+    back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
+    cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
+    if linear_solver isa typeof(\)
+        Bᵀ = factorize(transpose(jacobian(cond_x, back_x, x)))
+    else
+        extras = prepare_pullback(cond_x, back_x, x)
+        _, pullbackfunc!! = value_and_pullback!!_split(cond_x, back_x, x, extras)
+        Bᵀ = LinearOperator(
+            eltype(y),
+            n,
+            m,
+            false,
+            false,
+            (res, v) -> res .= pullbackfunc!!(res, v),
+            typeof(x),
+        )
+    end
+    return Bᵀ
 end
