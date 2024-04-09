@@ -16,7 +16,7 @@ using DifferentiationInterface:
     value_and_pullback!!_split
 using Krylov: gmres
 using LinearOperators: LinearOperator
-using LinearAlgebra: factorize
+using LinearAlgebra: factorize, lu
 
 include("implicit_function.jl")
 include("operators.jl")

@@ -6,7 +6,6 @@ using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using JET
 using JuliaFormatter
-using Pkg
 using Random
 using Test
 using Zygote: Zygote
@@ -34,22 +33,15 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
 
 @testset verbose = true "ImplicitDifferentiation.jl" begin
     @testset verbose = false "Code quality (Aqua.jl)" begin
-        if VERSION >= v"1.9"
-            Aqua.test_all(ImplicitDifferentiation; ambiguities=false, deps_compat=false)
-            Aqua.test_deps_compat(ImplicitDifferentiation; check_extras=false)
-        end
+        Aqua.test_all(
+            ImplicitDifferentiation; ambiguities=false, deps_compat=(check_extras = false)
+        )
     end
     @testset verbose = true "Formatting (JuliaFormatter.jl)" begin
         @test format(ImplicitDifferentiation; verbose=false, overwrite=false)
     end
     @testset verbose = true "Static checking (JET.jl)" begin
-        if VERSION >= v"1.9"
-            JET.test_package(
-                ImplicitDifferentiation;
-                target_defined_modules=true,
-                toplevel_logger=nothing,
-            )
-        end
+        JET.test_package(ImplicitDifferentiation; target_defined_modules=true)
     end
     @testset verbose = false "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)

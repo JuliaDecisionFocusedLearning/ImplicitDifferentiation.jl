@@ -13,7 +13,7 @@ function (implicit::ImplicitFunction)(
     y_or_yz = implicit(x, args...; kwargs...)
     y = get_output(y_or_yz)
 
-    suggested_backend = AutoForwardDiff(; chunksize=chunksize(Chunk(x)))
+    suggested_backend = AutoForwardDiff{1,Nothing}(nothing)
     A = build_A(implicit, x, y_or_yz, args...; suggested_backend, kwargs...)
     B = build_B(implicit, x, y_or_yz, args...; suggested_backend, kwargs...)
 

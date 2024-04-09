@@ -71,6 +71,7 @@ function (implicit::ImplicitFunction)(x::AbstractVector, args...; kwargs...)
 end
 
 get_output(y::AbstractVector) = y
-get_byproduct(y::AbstractVector) = error("No byproduct")
-get_output(yz::Tuple{<:AbstractVector,<:Any}) = yz[1]
-get_byproduct(yz::Tuple{<:AbstractVector,<:Any}) = yz[2]
+get_byproduct(::AbstractVector) = error("No byproduct")
+
+get_output((y, z)) = y
+get_byproduct((y, z)) = z
