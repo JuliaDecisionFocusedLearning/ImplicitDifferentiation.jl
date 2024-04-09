@@ -14,7 +14,7 @@ using DifferentiationInterface:
     prepare_pullback,
     pushforward!!,
     value_and_pullback!!_split
-using Krylov: gmres
+using Krylov: block_gmres, gmres
 using LinearOperators: LinearOperator
 using LinearAlgebra: factorize, lu
 

@@ -12,17 +12,17 @@ LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 
 [weakdeps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
 
 [extensions]
 ImplicitDifferentiationChainRulesCoreExt = "ChainRulesCore"
+ImplicitDifferentiationEnzymeExt = "Enzyme"
 ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
-ImplicitDifferentiationEnzymeCoreExt = "EnzymeCore"
 
 [compat]
 ChainRulesCore = "1.23.0"
-EnzymeCore = "0.6.5"
+Enzyme = "0.11.20"
 ForwardDiff = "0.10.36"
 Krylov = "0.9.5"
 LinearAlgebra = "1.10"
@@ -35,8 +35,9 @@ Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 ChainRulesTestUtils = "cdddcdb0-9152-4a09-a978-84456f9df70a"
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
+DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
@@ -56,8 +57,9 @@ test = [
     "ChainRulesCore",
     "ChainRulesTestUtils",
     "ComponentArrays",
+    "DifferentiationInterface",
     "Documenter",
-    "FiniteDifferences",
+    "Enzyme",
     "ForwardDiff",
     "JET",
     "JuliaFormatter",

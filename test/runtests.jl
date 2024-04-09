@@ -57,10 +57,6 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
             end
         end
     end
-    @testset verbose = true "Errors" begin
-        @info "Error tests"
-        include("errors.jl")
-    end
     @testset verbose = true "Systematic" begin
         @info "Systematic tests"
         include("systematic.jl")

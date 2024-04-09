@@ -1,6 +1,8 @@
 [deps]
+ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 ImplicitDifferentiation = "57b37032-215b-411a-8a7c-41a003a55207"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"

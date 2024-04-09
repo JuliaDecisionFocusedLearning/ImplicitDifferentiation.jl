@@ -51,9 +51,9 @@ function (conditions_y_byproduct::ConditionsYByproduct)(y::AbstractVector)
 end
 
 function ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
-    y = get_output(y_or_yz)
+    y = output(y_or_yz)
     if y_or_yz isa Tuple
-        z = get_byproduct(y_or_yz)
+        z = byproduct(y_or_yz)
         return ConditionsXByproduct(conditions, y, z, args, kwargs)
     else
         return ConditionsXNoByproduct(conditions, y, args, kwargs)
@@ -62,7 +62,7 @@ end
 
 function ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
     if y_or_yz isa Tuple
-        z = get_byproduct(y_or_yz)
+        z = byproduct(y_or_yz)
         return ConditionsYByproduct(conditions, x, z, args, kwargs)
     else
         return ConditionsYNoByproduct(conditions, x, args, kwargs)
@@ -79,7 +79,8 @@ struct PushforwardOperator!{F,B,X,E}
 end
 
 function (po::PushforwardOperator!)(res, v)
-    return res .= pushforward!!(po.f, res, po.backend, po.x, v, po.extras)
+    res .= pushforward!!(po.f, res, po.backend, po.x, v, po.extras)
+    return res
 end
 
 struct PullbackOperator!{PB}
@@ -87,7 +88,8 @@ struct PullbackOperator!{PB}
 end
 
 function (po::PullbackOperator!)(res, v)
-    return res .= po.pullbackfunc!!(res, v)
+    res .= po.pullbackfunc!!(res, v)
+    return res
 end
 
 function build_A(
@@ -99,7 +101,7 @@ function build_A(
     kwargs...,
 )
     (; conditions, linear_solver, conditions_y_backend) = implicit
-    y = get_output(y_or_yz)
+    y = output(y_or_yz)
     n, m = length(x), length(y)
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
@@ -130,7 +132,7 @@ function build_Aᵀ(
     kwargs...,
 )
     (; conditions, linear_solver, conditions_y_backend) = implicit
-    y = get_output(y_or_yz)
+    y = output(y_or_yz)
     n, m = length(x), length(y)
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
@@ -156,7 +158,7 @@ function build_B(
     kwargs...,
 )
     (; conditions, linear_solver, conditions_x_backend) = implicit
-    y = get_output(y_or_yz)
+    y = output(y_or_yz)
     n, m = length(x), length(y)
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
     cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
@@ -186,7 +188,7 @@ function build_Bᵀ(
     kwargs...,
 )
     (; conditions, linear_solver, conditions_x_backend) = implicit
-    y = get_output(y_or_yz)
+    y = output(y_or_yz)
     n, m = length(x), length(y)
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
     cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
