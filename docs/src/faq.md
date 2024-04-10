@@ -1,21 +1,18 @@
-# Frequently Asked Questions
+# FAQ
 
 ## Supported autodiff backends
 
 To differentiate an `ImplicitFunction`, the following backends are supported.
 
 | Backend                                                                | Forward mode | Reverse mode |
-| ---------------------------------------------------------------------- | ------------ | ------------ |
+| :--------------------------------------------------------------------- | :----------- | :----------- |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
-| [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | soon          | yes         |
-| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | someday      | someday      |
+| [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | no           | yes          |
+| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | yes          | soon         |
 
-By default, the conditions are differentiated with the same backend as the `ImplicitFunction` that contains them.
-However, this can be switched to any backend compatible with [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl) (i.e. a subtype of `AD.AbstractBackend`).
-You can specify it with the `conditions_backend` keyword argument when constructing an `ImplicitFunction`.
-
-!!! warning "Warning"
-    At the moment, `conditions_backend` can only be `nothing` or `AD.ForwardDiffBackend()`. We are investigating why the other backends fail.
+By default, the conditions are differentiated using the same "outer" backend that is trying to differentiate the `ImplicitFunction`.
+However, this can be switched to any other "inner" backend compatible with [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) (i.e. a subtype of `ADTypes.AbstractADType`).
+You can override the default with the `conditions_x_backend` and `conditions_y_backend` keyword arguments when constructing an `ImplicitFunction`.
 
 ## Input and output types
 
@@ -37,7 +34,7 @@ Or better yet, wrap it in a static vector: `SVector(val)`.
     Sparse arrays are not officially supported and might give incorrect values or `NaN`s!
 
 With ForwardDiff.jl, differentiation of sparse arrays will always give wrong results due to [sparsity pattern cancellation](https://github.com/JuliaDiff/ForwardDiff.jl/issues/658).
-With Zygote.jl it appears to work, but this functionality is considered experimental and might evolve.
+That is why we do not test behavior for sparse inputs.
 
 ## Number of inputs and outputs
 
@@ -46,9 +43,9 @@ What can you do to handle multiple inputs or outputs?
 Well, it depends whether you want their derivatives or not.
 
 |                      | Derivatives needed                      | Derivatives not needed                  |
-| -------------------- | --------------------------------------- | --------------------------------------- |
+| :------------------- | :-------------------------------------- | :-------------------------------------- |
 | **Multiple inputs**  | Make `x` a `ComponentVector`            | Supply `args` and `kwargs` to `forward` |
-| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `forward` return a byproduct        |
+| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `forward` return a byproduct `z`    |
 
 We now detail each of these options.
 
@@ -100,7 +97,7 @@ A more advanced application is given by [DifferentiableFrankWolfe.jl](https://gi
 ### Writing conditions
 
 We recommend that the conditions themselves do not involve calls to autodiff, even when they describe a gradient.
-Otherwise, you will need to make sure that nested autodiff works well in your case.
+Otherwise, you will need to make sure that nested autodiff works well in your case (i.e. that the "outer" backend can differentiate through the "inner" backend).
 For instance, if you're differentiating your implicit function (and your conditions) in reverse mode with Zygote.jl, you may want to use ForwardDiff.jl mode to compute gradients inside the conditions.
 
 ### Dealing with constraints
