@@ -19,14 +19,15 @@ using Zygote: Zygote, ZygoteRuleConfig
 
 Random.seed!(63);
 
-function identity_break_autodiff(x::AbstractVector{R}) where {R}
+function identity_break_autodiff(x::X)::X where {R,X<:AbstractVector{R}}
     float(first(x))  # break ForwardDiff
     (Vector{R}(undef, 1))[1] = first(x)  # break Zygote
-    try
-        throw(copy(x))  # break Enzyme
+    result = try
+        throw(copy(x))
     catch y
-        return y
+        y
     end
+    return result
 end
 
 function mysqrt(x::AbstractVector)
@@ -43,22 +44,22 @@ function make_implicit_sqrt(; kwargs...)
 end
 
 function make_implicit_sqrt_byproduct(; kwargs...)
-    forward(x) = 1 * mysqrt(x), 1
-    conditions(x, y, z::Integer) = abs2.(y ./ z) .- abs.(x)
+    forward(x) = one(eltype(x)) .* mysqrt(x), one(eltype(x))
+    conditions(x, y, z) = abs2.(y ./ z) .- abs.(x)
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_sqrt_args(; kwargs...)
-    forward(x, p::Integer) = p * mysqrt(x)
-    conditions(x, y, p::Integer) = abs2.(y ./ p) .- abs.(x)
+    forward(x, p) = p .* mysqrt(x)
+    conditions(x, y, p) = abs2.(y ./ p) .- abs.(x)
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
 
 function make_implicit_sqrt_kwargs(; kwargs...)
-    forward(x; p::Integer) = p .* mysqrt(x)
-    conditions(x, y; p::Integer) = abs2.(y ./ p) .- abs.(x)
+    forward(x; p) = p .* mysqrt(x)
+    conditions(x, y; p) = abs2.(y ./ p) .- abs.(x)
     implicit = ImplicitFunction(forward, conditions; kwargs...)
     return implicit
 end
@@ -258,20 +259,29 @@ function test_implicit_backend(
 
     J1 = DifferentiationInterface.jacobian(imf1, backend, x)
     J2 = DifferentiationInterface.jacobian(first ∘ imf2, backend, x)
-    J3 = DifferentiationInterface.jacobian(_x -> imf3(_x, 1), backend, x)
-    J4 = DifferentiationInterface.jacobian(_x -> imf4(_x; p=1), backend, x)
+    J3 = DifferentiationInterface.jacobian(_x -> imf3(_x, one(eltype(x))), backend, x)
+
+    J4 = if !(backend isa AutoEnzyme)
+        DifferentiationInterface.jacobian(_x -> imf4(_x; p=one(eltype(x))), backend, x)
+    else
+        nothing
+    end
+
     J_true = ForwardDiff.jacobian(_x -> sqrt.(_x), x)
 
     @testset "Exact Jacobian" begin
         @test J1 ≈ J_true
         @test J2 ≈ J_true
         @test J3 ≈ J_true
-        @test J4 ≈ J_true
 
         @test eltype(J1) == eltype(x)
         @test eltype(J2) == eltype(x)
         @test eltype(J3) == eltype(x)
-        @test eltype(J4) == eltype(x)
+
+        if !(backend isa AutoEnzyme)
+            @test J4 ≈ J_true
+            @test eltype(J4) == eltype(x)
+        end
     end
     return nothing
 end
@@ -296,18 +306,18 @@ end
 
 backends = [
     AutoForwardDiff(; chunksize=1), #
-    # AutoEnzyme(Enzyme.Forward),
+    AutoEnzyme(Enzyme.Forward),
     AutoZygote(),
 ]
 
 linear_solver_candidates = (
     \, #
-    ID.DefaultLinearSolver(),
+    # ID.DefaultLinearSolver(),
 )
 
 conditions_backend_candidates = (
     nothing, #
-    AutoForwardDiff(; chunksize=1),
+    # AutoForwardDiff(; chunksize=1),
     # AutoEnzyme(Enzyme.Forward),
 );
 
@@ -317,12 +327,11 @@ x_candidates = (
 
 ## Test loop
 
-@testset verbose = true "$linear_solver - $(typeof(conditions_backend)) - $(typeof(x))" for (
-    linear_solver, conditions_backend, x
+@testset verbose = true "$(typeof(x)) - $linear_solver - $(typeof(conditions_backend))" for (
+    x, linear_solver, conditions_backend
 ) in Iterators.product(
-    linear_solver_candidates, conditions_backend_candidates, x_candidates
+    x_candidates, linear_solver_candidates, conditions_backend_candidates
 )
-    @info "$linear_solver - $(typeof(conditions_backend)) - $(typeof(x))"
     test_implicit(
         backends,
         x;

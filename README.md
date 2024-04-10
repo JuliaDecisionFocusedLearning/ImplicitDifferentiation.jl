@@ -49,6 +49,7 @@ Please read the [documentation](https://gdalle.github.io/ImplicitDifferentiation
 
 In Julia:
 
+- [SciML](https://sciml.ai/) ecosystem, especially [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl), [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl) and [Optimization.jl](https://github.com/SciML/Optimization.jl)
 - [jump-dev/DiffOpt.jl](https://github.com/jump-dev/DiffOpt.jl): differentiation of convex optimization problems
 - [axelparmentier/InferOpt.jl](https://github.com/axelparmentier/InferOpt.jl): approximate differentiation of combinatorial optimization problems
 - [JuliaNonconvex/NonconvexUtils.jl](https://github.com/JuliaNonconvex/NonconvexUtils.jl): contains the original implementation from which this package drew inspiration

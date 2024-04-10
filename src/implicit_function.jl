@@ -85,5 +85,8 @@ end
 output(y::AbstractVector) = y
 byproduct(::AbstractVector) = error("No byproduct")
 
+output(yz::Tuple{<:Any,<:Any}) = yz[1]
+byproduct(yz::Tuple{<:Any,<:Any}) = yz[2]
+
 output((y, z)) = y
 byproduct((y, z)) = z

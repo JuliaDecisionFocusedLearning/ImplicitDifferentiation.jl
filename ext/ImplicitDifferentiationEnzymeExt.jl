@@ -3,56 +3,52 @@ module ImplicitDifferentiationEnzymeExt
 using ADTypes
 using Enzyme
 using Enzyme.EnzymeCore
-using ImplicitDifferentiation: ImplicitFunction, build_A, build_B, output
-
-function EnzymeRules.forward(
-    func::Const{<:ImplicitFunction},
-    RT::Type{<:Union{Duplicated,DuplicatedNoNeed}},
-    x::Union{Duplicated,DuplicatedNoNeed},
-)
-    implicit = func.val
-    @info "My Duplicated rule is used"
-    y_or_yz = implicit(x.val)
-    y = output(y_or_yz)
-
-    suggested_backend = AutoEnzyme(Enzyme.Forward)
-    A = build_A(implicit, x.val, y_or_yz; suggested_backend)
-    B = build_B(implicit, x.val, y_or_yz; suggested_backend)
-
-    dc = B * x.dval
-    dy = convert(typeof(y), implicit.linear_solver(A, -dc))
-    if RT <: Duplicated
-        return Duplicated(y, dy)
-    elseif RT <: DuplicatedNoNeed
-        return dy
-    end
-end
+using ImplicitDifferentiation: ImplicitFunction, build_A, build_B, byproduct, output
 
 function EnzymeRules.forward(
     func::Const{<:ImplicitFunction},
     RT::Type{<:Union{BatchDuplicated,BatchDuplicatedNoNeed}},
-    x::Union{BatchDuplicated{T,N},BatchDuplicatedNoNeed{T,N}},
-) where {T,N}
+    func_x::Union{BatchDuplicated{T,N},BatchDuplicatedNoNeed{T,N}},
+    func_args::Vararg{Const,P},
+) where {T,N,P}
+    @info "My BatchDuplicated rule is used" RT typeof(func_x) typeof(func_args)
     implicit = func.val
-    @info "My BatchDuplicated rule is used"
-    y_or_yz = implicit(x.val)
+    args = map(a -> a.val, func_args)
+    x = func_x.val
+    dx = func_x.dval
+
+    y_or_yz = implicit(x, args...)
     y = output(y_or_yz)
+    Y = typeof(y)
 
     suggested_backend = AutoEnzyme(Enzyme.Forward)
-    A = build_A(implicit, x.val, y_or_yz; suggested_backend)
-    B = build_B(implicit, x.val, y_or_yz; suggested_backend)
+    A = build_A(implicit, x, y_or_yz, args...; suggested_backend)
+    B = build_B(implicit, x, y_or_yz, args...; suggested_backend)
 
-    dX = reduce(hcat, x.dval)
-    dC = mareduce(hcat, eachcol(dX)) do dₖx
+    dx_batch = reduce(hcat, dx)
+    dc_batch = mapreduce(hcat, eachcol(dx_batch)) do dₖx
         B * dₖx
     end
-    dY = implicit.linear_solver(A, -dC)
+    dy_batch = implicit.linear_solver(A, -dc_batch)
 
-    dy = convert(NTuple{N,typeof(y)}, ntuple(k -> dY[:, k], Val(N)))
-    if RT <: BatchDuplicated
-        return BatchDuplicated(y, dy)
-    elseif RT <: BatchDuplicatedNoNeed
-        return dy
+    dy::NTuple{N,Y} = ntuple(k -> convert(Y, dy_batch[:, k]), Val(N))
+
+    if y_or_yz isa AbstractArray
+        if RT <: BatchDuplicated
+            return BatchDuplicated(y, dy)
+        elseif RT <: BatchDuplicatedNoNeed
+            return dy
+        end
+    elseif y_or_yz isa Tuple
+        yz = y_or_yz
+        z = byproduct(yz)
+        Z = typeof(z)
+        dyz::NTuple{N,Tuple{Y,Z}} = ntuple(k -> (dy[k], make_zero(z)), Val(N))
+        if RT <: BatchDuplicated
+            return BatchDuplicated(yz, dyz)
+        elseif RT <: BatchDuplicatedNoNeed
+            return dyz
+        end
     end
 end
 
