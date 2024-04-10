@@ -20,9 +20,13 @@ using Zygote: Zygote, ZygoteRuleConfig
 Random.seed!(63);
 
 function identity_break_autodiff(x::AbstractVector{R}) where {R}
-    a = [zero(R)]
-    a[1] = float(first(x))
-    return copy(x)
+    float(first(x))  # break ForwardDiff
+    (Vector{R}(undef, 1))[1] = first(x)  # break Zygote
+    try
+        throw(copy(x))  # break Enzyme
+    catch y
+        return y
+    end
 end
 
 function mysqrt(x::AbstractVector)
@@ -61,21 +65,21 @@ end
 
 ## Low level tests
 
-function coherent_array_type(a, b)
+function test_coherent_array_type(a, b)
+    @test eltype(a) == eltype(b)
     if a isa Array
-        return b isa Array || b isa (Base.ReshapedArray{T,N,<:Array} where {T,N})
+        @test b isa Array || b isa (Base.ReshapedArray{T,N,<:Array} where {T,N})
     elseif a isa StaticArray
-        return b isa StaticArray ||
-               b isa (Base.ReshapedArray{T,N,<:StaticArray} where {T,N})
+        @test b isa StaticArray || b isa (Base.ReshapedArray{T,N,<:StaticArray} where {T,N})
     elseif a isa AbstractSparseArray
-        return b isa AbstractSparseArray ||
-               b isa (Base.ReshapedArray{T,N,<:AbstractSparseArray} where {T,N})
+        @test b isa AbstractSparseArray ||
+            b isa (Base.ReshapedArray{T,N,<:AbstractSparseArray} where {T,N})
     else
         error("New array type")
     end
 end
 
-function test_implicit_call(x::AbstractVector{T}; kwargs...) where {T}
+function test_implicit_call(x::AbstractVector{T}; type_stability=false, kwargs...) where {T}
     imf1 = make_implicit_sqrt(; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(; kwargs...)
     imf3 = make_implicit_sqrt_args(; kwargs...)
@@ -87,7 +91,7 @@ function test_implicit_call(x::AbstractVector{T}; kwargs...) where {T}
     y3 = imf3(x, 1)
     y4 = imf4(x; p=1)
 
-    @testset "Exact value" begin
+    @testset "Primal value" begin
         @test y1 ≈ y_true
         @test y2 ≈ y_true
         @test y3 ≈ y_true
@@ -96,21 +100,27 @@ function test_implicit_call(x::AbstractVector{T}; kwargs...) where {T}
     end
 
     @testset "Array type" begin
-        @test coherent_array_type(x, y1)
-        @test coherent_array_type(x, y2)
-        @test coherent_array_type(x, y3)
-        @test coherent_array_type(x, y4)
+        test_coherent_array_type(x, y1)
+        test_coherent_array_type(x, y2)
+        test_coherent_array_type(x, y3)
+        test_coherent_array_type(x, y4)
     end
 
-    @testset "Type stability" begin
-        @test_opt target_modules = (ID,) imf1(x)
-        @test_opt target_modules = (ID,) imf2(x)
-        @test_opt target_modules = (ID,) imf3(x, 1)
-        @test_opt target_modules = (ID,) imf4(x; p=1)
+    if type_stability
+        @testset "Type stability" begin
+            @test_opt target_modules = (ID,) imf1(x)
+            @test_opt target_modules = (ID,) imf2(x)
+            @test_opt target_modules = (ID,) imf3(x, 1)
+            @test_opt target_modules = (ID,) imf4(x; p=1)
+        end
     end
 end
 
-function test_implicit_duals(x::AbstractVector{T}; kwargs...) where {T}
+tag(::AbstractVector{<:ForwardDiff.Dual{T}}) where {T} = T
+
+function test_implicit_duals(
+    x::AbstractVector{T}; type_stability=false, kwargs...
+) where {T}
     imf1 = make_implicit_sqrt(; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(; kwargs...)
     imf3 = make_implicit_sqrt_args(; kwargs...)
@@ -118,7 +128,7 @@ function test_implicit_duals(x::AbstractVector{T}; kwargs...) where {T}
 
     y_true = mysqrt(x)
     dx = similar(x)
-    dx .= one(T)
+    dx .= 2 * one(T)
     x_and_dx = ForwardDiff.Dual.(x, dx)
 
     y_and_dy1 = imf1(x_and_dx)
@@ -131,25 +141,37 @@ function test_implicit_duals(x::AbstractVector{T}; kwargs...) where {T}
         @test ForwardDiff.value.(y_and_dy2) ≈ y_true
         @test ForwardDiff.value.(y_and_dy3) ≈ y_true
         @test ForwardDiff.value.(y_and_dy4) ≈ y_true
+        @test ForwardDiff.extract_derivative(tag(y_and_dy1), y_and_dy1) ≈
+            2 .* inv.(2 .* sqrt.(x))
+        @test ForwardDiff.extract_derivative(tag(y_and_dy2), y_and_dy2) ≈
+            2 .* inv.(2 .* sqrt.(x))
+        @test ForwardDiff.extract_derivative(tag(y_and_dy3), y_and_dy3) ≈
+            2 .* inv.(2 .* sqrt.(x))
+        @test ForwardDiff.extract_derivative(tag(y_and_dy4), y_and_dy4) ≈
+            2 .* inv.(2 .* sqrt.(x))
         @test z2 ≈ 1
     end
 
     @testset "Array types" begin
-        @test coherent_array_type(x, y_and_dy1)
-        @test coherent_array_type(x, y_and_dy2)
-        @test coherent_array_type(x, y_and_dy3)
-        @test coherent_array_type(x, y_and_dy4)
+        test_coherent_array_type(x, ForwardDiff.value.(y_and_dy1))
+        test_coherent_array_type(x, ForwardDiff.value.(y_and_dy2))
+        test_coherent_array_type(x, ForwardDiff.value.(y_and_dy3))
+        test_coherent_array_type(x, ForwardDiff.value.(y_and_dy4))
     end
 
-    @testset "Type stability" begin
-        @test_skip @test_opt target_modules = (ID,) imf1(x_and_dx)
-        @test_skip @test_opt target_modules = (ID,) imf2(x_and_dx)
-        @test_skip @test_opt target_modules = (ID,) imf3(x_and_dx, 1)
-        @test_skip @test_opt target_modules = (ID,) imf4(x_and_dx; p=1)
+    if type_stability
+        @testset "Type stability" begin
+            @test_opt target_modules = (ID,) imf1(x_and_dx)
+            @test_opt target_modules = (ID,) imf2(x_and_dx)
+            @test_opt target_modules = (ID,) imf3(x_and_dx, 1)
+            @test_opt target_modules = (ID,) imf4(x_and_dx; p=1)
+        end
     end
 end
 
-function test_implicit_rrule(rc, x::AbstractVector{T}; kwargs...) where {T}
+function test_implicit_rrule(
+    rc, x::AbstractVector{T}; type_stability=false, kwargs...
+) where {T}
     imf1 = make_implicit_sqrt(; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(; kwargs...)
     imf3 = make_implicit_sqrt_args(; kwargs...)
@@ -191,27 +213,15 @@ function test_implicit_rrule(rc, x::AbstractVector{T}; kwargs...) where {T}
     end
 
     @testset "Array type" begin
-        @test coherent_array_type(x, y1)
-        @test coherent_array_type(x, y2)
-        @test coherent_array_type(x, y3)
-        @test coherent_array_type(x, y4)
+        test_coherent_array_type(x, y1)
+        test_coherent_array_type(x, y2)
+        test_coherent_array_type(x, y3)
+        test_coherent_array_type(x, y4)
 
-        @test coherent_array_type(x, dx1)
-        @test coherent_array_type(x, dx2)
-        @test coherent_array_type(x, dx3)
-        @test coherent_array_type(x, dx4)
-    end
-
-    @testset "Type stability" begin
-        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf1, x)
-        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf2, x)
-        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf3, x, 1)
-        @test_skip @test_opt target_modules = (ID,) rrule(rc, imf4, x; p=1)
-
-        @test_skip @test_opt target_modules = (ID,) pb1(dy)
-        @test_skip @test_opt target_modules = (ID,) pb2((dy, dz))
-        @test_skip @test_opt target_modules = (ID,) pb3(dy)
-        @test_skip @test_opt target_modules = (ID,) pb4(dy)
+        test_coherent_array_type(x, dx1)
+        test_coherent_array_type(x, dx2)
+        test_coherent_array_type(x, dx3)
+        test_coherent_array_type(x, dx4)
     end
 
     @testset "ChainRulesTestUtils" begin
@@ -220,12 +230,26 @@ function test_implicit_rrule(rc, x::AbstractVector{T}; kwargs...) where {T}
         test_rrule(rc, imf3, x, 1; atol=1e-2, check_inferred=false)
         test_rrule(rc, imf4, x; atol=1e-2, fkwargs=(p=1,), check_inferred=false)
     end
+
+    if type_stability
+        @testset "Type stability" begin
+            @test_opt target_modules = (ID,) rrule(rc, imf1, x)
+            @test_opt target_modules = (ID,) rrule(rc, imf2, x)
+            @test_opt target_modules = (ID,) rrule(rc, imf3, x, 1)
+            @test_opt target_modules = (ID,) rrule(rc, imf4, x; p=1)
+
+            @test_opt target_modules = (ID,) pb1(dy)
+            @test_opt target_modules = (ID,) pb2((dy, dz))
+            @test_opt target_modules = (ID,) pb3(dy)
+            @test_opt target_modules = (ID,) pb4(dy)
+        end
+    end
 end
 
 ## High-level tests per backend
 
 function test_implicit_backend(
-    backend::ADTypes.AbstractADType, x::AbstractVector{T}; kwargs...
+    backend::ADTypes.AbstractADType, x::AbstractVector{T}; type_stability=false, kwargs...
 ) where {T}
     imf1 = make_implicit_sqrt(; kwargs...)
     imf2 = make_implicit_sqrt_byproduct(; kwargs...)
@@ -252,7 +276,7 @@ function test_implicit_backend(
     return nothing
 end
 
-function test_implicit(backends, x; kwargs...)
+function test_implicit(backends, x; type_stability=false, kwargs...)
     @testset verbose = true "Call" begin
         test_implicit_call(x; kwargs...)
     end
@@ -270,15 +294,30 @@ end
 
 ## Parameter combinations
 
-backends = [AutoForwardDiff(; chunksize=1), AutoZygote()]
+backends = [
+    AutoForwardDiff(; chunksize=1), #
+    # AutoEnzyme(Enzyme.Forward),
+    AutoZygote(),
+]
 
-linear_solver_candidates = (\, ID.DefaultLinearSolver())
-conditions_backend_candidates = (nothing, AutoForwardDiff(; chunksize=1));
-x_candidates = (rand(Float32, 2), rand(Float64, 2));
+linear_solver_candidates = (
+    \, #
+    ID.DefaultLinearSolver(),
+)
+
+conditions_backend_candidates = (
+    nothing, #
+    AutoForwardDiff(; chunksize=1),
+    # AutoEnzyme(Enzyme.Forward),
+);
+
+x_candidates = (
+    rand(Float32, 2), #
+);
 
 ## Test loop
 
-@testset "$linear_solver - $(typeof(conditions_backend)) - $(typeof(x))" for (
+@testset verbose = true "$linear_solver - $(typeof(conditions_backend)) - $(typeof(x))" for (
     linear_solver, conditions_backend, x
 ) in Iterators.product(
     linear_solver_candidates, conditions_backend_candidates, x_candidates

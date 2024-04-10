@@ -5,8 +5,6 @@ using Enzyme
 using Enzyme.EnzymeCore
 using ImplicitDifferentiation: ImplicitFunction, build_A, build_B, output
 
-# https://discourse.julialang.org/t/can-i-define-a-type-unstable-enzymerule/112732
-
 function EnzymeRules.forward(
     func::Const{<:ImplicitFunction},
     RT::Type{<:Union{Duplicated,DuplicatedNoNeed}},
@@ -22,7 +20,7 @@ function EnzymeRules.forward(
     B = build_B(implicit, x.val, y_or_yz; suggested_backend)
 
     dc = B * x.dval
-    dy = implicit.linear_solver(A, -dc)
+    dy = convert(typeof(y), implicit.linear_solver(A, -dc))
     if RT <: Duplicated
         return Duplicated(y, dy)
     elseif RT <: DuplicatedNoNeed
@@ -50,7 +48,7 @@ function EnzymeRules.forward(
     end
     dY = implicit.linear_solver(A, -dC)
 
-    dy = ntuple(k -> dY[:, k], Val(N))
+    dy = convert(NTuple{N,typeof(y)}, ntuple(k -> dY[:, k], Val(N)))
     if RT <: BatchDuplicated
         return BatchDuplicated(y, dy)
     elseif RT <: BatchDuplicatedNoNeed
