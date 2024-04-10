@@ -13,9 +13,22 @@ function (implicit::ImplicitFunction)(
     y_or_yz = implicit(x, args...; kwargs...)
     y = output(y_or_yz)
 
-    suggested_backend = AutoForwardDiff(; tag=T(), chunksize=chunksize(Chunk(x)))
-    A = build_A(implicit, x, y_or_yz, args...; suggested_backend, kwargs...)
-    B = build_B(implicit, x, y_or_yz, args...; suggested_backend, kwargs...)
+    A = build_A(
+        implicit,
+        x,
+        y_or_yz,
+        args...;
+        suggested_backend=AutoForwardDiff(; tag=T(), chunksize=chunksize(Chunk(y))),
+        kwargs...,
+    )
+    B = build_B(
+        implicit,
+        x,
+        y_or_yz,
+        args...;
+        suggested_backend=AutoForwardDiff(; tag=T(), chunksize=chunksize(Chunk(x))),
+        kwargs...,
+    )
 
     dX = mapreduce(hcat, 1:N) do k
         partials.(x_and_dx, k)
