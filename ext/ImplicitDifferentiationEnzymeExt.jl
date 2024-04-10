@@ -11,11 +11,10 @@ function EnzymeRules.forward(
     func_x::Union{BatchDuplicated{T,N},BatchDuplicatedNoNeed{T,N}},
     func_args::Vararg{Const,P},
 ) where {T,N,P}
-    @info "My BatchDuplicated rule is used" RT typeof(func_x) typeof(func_args)
     implicit = func.val
-    args = map(a -> a.val, func_args)
     x = func_x.val
     dx = func_x.dval
+    args = map(a -> a.val, func_args)
 
     y_or_yz = implicit(x, args...)
     y = output(y_or_yz)

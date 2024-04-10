@@ -71,24 +71,40 @@ end
 
 ## Lazy operators
 
-struct PushforwardOperator!{F,B,X,E}
+struct PushforwardOperator!{F,B,X,E,R}
     f::F
     backend::B
     x::X
     extras::E
+    res_backup::R
 end
 
-function (po::PushforwardOperator!)(res, v)
-    res .= pushforward!!(po.f, res, po.backend, po.x, v, po.extras)
+function (po::PushforwardOperator!)(res, v, α, β)
+    if iszero(β)
+        res .= pushforward!!(po.f, res, po.backend, po.x, v, po.extras)
+        res .= α .* res
+    else
+        po.res_backup .= res
+        res .= pushforward!!(po.f, res, po.backend, po.x, v, po.extras)
+        res .= α .* res .+ β .* po.res_backup
+    end
     return res
 end
 
-struct PullbackOperator!{PB}
+struct PullbackOperator!{PB,R}
     pullbackfunc!!::PB
+    res_backup::R
 end
 
-function (po::PullbackOperator!)(res, v)
-    res .= po.pullbackfunc!!(res, v)
+function (po::PullbackOperator!)(res, v, α, β)
+    if iszero(β)
+        res .= po.pullbackfunc!!(res, v)
+        res .= α .* res
+    else
+        po.res_backup .= res
+        res .= po.pullbackfunc!!(res, v)
+        res .= α .* res .+ β .+ po.res_backup
+    end
     return res
 end
 
@@ -107,7 +123,7 @@ function build_A(
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
     if linear_solver isa typeof(\)
         J = jacobian(cond_y, back_y, y)
-        A = lu(J)
+        A = factorize(J)
     else
         extras = prepare_pushforward(cond_y, back_y, y)
         A = LinearOperator(
@@ -116,7 +132,7 @@ function build_A(
             m,
             false,
             false,
-            PushforwardOperator!(cond_y, back_y, y, extras),
+            PushforwardOperator!(cond_y, back_y, y, extras, similar(y)),
             typeof(y),
         )
     end
@@ -138,12 +154,18 @@ function build_Aᵀ(
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
     if linear_solver isa typeof(\)
         Jᵀ = transpose(jacobian(cond_y, back_y, y))
-        Aᵀ = lu(Jᵀ)
+        Aᵀ = factorize(Jᵀ)
     else
         extras = prepare_pullback(cond_y, back_y, y)
         _, pullbackfunc!! = value_and_pullback!!_split(cond_y, back_y, y, extras)
         Aᵀ = LinearOperator(
-            eltype(y), m, m, false, false, PullbackOperator!(pullbackfunc!!), typeof(y)
+            eltype(y),
+            m,
+            m,
+            false,
+            false,
+            PullbackOperator!(pullbackfunc!!, similar(y)),
+            typeof(y),
         )
     end
     return Aᵀ
@@ -172,7 +194,7 @@ function build_B(
             n,
             false,
             false,
-            (res, v) -> res .= pushforward!!(cond_x, res, back_x, x, v, extras),
+            PushforwardOperator!(cond_x, back_x, x, extras, similar(y)),
             typeof(x),
         )
     end
@@ -198,7 +220,13 @@ function build_Bᵀ(
         extras = prepare_pullback(cond_x, back_x, x)
         _, pullbackfunc!! = value_and_pullback!!_split(cond_x, back_x, x, extras)
         Bᵀ = LinearOperator(
-            eltype(y), n, m, false, false, PullbackOperator!(pullbackfunc!!), typeof(x)
+            eltype(y),
+            n,
+            m,
+            false,
+            false,
+            PullbackOperator!(pullbackfunc!!, similar(y)),
+            typeof(x),
         )
     end
     return Bᵀ

@@ -9,11 +9,8 @@ using ForwardDiff
 using ImplicitDifferentiation
 using LinearAlgebra
 using Optim
-using Random
 using Test  #src
 using Zygote
-
-Random.seed!(63);
 
 # ## Constrained optimization
 
@@ -46,19 +43,17 @@ function forward_cstr_optim(x)
     res = optimize(f, lower, upper, y0, Fminbox(GradientDescent()))
     y = Optim.minimizer(res)
     return y
-end
+end;
 
 #-
 
-function proj_hypercube(p)
-    return max.(0, min.(1, p))
-end
+proj_hypercube(p) = max.(0, min.(1, p))
 
 function conditions_cstr_optim(x, y)
     ∇₂f = @. 4 * (y^2 - x) * y
     η = 0.1
     return y .- proj_hypercube(y .- η .* ∇₂f)
-end
+end;
 
 # We now have all the ingredients to construct our implicit function.
 
@@ -66,7 +61,7 @@ implicit_cstr_optim = ImplicitFunction(forward_cstr_optim, conditions_cstr_optim
 
 # And indeed, it behaves as it should when we call it:
 
-x = rand(2) .+ [0, 1]
+x = [0.3, 1.4]
 
 #=
 The second component of $x$ is $> 1$, so its square root will be thresholded to one, and the corresponding derivative will be $0$.

@@ -9,11 +9,8 @@ using ForwardDiff
 using ImplicitDifferentiation
 using Krylov
 using LinearAlgebra
-using Random
 using Test  #src
 using Zygote
-
-Random.seed!(63);
 
 # ## ComponentArrays
 
@@ -55,7 +52,7 @@ Krylov.ktypeof(::ComponentVector{T,V}) where {T,V} = V
 
 # Now we're good to go.
 
-a, b, m = rand(2), rand(3), 7.0
+a, b, m = [1.0, 2.0], [3.0, 4.0, 5.0], 6.0
 x = ComponentVector(; a=a, b=b, m=m)
 implicit_components(x)
 
@@ -83,7 +80,7 @@ end;
 # For when you need an additional output but don't care about its derivative.
 
 function forward_byproduct(x)
-    z = rand((2, 2))  # "randomized" choice
+    z = 2  # "randomized" choice
     y = x .^ (1 / z)
     return y, z
 end
@@ -99,7 +96,7 @@ implicit_byproduct = ImplicitFunction(forward_byproduct, conditions_byproduct);
 
 # But this time the return value is a tuple `(y, z)`
 
-x = rand(3)
+x = [4.0, 9.0]
 implicit_byproduct(x)
 
 # And it works with both ForwardDiff.jl and Zygote.jl

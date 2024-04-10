@@ -14,19 +14,6 @@ DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
 )
 
-function markdown_title(path)
-    title = "?"
-    open(path, "r") do file
-        for line in eachline(file)
-            if startswith(line, '#')
-                title = strip(line, [' ', '#'])
-                break
-            end
-        end
-    end
-    return title
-end
-
 EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
 
 ## Test sets
@@ -49,11 +36,9 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
     @testset verbose = true "Examples" begin
         @info "Example tests"
         for file in readdir(EXAMPLES_DIR_JL)
-            path = joinpath(EXAMPLES_DIR_JL, file)
-            title = markdown_title(path)
-            @info "$title"
-            @testset verbose = true "$title" begin
-                include(path)
+            @info "$file"
+            @testset "$file" begin
+                include(joinpath(EXAMPLES_DIR_JL, file))
             end
         end
     end

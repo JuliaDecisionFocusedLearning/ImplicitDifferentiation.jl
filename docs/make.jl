@@ -36,12 +36,12 @@ end
 
 pages = [
     "Home" => "index.md",
-    "faq.md",
     "Examples" => [
         joinpath("examples", file) for
         file in sort(readdir(EXAMPLES_DIR_MD)) if endswith(file, ".md")
     ],
     "api.md",
+    "faq.md",
 ]
 
 makedocs(;

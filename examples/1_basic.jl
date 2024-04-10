@@ -5,6 +5,8 @@ We show how to differentiate through very common routines:
 - an unconstrained optimization problem
 - a nonlinear system of equations
 - a fixed point iteration
+
+Note that some packages from the [SciML](https://sciml.ai/) ecosystem provide a similar implicit differentiation mechanism.
 =#
 
 using ForwardDiff
@@ -12,18 +14,15 @@ using ImplicitDifferentiation
 using LinearAlgebra
 using NLsolve
 using Optim
-using Random
 using Test  #src
 using Zygote
-
-Random.seed!(63);
 
 #=
 In all three cases, we will use the square root as our forward mapping, but expressed in three different ways.
 Here's our heroic test vector:
 =#
 
-x = rand(2);
+x = [4.0, 9.0];
 
 #=
 Since we already know the mathematical expression of the Jacobian, we will be able to compare it with our numerical results.
@@ -40,7 +39,7 @@ y(x) = \underset{y \in \mathbb{R}^m}{\mathrm{argmin}} ~ f(x, y)
 ```
 The optimality conditions are given by gradient stationarity:
 ```math
-\nabla_2 f(x, y) = 0
+c(x, y) = \nabla_2 f(x, y) = 0
 ```
 =#
 
@@ -58,7 +57,7 @@ function forward_optim(x; method)
     y0 = ones(eltype(x), size(x))
     result = optimize(f, y0, method)
     return Optim.minimizer(result)
-end
+end;
 
 #=
 Even though they are defined as a gradient, it is better to provide optimality conditions explicitly: that way we avoid nesting autodiff calls. By default, the conditions should accept two arguments as input.
@@ -68,7 +67,7 @@ The forward mapping and the conditions should accept the same set of keyword arg
 function conditions_optim(x, y; method)
     ∇₂f = @. 4 * (y^2 - x) * y
     return ∇₂f
-end
+end;
 
 #=
 We now have all the ingredients to construct our implicit function.
@@ -112,18 +111,18 @@ end
 #=
 Next, we show how to differentiate through the solution of a nonlinear system of equations:
 ```math
-\text{find} \quad y(x) \quad \text{such that} \quad F(x, y(x)) = 0
+\text{find} \quad y(x) \quad \text{such that} \quad c(x, y(x)) = 0
 ```
 The optimality conditions are pretty obvious:
 ```math
-F(x, y) = 0
+c(x, y) = 0
 ```
 =#
 
 #=
 To make verification easy, we solve the following system:
 ```math
-F(x, y) = y \odot y - x = 0
+c(x, y) = y \odot y - x = 0
 ```
 In this case, the optimization problem boils down to the componentwise square root function, but we implement it using a black box solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl).
 =#
@@ -134,14 +133,14 @@ function forward_nlsolve(x; method)
     initial_y .= 1
     result = nlsolve(F!, initial_y; method)
     return result.zero
-end
+end;
 
 #-
 
 function conditions_nlsolve(x, y; method)
     c = y .^ 2 .- x
     return c
-end
+end;
 
 #-
 
@@ -179,18 +178,18 @@ end
 #=
 Finally, we show how to differentiate through the limit of a fixed point iteration:
 ```math
-y \longmapsto T(x, y)
+y \longmapsto g(x, y)
 ```
 The optimality conditions are pretty obvious:
 ```math
-y = T(x, y)
+c(x, y) = g(x, y) - y = 0
 ```
 =#
 
 #=
 To make verification easy, we consider [Heron's method](https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Heron's_method):
 ```math
-T(x, y) = \frac{1}{2} \left(y + \frac{x}{y}\right)
+g(x, y) = \frac{1}{2} \left(y + \frac{x}{y}\right)
 ```
 In this case, the fixed point algorithm boils down to the componentwise square root function, but we implement it manually.
 =#
@@ -198,17 +197,17 @@ In this case, the fixed point algorithm boils down to the componentwise square r
 function forward_fixedpoint(x; iterations)
     y = ones(eltype(x), size(x))
     for _ in 1:iterations
-        y .= 0.5 .* (y .+ x ./ y)
+        y .= (y .+ x ./ y) ./ 2
     end
     return y
-end
+end;
 
 #-
 
 function conditions_fixedpoint(x, y; iterations)
-    T = 0.5 .* (y .+ x ./ y)
-    return T .- y
-end
+    g = (y .+ x ./ y) ./ 2
+    return g .- y
+end;
 
 #-
 

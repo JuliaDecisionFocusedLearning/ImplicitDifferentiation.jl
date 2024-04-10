@@ -8,11 +8,8 @@ using ForwardDiff
 using ImplicitDifferentiation
 using JET  #src
 using LinearAlgebra
-using Random
 using Test  #src
 using Zygote
-
-Random.seed!(63);
 
 # ## Why do we bother?
 
@@ -23,17 +20,17 @@ While they are very generic, there are simple language constructs that they cann
 
 function badsqrt(x::AbstractArray)
     a = [0.0]
-    a[1] = first(x)
+    a[1] = x[1]
     return sqrt.(x)
-end
+end;
 
 #=
 This is essentially the componentwise square root function but with an additional twist: `a::Vector{Float64}` is created internally, and its only element is replaced with the first element of `x`.
 We can check that it does what it's supposed to do.
 =#
 
-x = rand(2)
-badsqrt(x) ≈ sqrt.(x)
+x = [4.0, 9.0]
+badsqrt(x)
 @test badsqrt(x) ≈ sqrt.(x)  #src
 
 #=
@@ -78,9 +75,9 @@ x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
 ```
 whose output is defined by conditions
 ```math
-F(x,y(x)) = 0 \in \mathbb{R}^m
+c(x,y(x)) = 0 \in \mathbb{R}^m
 ```
-We represent it using a type called `ImplicitFunction`, which you will see in action shortly.
+We represent it using a type called [`ImplicitFunction`](@ref), which you will see in action shortly.
 =#
 
 #=
@@ -89,7 +86,7 @@ It returns the actual output $y(x)$ of the function, and can be thought of as a 
 Importantly, this Julia callable _doesn't need to be differentiable by automatic differentiation packages but the underlying function still needs to be mathematically differentiable_.
 =#
 
-forward(x) = badsqrt(x)
+forward(x) = badsqrt(x);
 
 #=
 Then we define `conditions` $c(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
@@ -101,7 +98,7 @@ Here the conditions are very obvious: the square of the square root should be eq
 function conditions(x, y)
     c = y .^ 2 .- x
     return c
-end
+end;
 
 #=
 Finally, we construct a wrapper `implicit` around the previous objects.
@@ -113,10 +110,10 @@ implicit = ImplicitFunction(forward, conditions)
 
 #=
 What does this wrapper do?
-When we call it as a function, it just falls back on `first ∘ implicit.forward`, so unsurprisingly we get the first output $y(x)$.
+When we call it as a function, it just falls back on `implicit.forward`, so unsurprisingly we get the output $y(x)$.
 =#
 
-implicit(x) ≈ sqrt.(x)
+implicit(x)
 @test implicit(x) ≈ sqrt.(x)  #src
 
 #=
