@@ -2,7 +2,7 @@
 
 ## Supported autodiff backends
 
-To differentiate an `ImplicitFunction`, the following backends are supported.
+To differentiate through an `ImplicitFunction`, the following backends are supported.
 
 | Backend                                                                | Forward mode | Reverse mode |
 | :--------------------------------------------------------------------- | :----------- | :----------- |
@@ -31,9 +31,9 @@ Or better yet, wrap it in a static vector: `SVector(val)`.
 ### Sparse arrays
 
 !!! danger "Danger"
-    Sparse arrays are not officially supported and might give incorrect values or `NaN`s!
+    Sparse arrays are not supported and might give incorrect values or `NaN`s!
 
-With ForwardDiff.jl, differentiation of sparse arrays will always give wrong results due to [sparsity pattern cancellation](https://github.com/JuliaDiff/ForwardDiff.jl/issues/658).
+With ForwardDiff.jl, differentiation of sparse arrays will often give wrong results due to [sparsity pattern cancellation](https://github.com/JuliaDiff/ForwardDiff.jl/issues/658).
 That is why we do not test behavior for sparse inputs.
 
 ## Number of inputs and outputs
@@ -91,6 +91,21 @@ See the examples for a demonstration.
 This is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
 In that case, you may want to write the conditions differentiation rules yourself.
 A more advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
+
+## Linear system
+
+### Lazy or dense
+
+Usually, dense Jacobians are more efficient in small dimension, while lazy operators become necessary in high dimension.
+This choice is made via the `lazy` type parameter of [`ImplicitFunction`](@ref), with `lazy = true` being the default.
+
+### Picking a solver
+
+The right linear solver to use depends on the Jacobian representation.
+You can usually stick to the default settings:
+
+- the direct solver `\` for dense Jacobians
+- an iterative solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) for lazy operators
 
 ## Modeling tips
 

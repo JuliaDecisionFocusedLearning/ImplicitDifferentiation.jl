@@ -73,7 +73,7 @@ end;
 We now have all the ingredients to construct our implicit function.
 =#
 
-implicit_optim = ImplicitFunction(; forward=forward_optim, conditions=conditions_optim)
+implicit_optim = ImplicitFunction(forward_optim, conditions_optim)
 
 # And indeed, it behaves as it should when we call it:
 

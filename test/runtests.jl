@@ -10,7 +10,7 @@ using Random
 using Test
 using Zygote: Zygote
 
-DocMeta.setdocmeta!(
+Documenter.DocMeta.setdocmeta!(
     ImplicitDifferentiation, :DocTestSetup, :(using ImplicitDifferentiation); recursive=true
 )
 

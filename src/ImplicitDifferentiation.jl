@@ -9,11 +9,7 @@ module ImplicitDifferentiation
 
 using ADTypes: AbstractADType
 using DifferentiationInterface:
-    jacobian,
-    prepare_pushforward,
-    prepare_pullback,
-    pushforward!!,
-    value_and_pullback!!_split
+    jacobian, prepare_pushforward, prepare_pullback, pushforward!, value_and_pullback!_split
 using Krylov: block_gmres, gmres
 using LinearOperators: LinearOperator
 using LinearAlgebra: factorize, lu

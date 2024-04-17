@@ -24,7 +24,7 @@ linear_solver_candidates = (
 conditions_backend_candidates = (
     nothing, #
     AutoForwardDiff(; chunksize=1),
-    # AutoEnzyme(Enzyme.Forward),
+    AutoEnzyme(Enzyme.Forward),
 );
 
 x_candidates = (
