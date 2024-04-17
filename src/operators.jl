@@ -81,51 +81,47 @@ end
 
 function (po::PushforwardOperator!)(res, v, α, β)
     if iszero(β)
-        res .= pushforward!!(po.f, res, po.backend, po.x, v, po.extras)
+        pushforward!(po.f, res, po.backend, po.x, v, po.extras)
         res .= α .* res
     else
         po.res_backup .= res
-        res .= pushforward!!(po.f, res, po.backend, po.x, v, po.extras)
+        pushforward!(po.f, res, po.backend, po.x, v, po.extras)
         res .= α .* res .+ β .* po.res_backup
     end
     return res
 end
 
 struct PullbackOperator!{PB,R}
-    pullbackfunc!!::PB
+    pullbackfunc!::PB
     res_backup::R
 end
 
 function (po::PullbackOperator!)(res, v, α, β)
     if iszero(β)
-        res .= po.pullbackfunc!!(res, v)
-        res .= α .* res
+        po.pullbackfunc!(res, v)
     else
         po.res_backup .= res
-        res .= po.pullbackfunc!!(res, v)
+        po.pullbackfunc!(res, v)
         res .= α .* res .+ β .+ po.res_backup
     end
     return res
 end
 
 function build_A(
-    implicit::ImplicitFunction,
+    implicit::ImplicitFunction{lazy},
     x::AbstractVector,
     y_or_yz,
     args...;
     suggested_backend,
     kwargs...,
-)
+) where {lazy}
     (; conditions, linear_solver, conditions_y_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
-    if linear_solver isa typeof(\)
-        J = jacobian(cond_y, back_y, y)
-        A = factorize(J)
-    else
-        extras = prepare_pushforward(cond_y, back_y, y)
+    if lazy
+        extras = prepare_pushforward(cond_y, back_y, y, similar(y))
         A = LinearOperator(
             eltype(y),
             m,
@@ -135,59 +131,60 @@ function build_A(
             PushforwardOperator!(cond_y, back_y, y, extras, similar(y)),
             typeof(y),
         )
+    else
+        J = jacobian(cond_y, back_y, y)
+        A = factorize(J)
     end
     return A
 end
 
 function build_Aᵀ(
-    implicit::ImplicitFunction,
+    implicit::ImplicitFunction{lazy},
     x::AbstractVector,
     y_or_yz,
     args...;
     suggested_backend,
     kwargs...,
-)
+) where {lazy}
     (; conditions, linear_solver, conditions_y_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
-    if linear_solver isa typeof(\)
-        Jᵀ = transpose(jacobian(cond_y, back_y, y))
-        Aᵀ = factorize(Jᵀ)
-    else
-        extras = prepare_pullback(cond_y, back_y, y)
-        _, pullbackfunc!! = value_and_pullback!!_split(cond_y, back_y, y, extras)
+    if lazy
+        extras = prepare_pullback(cond_y, back_y, y, similar(y))
+        _, pullbackfunc! = value_and_pullback!_split(cond_y, back_y, y, extras)
         Aᵀ = LinearOperator(
             eltype(y),
             m,
             m,
             false,
             false,
-            PullbackOperator!(pullbackfunc!!, similar(y)),
+            PullbackOperator!(pullbackfunc!, similar(y)),
             typeof(y),
         )
+    else
+        Jᵀ = transpose(jacobian(cond_y, back_y, y))
+        Aᵀ = factorize(Jᵀ)
     end
     return Aᵀ
 end
 
 function build_B(
-    implicit::ImplicitFunction,
+    implicit::ImplicitFunction{lazy},
     x::AbstractVector,
     y_or_yz,
     args...;
     suggested_backend,
     kwargs...,
-)
+) where {lazy}
     (; conditions, linear_solver, conditions_x_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
     cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
-    if linear_solver isa typeof(\)
-        B = transpose(jacobian(cond_x, back_x, x))
-    else
-        extras = prepare_pushforward(cond_x, back_x, x)
+    if lazy
+        extras = prepare_pushforward(cond_x, back_x, x, similar(x))
         B = LinearOperator(
             eltype(y),
             m,
@@ -197,37 +194,39 @@ function build_B(
             PushforwardOperator!(cond_x, back_x, x, extras, similar(y)),
             typeof(x),
         )
+    else
+        B = transpose(jacobian(cond_x, back_x, x))
     end
     return B
 end
 
 function build_Bᵀ(
-    implicit::ImplicitFunction,
+    implicit::ImplicitFunction{lazy},
     x::AbstractVector,
     y_or_yz,
     args...;
     suggested_backend,
     kwargs...,
-)
+) where {lazy}
     (; conditions, linear_solver, conditions_x_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
     cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
-    if linear_solver isa typeof(\)
-        Bᵀ = transpose(jacobian(cond_x, back_x, x))
-    else
-        extras = prepare_pullback(cond_x, back_x, x)
-        _, pullbackfunc!! = value_and_pullback!!_split(cond_x, back_x, x, extras)
+    if lazy
+        extras = prepare_pullback(cond_x, back_x, x, similar(y))
+        _, pullbackfunc! = value_and_pullback!_split(cond_x, back_x, x, extras)
         Bᵀ = LinearOperator(
             eltype(y),
             n,
             m,
             false,
             false,
-            PullbackOperator!(pullbackfunc!!, similar(y)),
+            PullbackOperator!(pullbackfunc!, similar(y)),
             typeof(x),
         )
+    else
+        Bᵀ = transpose(jacobian(cond_x, back_x, x))
     end
     return Bᵀ
 end

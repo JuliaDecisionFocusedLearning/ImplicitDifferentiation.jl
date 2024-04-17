@@ -31,31 +31,35 @@ end
 
 ## Various signatures
 
-function make_implicit_sqrt(; kwargs...)
+function make_implicit_sqrt(; linear_solver, kwargs...)
+    lazy = !(linear_solver isa typeof(\))
     forward(x) = mysqrt(x)
     conditions(x, y) = abs2.(y) .- abs.(x)
-    implicit = ImplicitFunction(forward, conditions; kwargs...)
+    implicit = ImplicitFunction{lazy}(forward, conditions; kwargs...)
     return implicit
 end
 
-function make_implicit_sqrt_byproduct(; kwargs...)
+function make_implicit_sqrt_byproduct(; linear_solver, kwargs...)
+    lazy = !(linear_solver isa typeof(\))
     forward(x) = one(eltype(x)) .* mysqrt(x), one(eltype(x))
     conditions(x, y, z) = abs2.(y ./ z) .- abs.(x)
-    implicit = ImplicitFunction(forward, conditions; kwargs...)
+    implicit = ImplicitFunction{lazy}(forward, conditions; linear_solver, kwargs...)
     return implicit
 end
 
-function make_implicit_sqrt_args(; kwargs...)
+function make_implicit_sqrt_args(; linear_solver, kwargs...)
+    lazy = !(linear_solver isa typeof(\))
     forward(x, p) = p .* mysqrt(x)
     conditions(x, y, p) = abs2.(y ./ p) .- abs.(x)
-    implicit = ImplicitFunction(forward, conditions; kwargs...)
+    implicit = ImplicitFunction{lazy}(forward, conditions; linear_solver, kwargs...)
     return implicit
 end
 
-function make_implicit_sqrt_kwargs(; kwargs...)
+function make_implicit_sqrt_kwargs(; linear_solver, kwargs...)
+    lazy = !(linear_solver isa typeof(\))
     forward(x; p) = p .* mysqrt(x)
     conditions(x, y; p) = abs2.(y ./ p) .- abs.(x)
-    implicit = ImplicitFunction(forward, conditions; kwargs...)
+    implicit = ImplicitFunction{lazy}(forward, conditions; linear_solver, kwargs...)
     return implicit
 end
 
