@@ -35,7 +35,7 @@ This requires solving a linear system `A * J = -B` where `A = ∂c/∂y`, `B = �
 
 # Type parameters
 
-- `lazy`: whether to use a `LinearOperator` from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (`lazy = true`) or a dense Jacobian matrix (`lazy = false`) for `A`
+- `lazy`: whether to use a `LinearOperator` from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (`lazy = true`) or a dense Jacobian matrix (`lazy = false`) for `A` and `B`
 
 # Constructors
 
