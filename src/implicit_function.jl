@@ -1,7 +1,7 @@
 """
     KrylovLinearSolver
 
-Callable object that can solve linear systems `As = b` and `AS = b` in the same way that `\`.
+Callable object that can solve linear systems `As = b` and `AS = b` in the same way as the built-in `\\`.
 Uses an iterative solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) under the hood.
 
 # Note
@@ -81,7 +81,7 @@ The provided `linear_solver` objects needs to be callable, with two methods:
 - `(A, b::AbstractVector) -> s::AbstractVector` such that `A * s = b`
 - `(A, B::AbstractVector) -> S::AbstractMatrix` such that `A * S = B`
 
-It can be either a direct solver (like `\`) or an iterative one (like [`KrylovLinearSolver`](@ref)).
+It can be either a direct solver (like `\\`) or an iterative one (like [`KrylovLinearSolver`](@ref)).
 Typically, direct solvers work best with dense Jacobians (`lazy = false`) while iterative solvers work best with operators (`lazy = true`).
 
 # Condition backends
@@ -103,11 +103,7 @@ end
 """
     ImplicitFunction{lazy}(
         forward, conditions;
-        linear_solver=if lazy
-            KrylovLinearSolver()
-        else
-            \
-        end,
+        linear_solver=lazy ? KrylovLinearSolver() : \\,
         conditions_x_backend=nothing,
         conditions_x_backend=nothing,
     )
@@ -138,9 +134,7 @@ end
         conditions_x_backend=nothing,
     )
 
-Constructor for an [`ImplicitFunction`](@ref) which picks the `lazy` parameter automatically based on the `linear_solver`, using the following heuristic:
-
-    lazy = linear_solver != \
+Constructor for an [`ImplicitFunction`](@ref) which picks the `lazy` parameter automatically based on the `linear_solver`, using the following heuristic: `lazy = linear_solver != \\`.
 """
 function ImplicitFunction(
     forward,
