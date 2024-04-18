@@ -103,7 +103,11 @@ end
 """
     ImplicitFunction{lazy}(
         forward, conditions;
-        linear_solver=lazy ? KrylovLinearSolver() : \,
+        linear_solver=if lazy
+            KrylovLinearSolver()
+        else
+            \
+        end,
         conditions_x_backend=nothing,
         conditions_x_backend=nothing,
     )
@@ -113,7 +117,11 @@ Constructor for an [`ImplicitFunction`](@ref) which picks the `linear_solver` au
 function ImplicitFunction{lazy}(
     forward::F,
     conditions::C;
-    linear_solver::L=lazy ? KrylovLinearSolver() : \,
+    linear_solver::L=if lazy
+        KrylovLinearSolver()
+    else
+        \
+    end,
     conditions_x_backend::B1=nothing,
     conditions_y_backend::B2=nothing,
 ) where {lazy,F,C,L,B1,B2}
@@ -132,7 +140,7 @@ end
 
 Constructor for an [`ImplicitFunction`](@ref) which picks the `lazy` parameter automatically based on the `linear_solver`, using the following heuristic:
 
-    lazy = (linear_solver != \)
+    lazy = linear_solver != \
 """
 function ImplicitFunction(
     forward,
@@ -141,7 +149,7 @@ function ImplicitFunction(
     conditions_x_backend=nothing,
     conditions_y_backend=nothing,
 )
-    lazy = (linear_solver != \)
+    lazy = linear_solver != \
     return ImplicitFunction{lazy}(
         forward, conditions; linear_solver, conditions_x_backend, conditions_y_backend
     )
