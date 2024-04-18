@@ -1,11 +1,31 @@
-struct DefaultLinearSolver end
+"""
+    KrylovLinearSolver
 
-function (::DefaultLinearSolver)(A, b::AbstractVector)
+Callable object that can solve linear systems `As = b` and `AS = b` in the same way that `\`.
+Uses an iterative solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) under the hood.
+
+# Note
+
+This name is not exported, and thus not part of the public API, but it is used in the [`ImplicitFunction`](@ref) constructors.
+"""
+struct KrylovLinearSolver end
+
+"""
+    (::KylovLinearSolver)(A, b::AbstractVector)
+
+Solve a linear system with a single right-hand side.
+"""
+function (::KrylovLinearSolver)(A, b::AbstractVector)
     x, stats = gmres(A, b)
     return x
 end
 
-function (::DefaultLinearSolver)(A, B::AbstractMatrix)
+"""
+    (::KrylovLinearSolver)(A, B::AbstractMatrix)
+
+Solve a linear system with multiple right-hand sides.
+"""
+function (::KrylovLinearSolver)(A, B::AbstractMatrix)
     # X, stats = block_gmres(A, B)  # https://github.com/JuliaSmoothOptimizers/Krylov.jl/issues/854
     X = mapreduce(hcat, eachcol(B)) do b
         first(gmres(A, b))
@@ -25,36 +45,20 @@ When a derivative is queried, the Jacobian of `y` is computed using the implicit
 
 This requires solving a linear system `A * J = -B` where `A = ∂c/∂y`, `B = ∂c/∂x` and `J = ∂y/∂x`.
 
+# Type parameters
+
+- `lazy::Bool`: whether to represent `A` and `B` with a `LinearOperator` from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (`lazy = true`) or a dense Jacobian matrix (`lazy = false`)
+
+Usually, dense Jacobians are more efficient in small dimension, while lazy operators become necessary in high dimension.
+The value of `lazy` must be chosen together with the `linear_solver`, see below.
+
 # Fields
 
 - `forward`: a callable computing `y(x)`, does not need to be compatible with automatic differentiation
 - `conditions`: a callable computing `c(x, y)`, must be compatible with automatic differentiation
-- `linear_solver`: a callable to solve the linear system `A * J = -B`
+- `linear_solver`: a callable to solve the linear system
 - `conditions_x_backend`: defines how the conditions will be differentiated with respect to the first argument `x` 
 - `conditions_y_backend`: defines how the conditions will be differentiated with respect to the second argument `y` 
-
-# Type parameters
-
-- `lazy`: whether to use a `LinearOperator` from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (`lazy = true`) or a dense Jacobian matrix (`lazy = false`) for `A` and `B`
-
-# Constructors
-
-    ImplicitFunction{lazy}(
-        forward, conditions;
-        linear_solver, conditions_x_backend, conditions_x_backend
-    )
-
-    ImplicitFunction(
-        forward, conditions;
-        linear_solver, conditions_x_backend, conditions_x_backend
-    )
-
-Default values:
-
-- `lazy = true`
-- `linear_solver`: the direct solver `\` for dense Jacobians, or an iterative solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) for lazy operators
-- `conditions_x_backend = nothing`
-- `conditions_y_backend = nothing`
 
 # Function signatures
 
@@ -62,7 +66,7 @@ There are two possible signatures for `forward` and `conditions`, which must be 
     
 | standard | byproduct |
 |:---|:---|
-| `forward(x, args...; kwargs...) = y`      | `conditions(x, y, args...; kwargs...) = c` |
+| `forward(x, args...; kwargs...) = y`      | `conditions(x, y, args...; kwargs...) = c`    |
 | `forward(x, args...; kwargs...) = (y, z)` | `conditions(x, y, z, args...; kwargs...) = c` |
     
 In both cases, `x`, `y` and `c` must be `AbstractVector`s, with `length(y) = length(c)`.
@@ -75,13 +79,16 @@ The byproduct `z` and the other positional arguments `args...` beyond `x` are co
 
 The provided `linear_solver` objects needs to be callable, with two methods:
 - `(A, b::AbstractVector) -> s::AbstractVector` such that `A * s = b`
-- `(A, B::AbstractVector) -> S::AbstractMatrix` such that `A * S = B` 
+- `(A, B::AbstractVector) -> S::AbstractMatrix` such that `A * S = B`
+
+It can be either a direct solver (like `\`) or an iterative one (like [`KrylovLinearSolver`](@ref)).
+Typically, direct solvers work best with dense Jacobians (`lazy = false`) while iterative solvers work best with operators (`lazy = true`).
 
 # Condition backends
 
 The provided `conditions_x_backend` and `conditions_y_backend` can be either:
-- `nothing`, in which case the outer backend (the one differentiating through the `ImplicitFunction`) is used
-- an object subtyping `AbstractADType` from [ADTypes.jl](https://github.com/SciML/ADTypes.jl).
+- an object subtyping `AbstractADType` from [ADTypes.jl](https://github.com/SciML/ADTypes.jl);
+- `nothing`, in which case the outer backend (the one differentiating through the `ImplicitFunction`) is used.
 """
 struct ImplicitFunction{
     lazy,F,C,L,B1<:Union{Nothing,AbstractADType},B2<:Union{Nothing,AbstractADType}
@@ -93,10 +100,20 @@ struct ImplicitFunction{
     conditions_y_backend::B2
 end
 
+"""
+    ImplicitFunction{lazy}(
+        forward, conditions;
+        linear_solver=lazy ? KrylovLinearSolver() : \,
+        conditions_x_backend=nothing,
+        conditions_x_backend=nothing,
+    )
+
+Constructor for an [`ImplicitFunction`](@ref) which picks the `linear_solver` automatically based on the `lazy` parameter.
+"""
 function ImplicitFunction{lazy}(
     forward::F,
     conditions::C;
-    linear_solver::L=lazy ? DefaultLinearSolver() : \,
+    linear_solver::L=lazy ? KrylovLinearSolver() : \,
     conditions_x_backend::B1=nothing,
     conditions_y_backend::B2=nothing,
 ) where {lazy,F,C,L,B1,B2}
@@ -105,8 +122,29 @@ function ImplicitFunction{lazy}(
     )
 end
 
-function ImplicitFunction(forward, conditions; kwargs...)
-    return ImplicitFunction{true}(forward, conditions; kwargs...)
+"""
+    ImplicitFunction(
+        forward, conditions;
+        linear_solver=KrylovLinearSolver(),
+        conditions_x_backend=nothing,
+        conditions_x_backend=nothing,
+    )
+
+Constructor for an [`ImplicitFunction`](@ref) which picks the `lazy` parameter automatically based on the `linear_solver`, using the following heuristic:
+
+    lazy = (linear_solver != \)
+"""
+function ImplicitFunction(
+    forward,
+    conditions;
+    linear_solver=KrylovLinearSolver(),
+    conditions_x_backend=nothing,
+    conditions_y_backend=nothing,
+)
+    lazy = (linear_solver != \)
+    return ImplicitFunction{lazy}(
+        forward, conditions; linear_solver, conditions_x_backend, conditions_y_backend
+    )
 end
 
 function Base.show(io::IO, implicit::ImplicitFunction{lazy}) where {lazy}
@@ -119,7 +157,7 @@ function Base.show(io::IO, implicit::ImplicitFunction{lazy}) where {lazy}
 end
 
 """
-    (implicit::ImplicitFunction)(x::AbstractArray, args...; kwargs...)
+    (implicit::ImplicitFunction)(x::AbstractVector, args...; kwargs...)
 
 Return `implicit.forward(x, args...; kwargs...)`, which can be either an `AbstractVector` `y` or a tuple `(y, z)`.
 

@@ -18,22 +18,22 @@ You can override the default with the `conditions_x_backend` and `conditions_y_b
 
 ### Arrays
 
-Functions that eat or spit out arbitrary arrays are supported, as long as the forward mapping _and_ conditions return arrays of the same size.
+Functions that eat or spit out arbitrary vectors are supported, as long as the forward mapping _and_ conditions return vectors of the same size.
 
-If you deal with small arrays (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
+If you deal with small vectors (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
 
 ### Scalars
 
 Functions that eat or spit out a single number are not supported.
-The forward mapping _and_ conditions need arrays: instead of returning `val` you should return `[val]` (a 1-element `Vector`).
+The forward mapping _and_ conditions need vectors: instead of returning `val` you should return `[val]` (a 1-element `Vector`).
 Or better yet, wrap it in a static vector: `SVector(val)`.
 
-### Sparse arrays
+### Sparse vectors
 
 !!! danger "Danger"
-    Sparse arrays are not supported and might give incorrect values or `NaN`s!
+    Sparse vectors are not supported and might give incorrect values or `NaN`s!
 
-With ForwardDiff.jl, differentiation of sparse arrays will often give wrong results due to [sparsity pattern cancellation](https://github.com/JuliaDiff/ForwardDiff.jl/issues/658).
+With ForwardDiff.jl, differentiation of sparse vectors will often give wrong results due to [sparsity pattern cancellation](https://github.com/JuliaDiff/ForwardDiff.jl/issues/658).
 That is why we do not test behavior for sparse inputs.
 
 ## Number of inputs and outputs
@@ -51,7 +51,7 @@ We now detail each of these options.
 
 ### Multiple inputs or outputs | Derivatives needed
 
-Say your forward mapping takes multiple input arrays and returns multiple output arrays, such that you want derivatives for all of them.
+Say your forward mapping takes multiple inputs and returns multiple outputs, such that you want derivatives for all of them.
 
 The trick is to leverage [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) to wrap all the inputs inside a single a `ComponentVector`, and do the same for all the outputs.
 See the examples for a demonstration.
@@ -91,21 +91,6 @@ See the examples for a demonstration.
 This is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
 In that case, you may want to write the conditions differentiation rules yourself.
 A more advanced application is given by [DifferentiableFrankWolfe.jl](https://github.com/gdalle/DifferentiableFrankWolfe.jl).
-
-## Linear system
-
-### Lazy or dense
-
-Usually, dense Jacobians are more efficient in small dimension, while lazy operators become necessary in high dimension.
-This choice is made via the `lazy` type parameter of [`ImplicitFunction`](@ref), with `lazy = true` being the default.
-
-### Picking a solver
-
-The right linear solver to use depends on the Jacobian representation.
-You can usually stick to the default settings:
-
-- the direct solver `\` for dense Jacobians
-- an iterative solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) for lazy operators
 
 ## Modeling tips
 

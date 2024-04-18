@@ -18,7 +18,7 @@ backends = [
 
 linear_solver_candidates = (
     \, #
-    ID.DefaultLinearSolver(),
+    ID.KrylovLinearSolver(),
 )
 
 conditions_backend_candidates = (
