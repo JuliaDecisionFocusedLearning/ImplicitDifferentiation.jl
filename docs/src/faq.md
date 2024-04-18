@@ -12,15 +12,19 @@ To differentiate through an `ImplicitFunction`, the following backends are suppo
 
 By default, the conditions are differentiated using the same "outer" backend that is trying to differentiate the `ImplicitFunction`.
 However, this can be switched to any other "inner" backend compatible with [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) (i.e. a subtype of `ADTypes.AbstractADType`).
-You can override the default with the `conditions_x_backend` and `conditions_y_backend` keyword arguments when constructing an `ImplicitFunction`.
 
 ## Input and output types
 
-### Arrays
+### Vectors
 
 Functions that eat or spit out arbitrary vectors are supported, as long as the forward mapping _and_ conditions return vectors of the same size.
 
 If you deal with small vectors (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
+
+### Arrays
+
+Functions that eat or spit out matrices and higher-order tensors are not supported.
+You can use `vec` and `reshape` for the conversion to and from vectors.
 
 ### Scalars
 
@@ -28,13 +32,12 @@ Functions that eat or spit out a single number are not supported.
 The forward mapping _and_ conditions need vectors: instead of returning `val` you should return `[val]` (a 1-element `Vector`).
 Or better yet, wrap it in a static vector: `SVector(val)`.
 
-### Sparse vectors
+### Sparse arrays
 
 !!! danger "Danger"
-    Sparse vectors are not supported and might give incorrect values or `NaN`s!
+    Sparse arrays are not supported out of the box and might yield incorrect values!
 
-With ForwardDiff.jl, differentiation of sparse vectors will often give wrong results due to [sparsity pattern cancellation](https://github.com/JuliaDiff/ForwardDiff.jl/issues/658).
-That is why we do not test behavior for sparse inputs.
+If your use case involves sparse arrays, it is best to differentiate with respect to the dense vector of values and only construct the sparse array inside of the `forward` and `conditions` functions.
 
 ## Number of inputs and outputs
 
