@@ -21,10 +21,10 @@ ImplicitDifferentiationEnzymeExt = "Enzyme"
 ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
 
 [compat]
-ADTypes = "0.2"
+ADTypes = "1.0"
 ChainRulesCore = "1.23.0"
-DifferentiationInterface = "0.2"
-Enzyme = "0.11.20"
+DifferentiationInterface = "0.3"
+Enzyme = "0.11.20,0.12"
 ForwardDiff = "0.10.36"
 Krylov = "0.9.5"
 LinearAlgebra = "1.10"
