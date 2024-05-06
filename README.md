@@ -1,13 +1,13 @@
 # ImplicitDifferentiation.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://gdalle.github.io/ImplicitDifferentiation.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://gdalle.github.io/ImplicitDifferentiation.jl/dev/)
-[![Build Status](https://github.com/gdalle/ImplicitDifferentiation.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/gdalle/ImplicitDifferentiation.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/gdalle/ImplicitDifferentiation.jl/branch/main/graph/badge.svg)](https://app.codecov.io/gh/gdalle/ImplicitDifferentiation.jl)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaDecisionFocusedLearning.github.io/ImplicitDifferentiation.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaDecisionFocusedLearning.github.io/ImplicitDifferentiation.jl/dev/)
+[![Build Status](https://github.com/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Coverage](https://codecov.io/gh/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-[ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly, i.e., _forward mappings_
+[ImplicitDifferentiation.jl](https://github.com/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl) is a package for automatic differentiation of functions defined implicitly, i.e., _forward mappings_
 
 ```math
 x \in \mathbb{R}^n \longmapsto y(x) \in \mathbb{R}^m
@@ -40,10 +40,10 @@ julia> using Pkg; Pkg.add("ImplicitDifferentiation")
 For the latest version, run this instead:
 
 ```julia
-julia> using Pkg; Pkg.add(url="https://github.com/gdalle/ImplicitDifferentiation.jl")
+julia> using Pkg; Pkg.add(url="https://github.com/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl")
 ```
 
-Please read the [documentation](https://gdalle.github.io/ImplicitDifferentiation.jl/stable/), especially the examples and FAQ.
+Please read the [documentation](https://JuliaDecisionFocusedLearning.github.io/ImplicitDifferentiation.jl/stable/), especially the examples and FAQ.
 
 ## Related projects
 
