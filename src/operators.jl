@@ -91,17 +91,21 @@ function (po::PushforwardOperator!)(res, v, α, β)
     return res
 end
 
-struct PullbackOperator!{PB,R}
-    pullbackfunc!::PB
+struct PullbackOperator!{F,B,X,E,R}
+    f::F
+    backend::B
+    x::X
+    extras::E
     res_backup::R
 end
 
 function (po::PullbackOperator!)(res, v, α, β)
     if iszero(β)
-        po.pullbackfunc!(res, v)
+        pullback!(po.f, res, po.backend, po.x, v, po.extras)
+        res .= α .* res
     else
         po.res_backup .= res
-        po.pullbackfunc!(res, v)
+        pullback!(po.f, res, po.backend, po.x, v, po.extras)
         res .= α .* res .+ β .+ po.res_backup
     end
     return res
@@ -121,7 +125,7 @@ function build_A(
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
     if lazy
-        extras = prepare_pushforward(cond_y, back_y, y, similar(y))
+        extras = prepare_pushforward_same_point(cond_y, back_y, y, zero(y))
         A = LinearOperator(
             eltype(y),
             m,
@@ -152,15 +156,14 @@ function build_Aᵀ(
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
     cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
     if lazy
-        extras = prepare_pullback(cond_y, back_y, y, similar(y))
-        _, pullbackfunc! = value_and_pullback!_split(cond_y, back_y, y, extras)
+        extras = prepare_pullback_same_point(cond_y, back_y, y, zero(y))
         Aᵀ = LinearOperator(
             eltype(y),
             m,
             m,
             false,
             false,
-            PullbackOperator!(pullbackfunc!, similar(y)),
+            PullbackOperator!(cond_y, back_y, y, extras, similar(y)),
             typeof(y),
         )
     else
@@ -184,7 +187,7 @@ function build_B(
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
     cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
     if lazy
-        extras = prepare_pushforward(cond_x, back_x, x, similar(x))
+        extras = prepare_pushforward_same_point(cond_x, back_x, x, zero(x))
         B = LinearOperator(
             eltype(y),
             m,
@@ -214,15 +217,14 @@ function build_Bᵀ(
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
     cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
     if lazy
-        extras = prepare_pullback(cond_x, back_x, x, similar(y))
-        _, pullbackfunc! = value_and_pullback!_split(cond_x, back_x, x, extras)
+        extras = prepare_pullback_same_point(cond_x, back_x, x, zero(y))
         Bᵀ = LinearOperator(
             eltype(y),
             n,
             m,
             false,
             false,
-            PullbackOperator!(pullbackfunc!, similar(y)),
+            PullbackOperator!(cond_x, back_x, x, extras, similar(x)),
             typeof(x),
         )
     else
