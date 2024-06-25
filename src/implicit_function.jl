@@ -57,8 +57,8 @@ The value of `lazy` must be chosen together with the `linear_solver`, see below.
 - `forward`: a callable computing `y(x)`, does not need to be compatible with automatic differentiation
 - `conditions`: a callable computing `c(x, y)`, must be compatible with automatic differentiation
 - `linear_solver`: a callable to solve the linear system
-- `conditions_x_backend`: defines how the conditions will be differentiated with respect to the first argument `x` 
-- `conditions_y_backend`: defines how the conditions will be differentiated with respect to the second argument `y` 
+- `conditions_x_backend`: how the conditions will be differentiated w.r.t. the first argument `x` 
+- `conditions_y_backend`: how the conditions will be differentiated w.r.t. the second argument `y` 
 
 # Function signatures
 
@@ -79,7 +79,7 @@ The byproduct `z` and the other positional arguments `args...` beyond `x` are co
 
 The provided `linear_solver` objects needs to be callable, with two methods:
 - `(A, b::AbstractVector) -> s::AbstractVector` such that `A * s = b`
-- `(A, B::AbstractVector) -> S::AbstractMatrix` such that `A * S = B`
+- `(A, B::AbstractMatrix) -> S::AbstractMatrix` such that `A * S = B`
 
 It can be either a direct solver (like `\\`) or an iterative one (like [`KrylovLinearSolver`](@ref)).
 Typically, direct solvers work best with dense Jacobians (`lazy = false`) while iterative solvers work best with operators (`lazy = true`).
@@ -105,7 +105,7 @@ end
         forward, conditions;
         linear_solver=lazy ? KrylovLinearSolver() : \\,
         conditions_x_backend=nothing,
-        conditions_x_backend=nothing,
+        conditions_y_backend=nothing,
     )
 
 Constructor for an [`ImplicitFunction`](@ref) which picks the `linear_solver` automatically based on the `lazy` parameter.

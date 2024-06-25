@@ -1,8 +1,7 @@
 # # Advanced use cases
 
 #=
-We dive into more advanced applications of implicit differentiation:
-- constrained optimization problems
+We dive into more advanced applications of implicit differentiation.
 =#
 
 using ForwardDiff

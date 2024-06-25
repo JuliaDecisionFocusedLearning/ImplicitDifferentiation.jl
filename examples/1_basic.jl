@@ -86,7 +86,7 @@ ForwardDiff.jacobian(_x -> implicit_optim(_x; method=LBFGS()), x)
 @test ForwardDiff.jacobian(_x -> implicit_optim(_x; method=LBFGS()), x) ≈ J  #src
 
 #=
-In this instance, we could use ForwardDiff.jl directly on the solver, but it returns the wrong result (not sure why).
+In this instance, we could use ForwardDiff.jl directly on the solver:
 =#
 
 ForwardDiff.jacobian(_x -> forward_optim(_x; method=LBFGS()), x)

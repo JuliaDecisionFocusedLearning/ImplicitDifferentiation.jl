@@ -34,13 +34,13 @@ If you want a deeper dive into the theory, you can refer to the paper [_Efficien
 To install the stable version, open a Julia REPL and run:
 
 ```julia
-julia> using Pkg; Pkg.add("ImplicitDifferentiation")
+using Pkg; Pkg.add("ImplicitDifferentiation")
 ```
 
 For the latest version, run this instead:
 
 ```julia
-julia> using Pkg; Pkg.add(url="https://github.com/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl")
+using Pkg; Pkg.add(url="https://github.com/JuliaDecisionFocusedLearning/ImplicitDifferentiation.jl")
 ```
 
 Please read the [documentation](https://JuliaDecisionFocusedLearning.github.io/ImplicitDifferentiation.jl/stable/), especially the examples and FAQ.

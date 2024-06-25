@@ -81,9 +81,9 @@ We represent it using a type called [`ImplicitFunction`](@ref), which you will s
 =#
 
 #=
-First we define a forward mapping corresponding to the function we consider.
+First we define a `forward` mapping corresponding to the function we consider.
 It returns the actual output $y(x)$ of the function, and can be thought of as a black box solver.
-Importantly, this Julia callable _doesn't need to be differentiable by automatic differentiation packages but the underlying function still needs to be mathematically differentiable_.
+Importantly, this Julia callable doesn't need to be differentiable by automatic differentiation packages but the underlying function still needs to be mathematically differentiable.
 =#
 
 forward(x) = badsqrt(x);
@@ -91,7 +91,7 @@ forward(x) = badsqrt(x);
 #=
 Then we define `conditions` $c(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
 These conditions must be array-valued, with the same size as $y$.
-Unlike the forward mapping, _the conditions need to be differentiable by automatic differentiation packages_ with respect to both $x$ and $y$.
+Unlike the forward mapping, the conditions need to be differentiable by automatic differentiation packages with respect to both $x$ and $y$.
 Here the conditions are very obvious: the square of the square root should be equal to the original value.
 =#
 

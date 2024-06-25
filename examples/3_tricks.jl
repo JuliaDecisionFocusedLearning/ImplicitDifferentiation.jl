@@ -28,7 +28,7 @@ function conditions_components_aux(a, b, m, d, e)
     return c_d, c_e
 end;
 
-# You can use `ComponentVector` as an intermediate storage.
+# You can use `ComponentVector` from [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) as an intermediate storage.
 
 function forward_components(x::ComponentVector)
     d, e = forward_components_aux(x.a, x.b, x.m)
