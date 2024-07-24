@@ -19,6 +19,7 @@ function EnzymeRules.forward(
     y_or_yz = implicit(x, args...)
     y = output(y_or_yz)
     Y = typeof(y)
+    X = typeof(x)
 
     suggested_backend = AutoEnzyme(Enzyme.Forward)
     A = build_A(implicit, x, y_or_yz, args...; suggested_backend)
@@ -26,7 +27,7 @@ function EnzymeRules.forward(
 
     dx_batch = reduce(hcat, dx)
     dc_batch = mapreduce(hcat, eachcol(dx_batch)) do dₖx
-        B * dₖx
+        B * X(dₖx)
     end
     dy_batch = implicit.linear_solver(A, -dc_batch)
 
