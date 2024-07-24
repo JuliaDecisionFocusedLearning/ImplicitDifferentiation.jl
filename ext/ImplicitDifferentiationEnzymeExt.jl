@@ -52,4 +52,47 @@ function EnzymeRules.forward(
     end
 end
 
+function EnzymeRules.forward(
+    func::Const{<:ImplicitFunction},
+    RT::Type{<:Union{Duplicated,DuplicatedNoNeed}},
+    func_x::Union{Duplicated{T},DuplicatedNoNeed{T}},
+    func_args::Vararg{Const,P},
+) where {T,P}
+    implicit = func.val
+    x = func_x.val
+    dx = func_x.dval
+    args = map(a -> a.val, func_args)
+
+    y_or_yz = implicit(x, args...)
+    y = output(y_or_yz)
+    Y = typeof(y)
+
+    suggested_backend = AutoEnzyme(Enzyme.Forward)
+    A = build_A(implicit, x, y_or_yz, args...; suggested_backend)
+    B = build_B(implicit, x, y_or_yz, args...; suggested_backend)
+
+    dc = B * dx
+
+    dy = convert(Y, implicit.linear_solver(A, -dc))
+    
+
+    if y_or_yz isa AbstractArray
+        if RT <: Duplicated
+            return Duplicated(y, dy)
+        elseif RT <: DuplicatedNoNeed
+            return dy
+        end
+    elseif y_or_yz isa Tuple
+        yz = y_or_yz
+        z = byproduct(yz)
+        Z = typeof(z)
+        dyz::NTuple{N,Tuple{Y,Z}} = ntuple(k -> (dy[k], make_zero(z)), Val(N))
+        if RT <: Duplicated
+            return Duplicated(yz, dyz)
+        elseif RT <: DuplicatedNoNeed
+            return dyz
+        end
+    end
+end
+
 end
