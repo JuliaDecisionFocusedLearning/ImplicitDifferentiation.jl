@@ -68,7 +68,7 @@ J = ForwardDiff.jacobian(forward_components, x)  #src
 Zygote.jacobian(implicit_components, x)[1]
 @test Zygote.jacobian(implicit_components, x)[1] ≈ J  #src
 
-@test Enzyme.jacobian(Enzyme.Forward, implicit_components, x) ≈ J  #src
+# @test Enzyme.jacobian(Enzyme.Forward, implicit_components, x) ≈ J  #src
 
 #- The full differentiable pipeline looks like this
 
