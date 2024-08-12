@@ -12,7 +12,7 @@ include("utils.jl")
 
 backends = [
     AutoForwardDiff(; chunksize=1), #
-    AutoEnzyme(Enzyme.Forward),
+    AutoEnzyme(; mode=Enzyme.Forward),
     AutoZygote(),
 ]
 
