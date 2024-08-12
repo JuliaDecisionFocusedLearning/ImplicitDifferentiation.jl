@@ -5,9 +5,7 @@ using Enzyme
 using Enzyme.EnzymeCore
 using ImplicitDifferentiation: ImplicitFunction, build_A, build_B, byproduct, output
 
-const FORWARD_BACKEND = AutoEnzyme(;
-    mode=Enzyme.Forward, function_annotation=Enzyme.Duplicated
-)
+const FORWARD_BACKEND = AutoEnzyme(; mode=Enzyme.Forward)
 
 function EnzymeRules.forward(
     func::Const{<:ImplicitFunction},
