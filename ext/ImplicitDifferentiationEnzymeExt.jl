@@ -5,6 +5,8 @@ using Enzyme
 using Enzyme.EnzymeCore
 using ImplicitDifferentiation: ImplicitFunction, build_A, build_B, byproduct, output
 
+const FORWARD_BACKEND = AutoEnzyme(; mode=Enzyme.Forward, function_annotation=Enzyme.Const)
+
 function EnzymeRules.forward(
     func::Const{<:ImplicitFunction},
     RT::Type{<:Union{BatchDuplicated,BatchDuplicatedNoNeed}},
@@ -20,12 +22,11 @@ function EnzymeRules.forward(
     y = output(y_or_yz)
     Y = typeof(y)
 
-    suggested_backend = AutoEnzyme(Enzyme.Forward)
+    suggested_backend = FORWARD_BACKEND
     A = build_A(implicit, x, y_or_yz, args...; suggested_backend)
     B = build_B(implicit, x, y_or_yz, args...; suggested_backend)
 
-    dx_batch = reduce(hcat, dx)
-    dc_batch = mapreduce(hcat, eachcol(dx_batch)) do dₖx
+    dc_batch = mapreduce(hcat, dx) do dₖx
         B * dₖx
     end
     dy_batch = implicit.linear_solver(A, -dc_batch)

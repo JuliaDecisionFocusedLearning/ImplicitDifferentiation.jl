@@ -5,6 +5,7 @@ We demonstrate several features that may come in handy for some users.
 =#
 
 using ComponentArrays
+using Enzyme  #src
 using ForwardDiff
 using ImplicitDifferentiation
 using Krylov
@@ -66,6 +67,8 @@ J = ForwardDiff.jacobian(forward_components, x)  #src
 
 Zygote.jacobian(implicit_components, x)[1]
 @test Zygote.jacobian(implicit_components, x)[1] ≈ J  #src
+
+@test_broken Enzyme.jacobian(Enzyme.Forward, implicit_components, x) ≈ J  #src
 
 #- The full differentiable pipeline looks like this
 

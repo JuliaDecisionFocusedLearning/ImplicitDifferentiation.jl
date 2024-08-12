@@ -60,6 +60,26 @@ The value of `lazy` must be chosen together with the `linear_solver`, see below.
 - `conditions_x_backend`: how the conditions will be differentiated w.r.t. the first argument `x` 
 - `conditions_y_backend`: how the conditions will be differentiated w.r.t. the second argument `y` 
 
+# Constructors
+
+    ImplicitFunction(
+        forward, conditions;
+        linear_solver=KrylovLinearSolver(),
+        conditions_x_backend=nothing,
+        conditions_x_backend=nothing,
+    )
+
+Picks the `lazy` parameter automatically based on the `linear_solver`, using the following heuristic: `lazy = linear_solver != \\`.
+
+    ImplicitFunction{lazy}(
+        forward, conditions;
+        linear_solver=lazy ? KrylovLinearSolver() : \\,
+        conditions_x_backend=nothing,
+        conditions_y_backend=nothing,
+    )
+
+Picks the `linear_solver` automatically based on the `lazy` parameter.
+
 # Function signatures
 
 There are two possible signatures for `forward` and `conditions`, which must be consistent with one another:
@@ -87,8 +107,10 @@ Typically, direct solvers work best with dense Jacobians (`lazy = false`) while 
 # Condition backends
 
 The provided `conditions_x_backend` and `conditions_y_backend` can be either:
+- `nothing` (the default), in which case the outer backend (the one differentiating through the `ImplicitFunction`) is used.
 - an object subtyping `AbstractADType` from [ADTypes.jl](https://github.com/SciML/ADTypes.jl);
-- `nothing`, in which case the outer backend (the one differentiating through the `ImplicitFunction`) is used.
+
+When differentiating with Enzyme as an outer backend, the default setting assumes that `conditions` does not contain writeable data involved in derivatives.
 """
 struct ImplicitFunction{
     lazy,F,C,L,B1<:Union{Nothing,AbstractADType},B2<:Union{Nothing,AbstractADType}
@@ -101,14 +123,7 @@ struct ImplicitFunction{
 end
 
 """
-    ImplicitFunction{lazy}(
-        forward, conditions;
-        linear_solver=lazy ? KrylovLinearSolver() : \\,
-        conditions_x_backend=nothing,
-        conditions_y_backend=nothing,
-    )
 
-Constructor for an [`ImplicitFunction`](@ref) which picks the `linear_solver` automatically based on the `lazy` parameter.
 """
 function ImplicitFunction{lazy}(
     forward::F,
@@ -126,16 +141,6 @@ function ImplicitFunction{lazy}(
     )
 end
 
-"""
-    ImplicitFunction(
-        forward, conditions;
-        linear_solver=KrylovLinearSolver(),
-        conditions_x_backend=nothing,
-        conditions_x_backend=nothing,
-    )
-
-Constructor for an [`ImplicitFunction`](@ref) which picks the `lazy` parameter automatically based on the `linear_solver`, using the following heuristic: `lazy = linear_solver != \\`.
-"""
 function ImplicitFunction(
     forward,
     conditions;
