@@ -9,14 +9,16 @@ module ImplicitDifferentiation
 
 using ADTypes: AbstractADType
 using DifferentiationInterface:
+    Constant,
     jacobian,
     prepare_pushforward_same_point,
     prepare_pullback_same_point,
     pullback!,
-    pushforward!
+    pushforward!,
+    unwrap
 using Krylov: block_gmres, gmres
 using LinearOperators: LinearOperator
-using LinearAlgebra: factorize, lu
+using LinearAlgebra: axpby!, factorize, lu
 
 include("implicit_function.jl")
 include("operators.jl")

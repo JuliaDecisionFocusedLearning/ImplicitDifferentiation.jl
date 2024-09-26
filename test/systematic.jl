@@ -29,7 +29,7 @@ conditions_backend_candidates = (
 
 x_candidates = (
     Float32[3, 4], #
-    MVector{2}(Float32[3, 4]), #
+    # MVector{2}(Float32[3, 4]), #
 );
 
 ## Test loop

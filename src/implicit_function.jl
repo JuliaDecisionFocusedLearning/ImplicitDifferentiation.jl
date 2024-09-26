@@ -177,9 +177,11 @@ end
 
 output(y::AbstractVector) = y
 byproduct(::AbstractVector) = error("No byproduct")
+rest(::AbstractVector) = ()
 
 output(yz::Tuple{<:Any,<:Any}) = yz[1]
 byproduct(yz::Tuple{<:Any,<:Any}) = yz[2]
+rest(yz::Tuple) = (byproduct(yz),)
 
 output((y, z)) = y
 byproduct((y, z)) = z

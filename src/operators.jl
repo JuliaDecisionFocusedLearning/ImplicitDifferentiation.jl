@@ -1,112 +1,75 @@
-## Partial conditions
-
-struct ConditionsXNoByproduct{C,Y,A,K}
+struct ConditionsX{C,K}
     conditions::C
-    y::Y
-    args::A
     kwargs::K
 end
 
-function (conditions_x_nobyproduct::ConditionsXNoByproduct)(x::AbstractVector)
-    (; conditions, y, args, kwargs) = conditions_x_nobyproduct
-    return conditions(x, y, args...; kwargs...)
-end
-
-struct ConditionsYNoByproduct{C,X,A,K}
+struct ConditionsY{C,K}
     conditions::C
-    x::X
-    args::A
     kwargs::K
 end
 
-function (conditions_y_nobyproduct::ConditionsYNoByproduct)(y::AbstractVector)
-    (; conditions, x, args, kwargs) = conditions_y_nobyproduct
-    return conditions(x, y, args...; kwargs...)
+function (cx::ConditionsX)(x, y, args...)
+    return cx.conditions(x, y, args...; cx.kwargs...)
 end
 
-struct ConditionsXByproduct{C,Y,Z,A,K}
-    conditions::C
-    y::Y
-    z::Z
-    args::A
-    kwargs::K
+function (cy::ConditionsY)(y, x, args...)  # order switch
+    return cy.conditions(x, y, args...; cy.kwargs...)
 end
 
-function (conditions_x_byproduct::ConditionsXByproduct)(x::AbstractVector)
-    (; conditions, y, z, args, kwargs) = conditions_x_byproduct
-    return conditions(x, y, z, args...; kwargs...)
-end
-
-struct ConditionsYByproduct{C,X,Z,A,K}
-    conditions::C
-    x::X
-    z::Z
-    args::A
-    kwargs::K
-end
-
-function (conditions_y_byproduct::ConditionsYByproduct)(y::AbstractVector)
-    (; conditions, x, z, args, kwargs) = conditions_y_byproduct
-    return conditions(x, y, z, args...; kwargs...)
-end
-
-function ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
-    y = output(y_or_yz)
-    if y_or_yz isa Tuple
-        z = byproduct(y_or_yz)
-        return ConditionsXByproduct(conditions, y, z, args, kwargs)
-    else
-        return ConditionsXNoByproduct(conditions, y, args, kwargs)
-    end
-end
-
-function ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
-    if y_or_yz isa Tuple
-        z = byproduct(y_or_yz)
-        return ConditionsYByproduct(conditions, x, z, args, kwargs)
-    else
-        return ConditionsYNoByproduct(conditions, x, args, kwargs)
-    end
-end
-
-## Lazy operators
-
-struct PushforwardOperator!{F,B,X,E,R}
+struct PushforwardOperator!{F,P,B,X,C,R}
     f::F
+    prep::P
     backend::B
     x::X
-    extras::E
+    contexts::C
     res_backup::R
 end
 
+struct PullbackOperator!{F,P,B,X,C,R}
+    f::F
+    prep::P
+    backend::B
+    x::X
+    contexts::C
+    res_backup::R
+end
+
+function PushforwardOperator!(f, prep, backend, x, contexts)
+    res_backup = similar(f(x, map(unwrap, contexts)...))
+    return PushforwardOperator!(f, prep, backend, x, contexts, res_backup)
+end
+
+function PullbackOperator!(f, prep, backend, x, contexts)
+    res_backup = similar(x)
+    return PullbackOperator!(f, prep, backend, x, contexts, res_backup)
+end
+
 function (po::PushforwardOperator!)(res, v, α, β)
+    (; f, backend, x, contexts, prep, res_backup) = po
     if iszero(β)
-        pushforward!(po.f, res, po.backend, po.x, v, po.extras)
-        res .= α .* res
+        pushforward!(f, (res,), prep, backend, x, (v,), contexts...)
+        if !isone(α)
+            res .*= α
+        end
     else
-        po.res_backup .= res
-        pushforward!(po.f, res, po.backend, po.x, v, po.extras)
-        res .= α .* res .+ β .* po.res_backup
+        copyto!(res_backup, res)
+        pushforward!(f, (res,), prep, backend, x, (v,), contexts...)
+        axpby!(β, res_backup, α, res)
     end
     return res
 end
 
-struct PullbackOperator!{F,B,X,E,R}
-    f::F
-    backend::B
-    x::X
-    extras::E
-    res_backup::R
-end
-
 function (po::PullbackOperator!)(res, v, α, β)
+    (; f, backend, x, contexts, prep, res_backup) = po
     if iszero(β)
-        pullback!(po.f, res, po.backend, po.x, v, po.extras)
-        res .= α .* res
+        pullback!(f, (res,), prep, backend, x, (v,), contexts...)
+        if !isone(α)
+            res .*= α
+        end
     else
-        po.res_backup .= res
-        pullback!(po.f, res, po.backend, po.x, v, po.extras)
-        res .= α .* res .+ β .+ po.res_backup
+        copyto!(res_backup, res)
+        pullback!(f, (res,), prep, backend, x, (v,), contexts...)
+        axpby!(β, res_backup, α, res)
     end
     return res
 end
@@ -119,24 +82,25 @@ function build_A(
     suggested_backend,
     kwargs...,
 ) where {lazy}
-    (; conditions, linear_solver, conditions_y_backend) = implicit
+    (; conditions, conditions_y_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
-    cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
+    cond_y = ConditionsY(conditions, kwargs)
+    contexts = (Constant(x), map(Constant, rest(y_or_yz))..., map(Constant, args)...)
     if lazy
-        extras = prepare_pushforward_same_point(cond_y, back_y, y, zero(y))
+        prep = prepare_pushforward_same_point(cond_y, back_y, y, (zero(y),), contexts...)
         A = LinearOperator(
             eltype(y),
             m,
             m,
             false,
             false,
-            PushforwardOperator!(cond_y, back_y, y, extras, similar(y)),
+            PushforwardOperator!(cond_y, prep, back_y, y, contexts),
             typeof(y),
         )
     else
-        J = jacobian(cond_y, back_y, y)
+        J = jacobian(cond_y, back_y, y, contexts...)
         A = factorize(J)
     end
     return A
@@ -150,24 +114,25 @@ function build_Aᵀ(
     suggested_backend,
     kwargs...,
 ) where {lazy}
-    (; conditions, linear_solver, conditions_y_backend) = implicit
+    (; conditions, conditions_y_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_y = isnothing(conditions_y_backend) ? suggested_backend : conditions_y_backend
-    cond_y = ConditionsY(conditions, x, y_or_yz, args...; kwargs...)
+    cond_y = ConditionsY(conditions, kwargs)
+    contexts = (Constant(x), map(Constant, rest(y_or_yz))..., map(Constant, args)...)
     if lazy
-        extras = prepare_pullback_same_point(cond_y, back_y, y, zero(y))
+        prep = prepare_pullback_same_point(cond_y, back_y, y, (zero(y),), contexts...)
         Aᵀ = LinearOperator(
             eltype(y),
             m,
             m,
             false,
             false,
-            PullbackOperator!(cond_y, back_y, y, extras, similar(y)),
+            PullbackOperator!(cond_y, prep, back_y, y, contexts),
             typeof(y),
         )
     else
-        Jᵀ = transpose(jacobian(cond_y, back_y, y))
+        Jᵀ = transpose(jacobian(cond_y, back_y, y, contexts...))
         Aᵀ = factorize(Jᵀ)
     end
     return Aᵀ
@@ -181,24 +146,25 @@ function build_B(
     suggested_backend,
     kwargs...,
 ) where {lazy}
-    (; conditions, linear_solver, conditions_x_backend) = implicit
+    (; conditions, conditions_x_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
-    cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
+    cond_x = ConditionsX(conditions, kwargs)
+    contexts = (Constant(y), map(Constant, rest(y_or_yz))..., map(Constant, args)...)
     if lazy
-        extras = prepare_pushforward_same_point(cond_x, back_x, x, zero(x))
+        prep = prepare_pushforward_same_point(cond_x, back_x, x, (zero(x),), contexts...)
         B = LinearOperator(
             eltype(y),
             m,
             n,
             false,
             false,
-            PushforwardOperator!(cond_x, back_x, x, extras, similar(y)),
+            PushforwardOperator!(cond_x, prep, back_x, x, contexts),
             typeof(x),
         )
     else
-        B = transpose(jacobian(cond_x, back_x, x))
+        B = transpose(jacobian(cond_x, back_x, x, contexts...))
     end
     return B
 end
@@ -211,24 +177,25 @@ function build_Bᵀ(
     suggested_backend,
     kwargs...,
 ) where {lazy}
-    (; conditions, linear_solver, conditions_x_backend) = implicit
+    (; conditions, conditions_x_backend) = implicit
     y = output(y_or_yz)
     n, m = length(x), length(y)
     back_x = isnothing(conditions_x_backend) ? suggested_backend : conditions_x_backend
-    cond_x = ConditionsX(conditions, x, y_or_yz, args...; kwargs...)
+    cond_x = ConditionsX(conditions, kwargs)
+    contexts = (Constant(y), map(Constant, rest(y_or_yz))..., map(Constant, args)...)
     if lazy
-        extras = prepare_pullback_same_point(cond_x, back_x, x, zero(y))
+        prep = prepare_pullback_same_point(cond_x, back_x, x, (zero(y),), contexts...)
         Bᵀ = LinearOperator(
             eltype(y),
             n,
             m,
             false,
             false,
-            PullbackOperator!(cond_x, back_x, x, extras, similar(x)),
+            PullbackOperator!(cond_x, prep, back_x, x, contexts),
             typeof(x),
         )
     else
-        Bᵀ = transpose(jacobian(cond_x, back_x, x))
+        Bᵀ = transpose(jacobian(cond_x, back_x, x, contexts...))
     end
     return Bᵀ
 end
