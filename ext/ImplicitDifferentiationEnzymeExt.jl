@@ -2,12 +2,13 @@ module ImplicitDifferentiationEnzymeExt
 
 using ADTypes
 using Enzyme
-using Enzyme.EnzymeCore
+using Enzyme.EnzymeRules
 using ImplicitDifferentiation: ImplicitFunction, build_A, build_B, byproduct, output
 
 const FORWARD_BACKEND = AutoEnzyme(; mode=Enzyme.Forward, function_annotation=Enzyme.Const)
 
 function EnzymeRules.forward(
+    config::EnzymeRules.FwdConfig,
     func::Const{<:ImplicitFunction},
     RT::Type{<:Union{BatchDuplicated,BatchDuplicatedNoNeed}},
     func_x::Union{BatchDuplicated{T,N},BatchDuplicatedNoNeed{T,N}},
