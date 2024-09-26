@@ -23,6 +23,6 @@ using LinearAlgebra: axpby!, factorize, lu
 include("implicit_function.jl")
 include("operators.jl")
 
-export ImplicitFunction
+export ImplicitFunction, KrylovLinearSolver
 
 end
