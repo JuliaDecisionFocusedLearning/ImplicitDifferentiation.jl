@@ -12,7 +12,9 @@ include("utils.jl")
 
 backends = [
     AutoForwardDiff(; chunksize=1), #
-    AutoEnzyme(; mode=Enzyme.Forward, function_annotation=Enzyme.Const),
+    AutoEnzyme(;
+        mode=Enzyme.set_runtime_activity(Enzyme.Forward), function_annotation=Enzyme.Const
+    ),
     AutoZygote(),
 ]
 
@@ -24,7 +26,9 @@ linear_solver_candidates = (
 conditions_backend_candidates = (
     nothing, #
     AutoForwardDiff(; chunksize=1),
-    AutoEnzyme(; mode=Enzyme.Forward, function_annotation=Enzyme.Const),
+    AutoEnzyme(;
+        mode=Enzyme.set_runtime_activity(Enzyme.Forward), function_annotation=Enzyme.Const
+    ),
 );
 
 x_candidates = (
