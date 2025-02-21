@@ -1,194 +1,79 @@
 """
-    KrylovLinearSolver
+    ImplicitFunction
 
-Callable object that can solve linear systems `Ax = b` and `AX = B` in the same way as the built-in `\\`.
-Uses an iterative solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) under the hood.
+Wrapper for an implicit function defined by a solver and a set of conditions which the solution satisfies.
+
+An `ImplicitFunction` object behaves like a function, with the following signature:
+    
+    y, z = (implicit::ImplicitFunction)(x, args...)
+
+The first output `y` is differentiable with respect to the first argument `x`, while the second output `z` and subsequent positional arguments are considered constant.
+Both `x` and `y` must be subtypes of `AbstractVector`, while `z` can be any byproduct of the solve.
+
+When a derivative is queried, the Jacobian of `y(x)` is computed using the implicit function theorem applied to the conditions `c(x, y)` (we ignore `z` for concision):
+
+    ∂₂c(x, y(x)) * ∂y(x) = -∂₁c(x, y(x))
+
+This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂₁c` and `J = ∂y`.
 
 # Constructor
 
-    KrylovLinearSolver(; verbose=true)
-
-If `verbose` is `true`, the solver logs a warning in case of failure.
-Otherwise it will fail silently, and may return solutions that do not exactly satisfy the linear system.
-
-# Callable behavior
-
-    (::KylovLinearSolver)(A, b::AbstractVector)
-
-Solve a linear system with a single right-hand side.
-
-    (::KrylovLinearSolver)(A, B::AbstractMatrix)
-
-Solve a linear system with multiple right-hand sides.
-"""
-Base.@kwdef struct KrylovLinearSolver
-    verbose::Bool = true
-end
-
-function (solver::KrylovLinearSolver)(A, b::AbstractVector)
-    x, stats = gmres(A, b)
-    if !stats.solved || stats.inconsistent
-        solver.verbose &&
-            @warn "Failed to solve the linear system in the implicit function theorem with `Krylov.gmres`" stats
-    end
-    return x
-end
-
-function (solver::KrylovLinearSolver)(A, B::AbstractMatrix)
-    # X, stats = block_gmres(A, B)  # https://github.com/JuliaSmoothOptimizers/Krylov.jl/issues/854
-    X = mapreduce(hcat, eachcol(B)) do b
-        solver(A, b)
-    end
-    return X
-end
-
-"""
-    ImplicitFunction{lazy}
-
-Wrapper for an implicit function defined by a forward mapping `y` and a set of conditions `c`.
-
-An `ImplicitFunction` object behaves like a function, and every call is differentiable with respect to the first argument `x`.
-When a derivative is queried, the Jacobian of `y` is computed using the implicit function theorem:
-
-    ∂/∂y c(x, y(x)) * ∂/∂x y(x) = -∂/∂x c(x, y(x))
-
-This requires solving a linear system `A * J = -B` where `A = ∂c/∂y`, `B = ∂c/∂x` and `J = ∂y/∂x`.
-
-# Type parameters
-
-- `lazy::Bool`: whether to represent `A` and `B` with a `LinearOperator` from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (`lazy = true`) or a dense Jacobian matrix (`lazy = false`)
-
-Usually, dense Jacobians are more efficient in small dimension, while lazy operators become necessary in high dimension.
-The value of `lazy` must be chosen together with the `linear_solver`, see below.
-
-# Fields
-
-- `forward`: a callable computing `y(x)`, does not need to be compatible with automatic differentiation
-- `conditions`: a callable computing `c(x, y)`, must be compatible with automatic differentiation
-- `linear_solver`: a callable to solve the linear system
-- `conditions_x_backend`: how the conditions will be differentiated w.r.t. the first argument `x` 
-- `conditions_y_backend`: how the conditions will be differentiated w.r.t. the second argument `y` 
-
-# Constructors
-
     ImplicitFunction(
-        forward, conditions;
+        solver,
+        conditions;
+        backend,
+        input_example,
         linear_solver=KrylovLinearSolver(),
-        conditions_x_backend=nothing,
-        conditions_x_backend=nothing,
+        lazy=true,
     )
 
-Picks the `lazy` parameter automatically based on the `linear_solver`, using the following heuristic: `lazy = linear_solver != \\`.
-
-    ImplicitFunction{lazy}(
-        forward, conditions;
-        linear_solver=lazy ? KrylovLinearSolver() : \\,
-        conditions_x_backend=nothing,
-        conditions_y_backend=nothing,
-    )
-
-Picks the `linear_solver` automatically based on the `lazy` parameter.
-
-# Callable behavior
-
-    (implicit::ImplicitFunction)(x::AbstractVector, args...; kwargs...)
-
-Return `implicit.forward(x, args...; kwargs...)`, which can be either an `AbstractVector` `y` or a tuple `(y, z)`.
-
-This call makes `y` differentiable with respect to `x`.
-
-# Function signatures
-
-There are two possible signatures for `forward` and `conditions`, which must be consistent with one another:
-    
-| standard | byproduct |
-|:---|:---|
-| `forward(x, args...; kwargs...) = y`      | `conditions(x, y, args...; kwargs...) = c`    |
-| `forward(x, args...; kwargs...) = (y, z)` | `conditions(x, y, z, args...; kwargs...) = c` |
-    
-In both cases, `x`, `y` and `c` must be `AbstractVector`s, with `length(y) = length(c)`.
-In the second case, the byproduct `z` can be an arbitrary object generated by `forward`.
-The positional arguments `args...` and keyword arguments `kwargs...` must be the same for both `forward` and `conditions`.
-
-The byproduct `z` and the other positional arguments `args...` beyond `x` are considered constant for differentiation purposes.
-
-# Linear solver
-
-The provided `linear_solver` objects needs to be callable, with two methods:
-- `(A, b::AbstractVector) -> s::AbstractVector` such that `A * s = b`
-- `(A, B::AbstractMatrix) -> S::AbstractMatrix` such that `A * S = B`
-
-It can be either a direct solver (like `\\`) or an iterative one (like [`KrylovLinearSolver`](@ref)).
-Typically, direct solvers work best with dense Jacobians (`lazy = false`) while iterative solvers work best with operators (`lazy = true`).
-
-# Condition backends
-
-The provided `conditions_x_backend` and `conditions_y_backend` can be either:
-- `nothing` (the default), in which case the outer backend (the one differentiating through the `ImplicitFunction`) is used.
-- an object subtyping `AbstractADType` from [ADTypes.jl](https://github.com/SciML/ADTypes.jl);
-
-When differentiating with Enzyme as an outer backend, the default setting assumes that `conditions` does not contain writeable data involved in derivatives.
+- `solver`: a callable returning `(x, args...) -> (y, z)` where `z` is an arbitrary byproduct of the solve
+- `conditions`: a callable returning a vector of optimality conditions `(x, y, z, args...) -> c`, must be compatible with automatic differentiation
+- `backend`: an `AbstractADType` object from [ADTypes.jl](https://github.com/SciML/ADTypes.jl) dictating how how the conditions will be differentiated
+- `input_example`: a tuple `(x, args...)` used to prepare differentiation
+- `linear_solver`: a callable to solve linear systems with two methods, one for `(A, b)` (single solve) and one for `(A, B)` (batched solve)
+- `lazy`: whether to represent `A` and `B` with a `LinearOperator` from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (`lazy = true`) or a materialized Jacobian matrix (`lazy = false`)
 """
-struct ImplicitFunction{
-    lazy,F,C,L,B1<:Union{Nothing,AbstractADType},B2<:Union{Nothing,AbstractADType}
-}
-    forward::F
+struct ImplicitFunction{lazy,F,C,B,L,PA1,PA2,PB1,PB2}
+    solver::F
     conditions::C
+    backend::B
     linear_solver::L
-    conditions_x_backend::B1
-    conditions_y_backend::B2
-end
-
-function ImplicitFunction{lazy}(
-    forward::F,
-    conditions::C;
-    linear_solver::L=if lazy
-        KrylovLinearSolver()
-    else
-        \
-    end,
-    conditions_x_backend::B1=nothing,
-    conditions_y_backend::B2=nothing,
-) where {lazy,F,C,L,B1,B2}
-    return ImplicitFunction{lazy,F,C,L,B1,B2}(
-        forward, conditions, linear_solver, conditions_x_backend, conditions_y_backend
-    )
+    prep_A::PA1
+    prep_Aᵀ::PA2
+    prep_B::PB1
+    prep_Bᵀ::PB2
 end
 
 function ImplicitFunction(
-    forward,
-    conditions;
-    linear_solver=KrylovLinearSolver(),
-    conditions_x_backend=nothing,
-    conditions_y_backend=nothing,
-)
-    lazy = linear_solver != \
-    return ImplicitFunction{lazy}(
-        forward, conditions; linear_solver, conditions_x_backend, conditions_y_backend
+    solver::F,
+    conditions::C;
+    backend::B,
+    input_example,
+    linear_solver::L=KrylovLinearSolver(),
+    lazy=true,
+) where {F,C,B,L}
+    # preparation
+    x, args = first(input_example), Base.tail(input_example)
+    y, z = solver(x, args...)
+    prep_A = prepare_A(conditions, backend, x, y, z, args...; lazy)
+    prep_Aᵀ = prepare_Aᵀ(conditions, backend, x, y, z, args...; lazy)
+    prep_B = prepare_B(conditions, backend, x, y, z, args...; lazy)
+    prep_Bᵀ = prepare_Bᵀ(conditions, backend, x, y, z, args...; lazy)
+    return ImplicitFunction{
+        lazy,F,C,B,L,typeof(prep_A),typeof(prep_Aᵀ),typeof(prep_B),typeof(prep_Bᵀ)
+    }(
+        solver, conditions, backend, linear_solver, prep_A, prep_Aᵀ, prep_B, prep_Bᵀ
     )
 end
 
 function Base.show(io::IO, implicit::ImplicitFunction{lazy}) where {lazy}
-    (; forward, conditions, linear_solver, conditions_x_backend, conditions_y_backend) =
-        implicit
+    (; solver, conditions, linear_solver, backend) = implicit
     return print(
-        io,
-        "ImplicitFunction{$(lazy ? "lazy" : "dense")}($forward, $conditions, $linear_solver, $conditions_x_backend, $conditions_y_backend)",
+        io, "ImplicitFunction{$lazy}($solver, $conditions, $backend, $linear_solver)"
     )
 end
 
-function (implicit::ImplicitFunction)(x::AbstractVector, args...; kwargs...)
-    y_or_yz = implicit.forward(x, args...; kwargs...)
-    return y_or_yz
+function (implicit::ImplicitFunction)(x::AbstractVector, args::Vararg{Any,N}) where {N}
+    return implicit.solver(x, args...)
 end
-
-output(y::AbstractVector) = y
-byproduct(::AbstractVector) = error("No byproduct")
-rest(::AbstractVector) = ()
-
-output(yz::Tuple{<:Any,<:Any}) = yz[1]
-byproduct(yz::Tuple{<:Any,<:Any}) = yz[2]
-rest(yz::Tuple) = (byproduct(yz),)
-
-output((y, z)) = y
-byproduct((y, z)) = z
