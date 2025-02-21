@@ -164,7 +164,7 @@ function build_B(
             typeof(x),
         )
     else
-        B = transpose(jacobian(cond_x, back_x, x, contexts...))
+        B = jacobian(cond_x, back_x, x, contexts...)
     end
     return B
 end
