@@ -30,10 +30,10 @@ function (implicit::ImplicitFunction)(
         kwargs...,
     )
 
-    dX = mapreduce(hcat, 1:N) do k
+    dX = map(1:N) do k
         partials.(x_and_dx, k)
     end
-    dC = mapreduce(hcat, eachcol(dX)) do dₖx
+    dC = mapreduce(hcat, dX) do dₖx
         B * dₖx
     end
     dY = implicit.linear_solver(A, -dC)
