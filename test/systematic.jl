@@ -1,57 +1,38 @@
 using ADTypes
-using Enzyme: Enzyme
+using ADTypes: ForwardMode, ReverseMode
 using ForwardDiff: ForwardDiff
-using SparseArrays
-using StaticArrays
+using ImplicitDifferentiation
 using Test
 using Zygote: Zygote, ZygoteRuleConfig
+using FiniteDiff: FiniteDiff
 
 include("utils.jl")
 
 ## Parameter combinations
 
-backends = [
-    AutoForwardDiff(; chunksize=1), #
-    AutoEnzyme(;
-        mode=Enzyme.set_runtime_activity(Enzyme.Forward), function_annotation=Enzyme.Const
-    ),
-    AutoZygote(),
-]
-
-linear_solver_candidates = (
-    \, #
-    ID.KrylovLinearSolver(),
-)
-
-conditions_backend_candidates = (
-    nothing, #
-    AutoForwardDiff(; chunksize=1),
-    AutoEnzyme(;
-        mode=Enzyme.set_runtime_activity(Enzyme.Forward), function_annotation=Enzyme.Const
-    ),
-);
-
-x_candidates = (
-    Float32[3, 4], #
-    # MVector{2}(Float32[3, 4]), #
-);
+linear_solver_candidates = [ID.KrylovLinearSolver(), \]
+representation_candidates = [MatrixRepresentation(), OperatorRepresentation()]
+backend_candidates = [nothing, AutoForwardDiff(), AutoZygote()]
+preparation_candidates = [nothing, ForwardMode(), ReverseMode()]
 
 ## Test loop
 
-@testset verbose = false "$(typeof(x)) - $linear_solver - $(typeof(conditions_backend))" for (
-    x, linear_solver, conditions_backend
-) in Iterators.product(
-    x_candidates, linear_solver_candidates, conditions_backend_candidates
-)
-    if x isa StaticArray && (linear_solver != \)
-        continue
+@testset verbose = true "Systematic tests" begin
+    @testset for representation in representation_candidates
+        for (linear_solver, backend, preparation) in Iterators.product(
+            linear_solver_candidates, backend_candidates, preparation_candidates
+        )
+            @info "Testing $((; linear_solver, backend, representation, preparation))"
+            if (representation isa OperatorRepresentation && linear_solver == \)
+                continue
+            end
+            outer_backends = [AutoForwardDiff(), AutoZygote()]
+            x = Float64.(1:6)
+            @testset "$((; linear_solver, backend, preparation))" begin
+                test_implicit(
+                    outer_backends, x; representation, backend, preparation, linear_solver
+                )
+            end
+        end
     end
-    @info "Testing $(typeof(x)) - $linear_solver - $(typeof(conditions_backend))"
-    test_implicit(
-        backends,
-        x;
-        linear_solver,
-        conditions_x_backend=conditions_backend,
-        conditions_y_backend=conditions_backend,
-    )
 end;

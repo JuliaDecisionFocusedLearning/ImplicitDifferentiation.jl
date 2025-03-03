@@ -46,14 +46,9 @@ pages = [
 
 makedocs(;
     modules=[ImplicitDifferentiation],
-    authors="Guillaume Dalle, Mohamed Tarek and contributors",
-    repo=Documenter.Remotes.GitHub(
-        "JuliaDecisionFocusedLearning", "ImplicitDifferentiation.jl"
-    ),
+    authors="Guillaume Dalle, Mohamed Tarek",
     sitename="ImplicitDifferentiation.jl",
-    format=Documenter.HTML(;
-        canonical="https://JuliaDecisionFocusedLearning.github.io/ImplicitDifferentiation.jl",
-    ),
+    format=Documenter.HTML(),
     pages=pages,
 )
 

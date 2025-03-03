@@ -41,14 +41,15 @@ function forward_cstr_optim(x)
     y0 = ones(eltype(x), size(x)) ./ 2
     res = optimize(f, lower, upper, y0, Fminbox(GradientDescent()))
     y = Optim.minimizer(res)
-    return y
+    z = Optim.iterations(res)  # can be useful to retrieve statistics for example
+    return y, z
 end;
 
 #-
 
 proj_hypercube(p) = max.(0, min.(1, p))
 
-function conditions_cstr_optim(x, y)
+function conditions_cstr_optim(x, y, _z)
     ∇₂f = @. 4 * (y^2 - x) * y
     η = 0.1
     return y .- proj_hypercube(y .- η .* ∇₂f)
@@ -66,8 +67,8 @@ x = [0.3, 1.4]
 The second component of $x$ is $> 1$, so its square root will be thresholded to one, and the corresponding derivative will be $0$.
 =#
 
-implicit_cstr_optim(x) .^ 2
-@test implicit_cstr_optim(x) .^ 2 ≈ [x[1], 1]  #src
+first(implicit_cstr_optim(x)) .^ 2
+@test first(implicit_cstr_optim(x)) .^ 2 ≈ [x[1], 1]  #src
 
 #-
 
@@ -75,22 +76,22 @@ J_thres = Diagonal([0.5 / sqrt(x[1]), 0])
 
 # Forward mode autodiff
 
-ForwardDiff.jacobian(implicit_cstr_optim, x)
-@test ForwardDiff.jacobian(implicit_cstr_optim, x) ≈ J_thres  #src
+ForwardDiff.jacobian(first ∘ implicit_cstr_optim, x)
+@test ForwardDiff.jacobian(first ∘ implicit_cstr_optim, x) ≈ J_thres  #src
 
 #-
 
-ForwardDiff.jacobian(forward_cstr_optim, x)
+ForwardDiff.jacobian(first ∘ forward_cstr_optim, x)
 
 # Reverse mode autodiff
 
-Zygote.jacobian(implicit_cstr_optim, x)[1]
-@test Zygote.jacobian(implicit_cstr_optim, x)[1] ≈ J_thres  #src
+Zygote.jacobian(first ∘ implicit_cstr_optim, x)[1]
+@test Zygote.jacobian(first ∘ implicit_cstr_optim, x)[1] ≈ J_thres  #src
 
 #-
 
 try
-    Zygote.jacobian(forward_cstr_optim, x)[1]
+    Zygote.jacobian(first ∘ forward_cstr_optim, x)[1]
 catch e
     e
 end

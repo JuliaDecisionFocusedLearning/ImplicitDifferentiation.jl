@@ -7,8 +7,7 @@ Its main export is the type [`ImplicitFunction`](@ref).
 """
 module ImplicitDifferentiation
 
-using ADTypes:
-    ADTypes, AbstractADType, AbstractMode, ForwardMode, ReverseMode, ForwardOrReverseMode
+using ADTypes: AbstractADType
 using DifferentiationInterface:
     Constant,
     jacobian,

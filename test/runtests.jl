@@ -2,6 +2,7 @@
 
 using Aqua
 using Documenter
+using ExplicitImports
 using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using JET
@@ -19,18 +20,27 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
 ## Test sets
 
 @testset verbose = true "ImplicitDifferentiation.jl" begin
-    @testset verbose = false "Code quality (Aqua.jl)" begin
+    @testset "Code quality (Aqua.jl)" begin
         Aqua.test_all(
             ImplicitDifferentiation; ambiguities=false, deps_compat=(check_extras = false)
         )
     end
-    @testset verbose = true "Formatting (JuliaFormatter.jl)" begin
+    @testset "Formatting (JuliaFormatter.jl)" begin
         @test format(ImplicitDifferentiation; verbose=false, overwrite=false)
     end
-    @testset verbose = true "Static checking (JET.jl)" begin
+    @testset "Static checking (JET.jl)" begin
         JET.test_package(ImplicitDifferentiation; target_defined_modules=true)
     end
-    @testset verbose = false "Doctests (Documenter.jl)" begin
+    @testset "Imports (ExplicitImports.jl)" begin
+        @test check_no_implicit_imports(ImplicitDifferentiation) === nothing
+        @test check_no_stale_explicit_imports(ImplicitDifferentiation) === nothing
+        @test check_all_explicit_imports_via_owners(ImplicitDifferentiation) === nothing
+        @test_broken check_all_explicit_imports_are_public(ImplicitDifferentiation) ===
+            nothing
+        @test check_all_qualified_accesses_via_owners(ImplicitDifferentiation) === nothing
+        @test check_no_self_qualified_accesses(ImplicitDifferentiation) === nothing
+    end
+    @testset "Doctests (Documenter.jl)" begin
         doctest(ImplicitDifferentiation)
     end
     @testset verbose = true "Examples" begin
@@ -46,4 +56,4 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
         @info "Systematic tests"
         include("systematic.jl")
     end
-end
+end;
