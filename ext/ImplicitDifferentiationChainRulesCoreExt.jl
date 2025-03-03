@@ -3,7 +3,15 @@ module ImplicitDifferentiationChainRulesCoreExt
 using ADTypes: AutoChainRules
 using ChainRulesCore: ChainRulesCore, NoTangent, ProjectTo, RuleConfig
 using ChainRulesCore: unthunk, @not_implemented
-using ImplicitDifferentiation: ImplicitFunction, build_Aᵀ, build_Bᵀ
+using ImplicitDifferentiation:
+    ImplicitDifferentiation,
+    ImplicitFunction,
+    build_Aᵀ,
+    build_Bᵀ,
+    chainrules_suggested_backend
+
+# not covered by Codecov for now
+ImplicitDifferentiation.chainrules_suggested_backend(rc::RuleConfig) = AutoChainRules(rc)
 
 function ChainRulesCore.rrule(
     rc::RuleConfig,
@@ -14,7 +22,7 @@ function ChainRulesCore.rrule(
 ) where {N}
     y, z = implicit(x, args...; kwargs...)
 
-    suggested_backend = AutoChainRules(rc)
+    suggested_backend = chainrules_suggested_backend(rc)
     Aᵀ = build_Aᵀ(implicit, x, y, z, args...; suggested_backend)
     Bᵀ = build_Bᵀ(implicit, x, y, z, args...; suggested_backend)
     project_x = ProjectTo(x)

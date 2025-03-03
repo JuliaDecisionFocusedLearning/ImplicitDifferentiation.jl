@@ -29,7 +29,9 @@ preparation_candidates = [nothing, ForwardMode(), ReverseMode()]
             outer_backends = [AutoForwardDiff(), AutoZygote()]
             x = Float64.(1:6)
             @testset "$((; linear_solver, backend, preparation))" begin
-                test_implicit(outer_backends, x; representation, backend, linear_solver)
+                test_implicit(
+                    outer_backends, x; representation, backend, preparation, linear_solver
+                )
             end
         end
     end

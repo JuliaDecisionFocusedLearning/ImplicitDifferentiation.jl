@@ -103,3 +103,5 @@ struct BothPreparation <: AbstractPreparation end
 Specify that the derivatives of the conditions should not be prepared for subsequent differentiation of the implicit function.
 """
 struct NoPreparation <: AbstractPreparation end
+
+function chainrules_suggested_backend end

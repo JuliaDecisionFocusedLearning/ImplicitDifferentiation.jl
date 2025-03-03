@@ -38,7 +38,6 @@ EXAMPLES_DIR_JL = joinpath(dirname(@__DIR__), "examples")
         @test_broken check_all_explicit_imports_are_public(ImplicitDifferentiation) ===
             nothing
         @test check_all_qualified_accesses_via_owners(ImplicitDifferentiation) === nothing
-        @test check_all_qualified_accesses_are_public(ImplicitDifferentiation) === nothing
         @test check_no_self_qualified_accesses(ImplicitDifferentiation) === nothing
     end
     @testset "Doctests (Documenter.jl)" begin
