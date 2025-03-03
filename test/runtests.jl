@@ -2,6 +2,7 @@
 
 using Aqua
 using Documenter
+using ExplicitImports
 using ForwardDiff: ForwardDiff
 using ImplicitDifferentiation
 using JET
