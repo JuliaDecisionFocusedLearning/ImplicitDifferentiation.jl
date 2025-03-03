@@ -12,7 +12,7 @@ using Zygote: Zygote, ZygoteRuleConfig
 
 ##
 
-function identity_break_autodiff(x::X)::X where {R,X<:AbstractVector{R}}
+function identity_break_autodiff(x::AbstractVector{R}) where {R}
     float(first(x))  # break ForwardDiff
     (Vector{R}(undef, 1))[1] = first(x)  # break Zygote
     result = try

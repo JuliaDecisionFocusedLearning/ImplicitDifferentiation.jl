@@ -1,8 +1,10 @@
 module ImplicitDifferentiationForwardDiffExt
 
 using ADTypes: AutoForwardDiff
-using ForwardDiff: Chunk, Dual, Partials, jacobian, partials, value
+using ForwardDiff: Chunk, Dual, Partials, partials, value
 using ImplicitDifferentiation: ImplicitFunction, build_A, build_B
+
+chunksize(::Chunk{N}) where {N} = N
 
 function (implicit::ImplicitFunction)(
     x_and_dx::AbstractVector{Dual{T,R,N}}, args...; kwargs...
@@ -10,8 +12,9 @@ function (implicit::ImplicitFunction)(
     x = value.(x_and_dx)
     y, z = implicit(x, args...; kwargs...)
 
-    A = build_A(implicit, x, y, z, args...)
-    B = build_B(implicit, x, y, z, args...)
+    suggested_backend = AutoForwardDiff()
+    A = build_A(implicit, x, y, z, args...; suggested_backend)
+    B = build_B(implicit, x, y, z, args...; suggested_backend)
 
     dX = map(1:N) do k
         partials.(x_and_dx, k)

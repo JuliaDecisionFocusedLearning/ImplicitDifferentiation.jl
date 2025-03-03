@@ -8,7 +8,7 @@ To differentiate through an `ImplicitFunction`, the following backends are suppo
 | :--------------------------------------------------------------------- | :----------- | :----------- |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
 | [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | no           | yes          |
-| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | yes          | soon         |
+| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | soon         | soon         |
 
 By default, the conditions are differentiated using the same "outer" backend that is trying to differentiate the `ImplicitFunction`.
 However, this can be switched to any other "inner" backend compatible with [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) (i.e. a subtype of `ADTypes.AbstractADType`).
@@ -30,14 +30,6 @@ You can use `vec` and `reshape` for the conversion to and from vectors.
 
 Functions that eat or spit out a single number are not supported.
 The forward mapping _and_ conditions need vectors: instead of returning `val` you should return `[val]` (a 1-element `Vector`).
-Or better yet, wrap it in a static vector: `SVector(val)`.
-
-### Sparse arrays
-
-!!! danger "Danger"
-    Sparse arrays are not supported out of the box and might yield incorrect values!
-
-If your use case involves sparse arrays, it is best to differentiate with respect to the dense vector of values and only construct the sparse array inside of the `forward` and `conditions` functions.
 
 ## Number of inputs and outputs
 
@@ -45,10 +37,10 @@ Most of the documentation is written for the simple case where the forward mappi
 What can you do to handle multiple inputs or outputs?
 Well, it depends whether you want their derivatives or not.
 
-|                      | Derivatives needed                      | Derivatives not needed                  |
-| :------------------- | :-------------------------------------- | :-------------------------------------- |
-| **Multiple inputs**  | Make `x` a `ComponentVector`            | Supply `args` and `kwargs` to `forward` |
-| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `forward` return a byproduct `z`    |
+|                      | Derivatives needed                      | Derivatives not needed                          |
+| :------------------- | :-------------------------------------- | :---------------------------------------------- |
+| **Multiple inputs**  | Make `x` a `ComponentVector`            | Supply `args...` to `forward`                   |
+| **Multiple outputs** | Make `y` and `c` two `ComponentVector`s | Let `forward` return a nontrivial byproduct `z` |
 
 We now detail each of these options.
 
@@ -70,26 +62,17 @@ If your forward mapping (or conditions) takes multiple inputs but you don't care
 It is important to make sure that the forward mapping and conditions accept the same set of arguments, even if each of these functions only uses a subset of them.
 
 ```julia
-forward(x, arg1, arg2; kwarg1, kwarg2) = y
-conditions(x, y, arg1, arg2; kwarg1, kwarg2) = c
+forward(x, arg1, arg2) = y, z
+conditions(x, y, z, arg1, arg2) = c
 ```
 
-All of the positional and keyword arguments apart from `x` will get zero tangents during differentiation of the implicit function.
+All of the positional arguments apart from `x` will get zero tangents during differentiation of the implicit function.
 
 ### Multiple outputs | Derivatives not needed
 
 The last and most tricky situation is when your forward mapping returns multiple outputs, but you only care about some of their derivatives.
-Then, you need to group the objects you don't want to differentiate into a "byproduct" `z`, returned alongside the actual output `y`.
+Then, you need to group the objects you don't want to differentiate into a nontrivial "byproduct" `z`, returned alongside the actual output `y`.
 This way, derivatives of `z` will not be computed: the byproduct is considered constant during differentiation.
-
-The signatures of your functions will need to be be slightly different from the previous cases:
-
-```julia
-forward(x, arg1, arg2; kwarg1, kwarg2) = (y, z)
-conditions(x, y, z, arg1, arg2; kwarg1, kwarg2) =  c
-```
-
-See the examples for a demonstration.
 
 This is mainly useful when the solution procedure creates objects such as Jacobians, which we want to reuse when computing or differentiating the conditions.
 In that case, you may want to write the conditions differentiation rules yourself.
@@ -123,5 +106,5 @@ Packages such as [Memoize.jl](https://github.com/JuliaCollections/Memoize.jl) an
 
 ```julia
 using Memoize
-@memoize Dict forward(x, args...; kwargs...) = y
+@memoize Dict forward(x, args...; kwargs...) = y, z
 ```

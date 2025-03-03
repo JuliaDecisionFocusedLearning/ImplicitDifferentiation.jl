@@ -21,9 +21,9 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
         solver,
         conditions,
         linear_solver=KrylovLinearSolver(),
-        representation=OperatorRepresentation(),
         backend=nothing,
-        preparation=nothing,
+        representation=OperatorRepresentation(),
+        preparation=NoPreparation(),
         input_example=nothing,
     )
 
@@ -34,19 +34,19 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
 
 ## Keyword arguments
 
-- `linear_solver`: a callable to solve linear systems with two required methods, one for `(A, b)` (single solve) and one for `(A, B)` (batched solve) (defaults to [`KrylovLinearSolver`](@ref))
-- `representation`: either [`MatrixRepresentation`](@ref) or [`OperatorRepresentation`](@ref)
+- `linear_solver`: a callable to solve linear systems with two methods, one for `(A, b)` (single solve) and one for `(A, B)` (batched solve) (defaults to [`KrylovLinearSolver`](@ref))
 - `backend::AbstractADType`: either `nothing` or an object from [ADTypes.jl](https://github.com/SciML/ADTypes.jl) dictating how how the conditions will be differentiated
-- `preparation`: either `nothing` or a mode object from [ADTypes.jl](https://github.com/SciML/ADTypes.jl): `ADTypes.ForwardMode()`, `ADTypes.ReverseMode()` or `ADTypes.ForwardOrReverseMode()`
+- `representation`: either [`MatrixRepresentation`](@ref) or [`OperatorRepresentation`](@ref)
+- `preparation`: one of [`NoPreparation`](@ref), [`ForwardPreparation`](@ref), [`ReversePreparation`](@ref), or [`BothPreparation`](@ref)
 - `input_example`: either `nothing` or a tuple `(x, args...)` used to prepare differentiation
 """
 struct ImplicitFunction{
     F,
     C,
     L,
-    R<:AbstractRepresentation,
     B<:Union{Nothing,AbstractADType},
-    P<:Union{Nothing,AbstractMode},
+    R<:AbstractRepresentation,
+    P<:AbstractPreparation,
     PA,
     PAT,
     PB,
@@ -55,8 +55,8 @@ struct ImplicitFunction{
     solver::F
     conditions::C
     linear_solver::L
-    representation::R
     backend::B
+    representation::R
     preparation::P
     prep_A::PA
     prep_Aᵀ::PAT
@@ -68,12 +68,12 @@ function ImplicitFunction(
     solver,
     conditions;
     linear_solver=KrylovLinearSolver(),
-    representation=OperatorRepresentation(),
     backend=nothing,
-    preparation=nothing,
+    representation=OperatorRepresentation(),
+    preparation=NoPreparation(),
     input_example=nothing,
 )
-    if isnothing(preparation) || isnothing(backend) || isnothing(input_example)
+    if preparation isa NoPreparation || isnothing(backend) || isnothing(input_example)
         prep_A = ()
         prep_Aᵀ = ()
         prep_B = ()
@@ -81,14 +81,14 @@ function ImplicitFunction(
     else
         x, args = first(input_example), Base.tail(input_example)
         y, z = solver(x, args...)
-        if preparation isa Union{ForwardMode,ForwardOrReverseMode}
+        if preparation isa Union{ForwardPreparation,BothPreparation}
             prep_A = (prepare_A(representation, x, y, z, args...; conditions, backend),)
             prep_B = (prepare_B(representation, x, y, z, args...; conditions, backend),)
         else
             prep_A = ()
             prep_B = ()
         end
-        if preparation isa Union{ReverseMode,ForwardOrReverseMode}
+        if preparation isa Union{ReversePreparation,BothPreparation}
             prep_Aᵀ = (prepare_Aᵀ(representation, x, y, z, args...; conditions, backend),)
             prep_Bᵀ = (prepare_Bᵀ(representation, x, y, z, args...; conditions, backend),)
         else
@@ -100,8 +100,8 @@ function ImplicitFunction(
         solver,
         conditions,
         linear_solver,
-        representation,
         backend,
+        representation,
         preparation,
         prep_A,
         prep_Aᵀ,
@@ -119,8 +119,8 @@ function Base.show(io::IO, implicit::ImplicitFunction)
             $solver,
             $conditions;
             linear_solver=$linear_solver,
-            representation=$representation,
             backend=$backend,
+            representation=$representation,
             preparation=$preparation,
         )
         """,

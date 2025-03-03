@@ -82,23 +82,20 @@ We represent it using a type called [`ImplicitFunction`](@ref), which you will s
 
 #=
 First we define a `forward` mapping corresponding to the function we consider.
-It returns the actual output $y(x)$ of the function, and can be thought of as a black box solver.
+It returns the actual output $y(x)$ of the function as well as a byproduct `z` (which can be `nothing`), and can be thought of as a black box solver.
 Importantly, this Julia callable doesn't need to be differentiable by automatic differentiation packages but the underlying function still needs to be mathematically differentiable.
 =#
 
-forward(x) = badsqrt(x);
+forward(x) = (badsqrt(x), nothing);
 
 #=
-Then we define `conditions` $c(x, y) = 0$ that the output $y(x)$ is supposed to satisfy.
-These conditions must be array-valued, with the same size as $y$.
+Then we define `conditions` $c(x, y, z) = 0$ that the output $y(x)$ is supposed to satisfy.
+These conditions must be array-valued, with the same size as $y$, and they can involve the byproduct `z`.
 Unlike the forward mapping, the conditions need to be differentiable by automatic differentiation packages with respect to both $x$ and $y$.
 Here the conditions are very obvious: the square of the square root should be equal to the original value.
 =#
 
-function conditions(x, y)
-    c = y .^ 2 .- x
-    return c
-end;
+conditions(x, y, _z) = y .^ 2 .- x
 
 #=
 Finally, we construct a wrapper `implicit` around the previous objects.
@@ -110,11 +107,11 @@ implicit = ImplicitFunction(forward, conditions)
 
 #=
 What does this wrapper do?
-When we call it as a function, it just falls back on `implicit.forward`, so unsurprisingly we get the output $y(x)$.
+When we call it as a function, it just falls back on `implicit.forward`, so unsurprisingly we get the output $y(x)$ and the byproduct `z`.
 =#
 
 implicit(x)
-@test implicit(x) ≈ sqrt.(x)  #src
+@test first(implicit(x)) ≈ sqrt.(x)  #src
 
 #=
 And when we try to compute its Jacobian, the [implicit function theorem](https://en.wikipedia.org/wiki/Implicit_function_theorem) is applied in the background to circumvent the lack of differentiability of the forward mapping.
@@ -126,12 +123,12 @@ And when we try to compute its Jacobian, the [implicit function theorem](https:/
 Now ForwardDiff.jl works seamlessly.
 =#
 
-ForwardDiff.jacobian(implicit, x) ≈ J
-@test ForwardDiff.jacobian(implicit, x) ≈ J  #src
+ForwardDiff.jacobian(first ∘ implicit, x) ≈ J
+@test ForwardDiff.jacobian(first ∘ implicit, x) ≈ J  #src
 
 #=
 And so does Zygote.jl. Hurray!
 =#
 
-Zygote.jacobian(implicit, x)[1] ≈ J
-@test Zygote.jacobian(implicit, x)[1] ≈ J  #src
+Zygote.jacobian(first ∘ implicit, x)[1] ≈ J
+@test Zygote.jacobian(first ∘ implicit, x)[1] ≈ J  #src

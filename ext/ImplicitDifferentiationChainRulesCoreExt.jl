@@ -1,8 +1,8 @@
 module ImplicitDifferentiationChainRulesCoreExt
 
-using ADTypes: AbstractADType, AutoChainRules
+using ADTypes: AutoChainRules
 using ChainRulesCore: ChainRulesCore, NoTangent, ProjectTo, RuleConfig
-using ChainRulesCore: rrule, rrule_via_ad, unthunk, @not_implemented
+using ChainRulesCore: unthunk, @not_implemented
 using ImplicitDifferentiation: ImplicitFunction, build_Aᵀ, build_Bᵀ
 
 function ChainRulesCore.rrule(
@@ -14,8 +14,9 @@ function ChainRulesCore.rrule(
 ) where {N}
     y, z = implicit(x, args...; kwargs...)
 
-    Aᵀ = build_Aᵀ(implicit, x, y, z, args...)
-    Bᵀ = build_Bᵀ(implicit, x, y, z, args...)
+    suggested_backend = AutoChainRules(rc)
+    Aᵀ = build_Aᵀ(implicit, x, y, z, args...; suggested_backend)
+    Bᵀ = build_Bᵀ(implicit, x, y, z, args...; suggested_backend)
     project_x = ProjectTo(x)
 
     function implicit_pullback((dy, dz))
