@@ -5,10 +5,10 @@ using ForwardDiff: Dual, Partials, partials, value
 using ImplicitDifferentiation: ImplicitFunction, build_A, build_B
 
 function (implicit::ImplicitFunction)(
-    x_and_dx::AbstractVector{Dual{T,R,N}}, args...; kwargs...
+    x_and_dx::AbstractVector{Dual{T,R,N}}, args...
 ) where {T,R,N}
     x = value.(x_and_dx)
-    y, z = implicit(x, args...; kwargs...)
+    y, z = implicit(x, args...)
 
     suggested_backend = AutoForwardDiff()
     A = build_A(implicit, x, y, z, args...; suggested_backend)
