@@ -14,13 +14,9 @@ using ImplicitDifferentiation:
 ImplicitDifferentiation.chainrules_suggested_backend(rc::RuleConfig) = AutoChainRules(rc)
 
 function ChainRulesCore.rrule(
-    rc::RuleConfig,
-    implicit::ImplicitFunction,
-    x::AbstractVector,
-    args::Vararg{Any,N};
-    kwargs...,
+    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector, args::Vararg{Any,N};
 ) where {N}
-    y, z = implicit(x, args...; kwargs...)
+    y, z = implicit(x, args...)
 
     suggested_backend = chainrules_suggested_backend(rc)
     Aᵀ = build_Aᵀ(implicit, x, y, z, args...; suggested_backend)

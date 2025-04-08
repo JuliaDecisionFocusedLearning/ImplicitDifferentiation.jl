@@ -58,7 +58,7 @@ See the examples for a demonstration.
 
 ### Multiple inputs | Derivatives not needed
 
-If your forward mapping (or conditions) takes multiple inputs but you don't care about derivatives, then you can add further positional and keyword arguments beyond `x`.
+If your forward mapping (or conditions) takes multiple inputs but you don't care about derivatives, then you can add further positional arguments beyond `x`.
 It is important to make sure that the forward mapping and conditions accept the same set of arguments, even if each of these functions only uses a subset of them.
 
 ```julia
