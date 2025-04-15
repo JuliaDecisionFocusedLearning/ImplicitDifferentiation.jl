@@ -17,13 +17,13 @@ struct VJP!{F,P,B,I,C}
     contexts::C
 end
 
-function (po::JVP!)(res::AbstractArray, v::AbstractArray)
+function (po::JVP!)(res::AbstractVector, v::AbstractVector)
     (; f, backend, input, contexts, prep) = po
     pushforward!(f, (res,), prep, backend, input, (v,), contexts...)
     return res
 end
 
-function (po::VJP!)(res::AbstractArray, v::AbstractArray)
+function (po::VJP!)(res::AbstractVector, v::AbstractVector)
     (; f, backend, input, contexts, prep) = po
     pullback!(f, (res,), prep, backend, input, (v,), contexts...)
     return res
@@ -142,7 +142,7 @@ function build_B_aux(
     actual_backend = isnothing(backend) ? suggested_backend : backend
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(conditions, x)
-    x_vec = vec(y)
+    x_vec = vec(x)
     dx_vec = vec(zero(x))
     prep_B_same = prepare_pushforward_same_point(
         f_vec, prep_B..., actual_backend, x_vec, (dx_vec,), contexts...
