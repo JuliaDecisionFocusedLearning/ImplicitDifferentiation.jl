@@ -79,7 +79,7 @@ function prepare_B(
     backend::AbstractADType,
 )
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    f_vec = VecToVec(conditions)
+    f_vec = VecToVec(conditions, x)
     x_vec = vec(x)
     dx_vec = vec(zero(x))
     return prepare_pushforward(f_vec, backend, x_vec, (dx_vec,), contexts...)
@@ -108,7 +108,7 @@ function prepare_Bᵀ(
     backend::AbstractADType,
 )
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    f_vec = VecToVec(conditions)
+    f_vec = VecToVec(conditions, x)
     x_vec = vec(x)
     dc_vec = vec(zero(y))  # same size
     return prepare_pullback(f_vec, backend, x_vec, (dc_vec,), contexts...)
