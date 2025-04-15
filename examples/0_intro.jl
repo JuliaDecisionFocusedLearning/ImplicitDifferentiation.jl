@@ -29,7 +29,7 @@ This is essentially the componentwise square root function but with an additiona
 We can check that it does what it's supposed to do.
 =#
 
-x = [4.0, 9.0]
+x = [1.0 2.0; 3.0 4.0]
 badsqrt(x)
 @test badsqrt(x) ≈ sqrt.(x)  #src
 
@@ -37,7 +37,7 @@ badsqrt(x)
 Of course the Jacobian has an explicit formula.
 =#
 
-J = Diagonal(0.5 ./ sqrt.(x))
+J = Diagonal(0.5 ./ vec(sqrt.(x)))
 
 #=
 However, things start to go wrong when we compute it with autodiff, due to the [limitations of ForwardDiff.jl](https://juliadiff.org/ForwardDiff.jl/stable/user/limitations/) and [those of Zygote.jl](https://fluxml.ai/Zygote.jl/stable/limitations/).

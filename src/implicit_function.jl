@@ -29,7 +29,7 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
 
 ## Positional arguments
 
-- `solver`: a callable returning `(x, args...) -> (y, z)` where `z` is an arbitrary byproduct of the solve. Both `x` and `y` must be subtypes of `AbstractVector`, while `z` and `args` can be anything.
+- `solver`: a callable returning `(x, args...) -> (y, z)` where `z` is an arbitrary byproduct of the solve. Both `x` and `y` must be subtypes of `AbstractArray`, while `z` and `args` can be anything.
 - `conditions`: a callable returning a vector of optimality conditions `(x, y, z, args...) -> c`, must be compatible with automatic differentiation
 
 ## Keyword arguments
@@ -127,6 +127,6 @@ function Base.show(io::IO, implicit::ImplicitFunction)
     )
 end
 
-function (implicit::ImplicitFunction)(x::AbstractVector, args::Vararg{Any,N}) where {N}
+function (implicit::ImplicitFunction)(x::AbstractArray, args::Vararg{Any,N}) where {N}
     return implicit.solver(x, args...)
 end

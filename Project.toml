@@ -1,7 +1,7 @@
 name = "ImplicitDifferentiation"
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 authors = ["Guillaume Dalle", "Mohamed Tarek"]
-version = "0.7.1"
+version = "0.7.2"
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"

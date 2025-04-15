@@ -1,15 +1,7 @@
-struct Switch12{F}
-    f::F
-end
-
-function (s12::Switch12)(arg1, arg2, other_args::Vararg{Any,N}) where {N}
-    return s12.f(arg2, arg1, other_args...)
-end
-
 function prepare_A(
     ::MatrixRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
@@ -21,21 +13,24 @@ end
 
 function prepare_A(
     ::OperatorRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
     backend::AbstractADType,
 )
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
-    return prepare_pushforward(Switch12(conditions), backend, y, (zero(y),), contexts...)
+    f_vec = VecToVec(Switch12(conditions), y)
+    y_vec = vec(y)
+    dy_vec = vec(zero(y))
+    return prepare_pushforward(f_vec, backend, y_vec, (dy_vec,), contexts...)
 end
 
 function prepare_Aᵀ(
     ::MatrixRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
@@ -47,21 +42,24 @@ end
 
 function prepare_Aᵀ(
     ::OperatorRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
     backend::AbstractADType,
 )
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
-    return prepare_pullback(Switch12(conditions), backend, y, (zero(y),), contexts...)
+    f_vec = VecToVec(Switch12(conditions), y)
+    y_vec = vec(y)
+    dc_vec = vec(zero(y))  # same size
+    return prepare_pullback(f_vec, backend, y_vec, (dc_vec,), contexts...)
 end
 
 function prepare_B(
     ::MatrixRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
@@ -73,21 +71,24 @@ end
 
 function prepare_B(
     ::OperatorRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
     backend::AbstractADType,
 )
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    return prepare_pushforward(conditions, backend, x, (zero(x),), contexts...)
+    f_vec = VecToVec(conditions, x)
+    x_vec = vec(x)
+    dx_vec = vec(zero(x))
+    return prepare_pushforward(f_vec, backend, x_vec, (dx_vec,), contexts...)
 end
 
 function prepare_Bᵀ(
     ::MatrixRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
@@ -99,13 +100,16 @@ end
 
 function prepare_Bᵀ(
     ::OperatorRepresentation,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     conditions,
     backend::AbstractADType,
 )
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    return prepare_pullback(conditions, backend, x, (zero(y),), contexts...)
+    f_vec = VecToVec(conditions, x)
+    x_vec = vec(x)
+    dc_vec = vec(zero(y))  # same size
+    return prepare_pullback(f_vec, backend, x_vec, (dc_vec,), contexts...)
 end

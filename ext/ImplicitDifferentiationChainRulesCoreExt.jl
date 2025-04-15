@@ -14,7 +14,7 @@ using ImplicitDifferentiation:
 ImplicitDifferentiation.chainrules_suggested_backend(rc::RuleConfig) = AutoChainRules(rc)
 
 function ChainRulesCore.rrule(
-    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractVector, args::Vararg{Any,N};
+    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray, args::Vararg{Any,N};
 ) where {N}
     y, z = implicit(x, args...)
 
@@ -25,8 +25,10 @@ function ChainRulesCore.rrule(
 
     function implicit_pullback((dy, dz))
         dy = unthunk(dy)
-        dc = implicit.linear_solver(Aᵀ, -dy)
-        dx = Bᵀ * dc
+        dy_vec = vec(dy)
+        dc_vec = implicit.linear_solver(Aᵀ, -dy_vec)
+        dx_vec = Bᵀ * dc_vec
+        dx = reshape(dx_vec, size(x))
         df = NoTangent()
         dargs = ntuple(unimplemented_tangent, N)
         return (df, project_x(dx), dargs...)

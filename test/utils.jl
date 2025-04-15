@@ -12,7 +12,7 @@ using Zygote: Zygote, ZygoteRuleConfig
 
 ##
 
-function identity_break_autodiff(x::AbstractVector{R}) where {R}
+function identity_break_autodiff(x::AbstractArray{R}) where {R}
     float(first(x))  # break ForwardDiff
     (Vector{R}(undef, 1))[1] = first(x)  # break Zygote
     result = try
@@ -23,7 +23,7 @@ function identity_break_autodiff(x::AbstractVector{R}) where {R}
     return result
 end
 
-mysqrt(x::AbstractVector) = identity_break_autodiff(sqrt.(x))
+mysqrt(x::AbstractArray) = identity_break_autodiff(sqrt.(x))
 
 ## Various signatures
 
@@ -43,7 +43,7 @@ function make_implicit_sqrt_args(x; kwargs...)
     return implicit
 end
 
-function test_implicit_call(x::AbstractVector{T}; kwargs...) where {T}
+function test_implicit_call(x::AbstractArray{T}; kwargs...) where {T}
     imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
     imf2 = make_implicit_sqrt_args(x; kwargs...)
 
@@ -59,9 +59,9 @@ function test_implicit_call(x::AbstractVector{T}; kwargs...) where {T}
     end
 end
 
-tag(::AbstractVector{<:ForwardDiff.Dual{T}}) where {T} = T
+tag(::AbstractArray{<:ForwardDiff.Dual{T}}) where {T} = T
 
-function test_implicit_duals(x::AbstractVector{T}; kwargs...) where {T}
+function test_implicit_duals(x::AbstractArray{T}; kwargs...) where {T}
     imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
     imf2 = make_implicit_sqrt_args(x; kwargs...)
 
@@ -85,7 +85,7 @@ function test_implicit_duals(x::AbstractVector{T}; kwargs...) where {T}
     end
 end
 
-function test_implicit_rrule(rc, x::AbstractVector{T}; kwargs...) where {T}
+function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
     imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
     imf2 = make_implicit_sqrt_args(x; kwargs...)
 
@@ -117,7 +117,7 @@ end
 ## High-level tests per backend
 
 function test_implicit_backend(
-    outer_backend::ADTypes.AbstractADType, x::AbstractVector{T}; kwargs...
+    outer_backend::ADTypes.AbstractADType, x::AbstractArray{T}; kwargs...
 ) where {T}
     imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
     imf2 = make_implicit_sqrt_args(x; kwargs...)
