@@ -15,16 +15,11 @@ However, this can be switched to any other "inner" backend compatible with [Diff
 
 ## Input and output types
 
-### Vectors
-
-Functions that eat or spit out arbitrary vectors are supported, as long as the forward mapping _and_ conditions return vectors of the same size.
-
-If you deal with small vectors (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
-
 ### Arrays
 
-Functions that eat or spit out matrices and higher-order tensors are not supported.
-You can use `vec` and `reshape` for the conversion to and from vectors.
+Functions that eat or spit out arbitrary arrays are supported, as long as the forward mapping _and_ conditions return arrays of the same size.
+
+If you deal with small arrays (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
 
 ### Scalars
 

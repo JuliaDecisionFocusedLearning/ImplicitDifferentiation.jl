@@ -1,31 +1,31 @@
 const SYMMETRIC = false
 const HERMITIAN = false
 
-struct JVP!{F,P,B,X,C}
+struct JVP!{F,P,B,I,C}
     f::F
     prep::P
     backend::B
-    x::X
+    input::I
     contexts::C
 end
 
-struct VJP!{F,P,B,X,C}
+struct VJP!{F,P,B,I,C}
     f::F
     prep::P
     backend::B
-    x::X
+    input::I
     contexts::C
 end
 
-function (po::JVP!)(res::AbstractVector, v::AbstractVector)
-    (; f, backend, x, contexts, prep) = po
-    pushforward!(f, (res,), prep, backend, x, (v,), contexts...)
+function (po::JVP!)(res::AbstractArray, v::AbstractArray)
+    (; f, backend, input, contexts, prep) = po
+    pushforward!(f, (res,), prep, backend, input, (v,), contexts...)
     return res
 end
 
-function (po::VJP!)(res::AbstractVector, v::AbstractVector)
-    (; f, backend, x, contexts, prep) = po
-    pullback!(f, (res,), prep, backend, x, (v,), contexts...)
+function (po::VJP!)(res::AbstractArray, v::AbstractArray)
+    (; f, backend, input, contexts, prep) = po
+    pullback!(f, (res,), prep, backend, input, (v,), contexts...)
     return res
 end
 
@@ -33,8 +33,8 @@ end
 
 function build_A(
     implicit::ImplicitFunction,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     suggested_backend::AbstractADType,
@@ -58,12 +58,15 @@ function build_A_aux(
     (; conditions, backend, prep_A) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
+    f_vec = VecToVec(Switch12(conditions), y)
+    y_vec = vec(y)
+    dy_vec = vec(zero(y))
     prep_A_same = prepare_pushforward_same_point(
-        Switch12(conditions), prep_A..., actual_backend, y, (zero(y),), contexts...
+        f_vec, prep_A..., actual_backend, y_vec, (dy_vec,), contexts...
     )
-    prod! = JVP!(Switch12(conditions), prep_A_same, actual_backend, y, contexts)
+    prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, contexts)
     return LinearOperator(
-        eltype(y), length(y), length(y), SYMMETRIC, HERMITIAN, prod!, typeof(y)
+        eltype(y), length(y), length(y), SYMMETRIC, HERMITIAN, prod!, typeof(y_vec)
     )
 end
 
@@ -71,8 +74,8 @@ end
 
 function build_Aᵀ(
     implicit::ImplicitFunction,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     suggested_backend::AbstractADType,
@@ -98,12 +101,15 @@ function build_Aᵀ_aux(
     (; conditions, backend, prep_Aᵀ) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
+    f_vec = VecToVec(Switch12(conditions), y)
+    y_vec = vec(y)
+    dc_vec = vec(zero(y))
     prep_Aᵀ_same = prepare_pullback_same_point(
-        Switch12(conditions), prep_Aᵀ..., actual_backend, y, (zero(y),), contexts...
+        f_vec, prep_Aᵀ..., actual_backend, y_vec, (dc_vec,), contexts...
     )
-    prod! = VJP!(Switch12(conditions), prep_Aᵀ_same, actual_backend, y, contexts)
+    prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, contexts)
     return LinearOperator(
-        eltype(y), length(y), length(y), SYMMETRIC, HERMITIAN, prod!, typeof(y)
+        eltype(y), length(y), length(y), SYMMETRIC, HERMITIAN, prod!, typeof(y_vec)
     )
 end
 
@@ -111,8 +117,8 @@ end
 
 function build_B(
     implicit::ImplicitFunction,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     suggested_backend::AbstractADType,
@@ -135,12 +141,15 @@ function build_B_aux(
     (; conditions, backend, prep_B) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
+    f_vec = VecToVec(conditions, x)
+    x_vec = vec(y)
+    dx_vec = vec(zero(x))
     prep_B_same = prepare_pushforward_same_point(
-        conditions, prep_B..., actual_backend, x, (zero(x),), contexts...
+        f_vec, prep_B..., actual_backend, x_vec, (dx_vec,), contexts...
     )
-    prod! = JVP!(conditions, prep_B_same, actual_backend, x, contexts)
+    prod! = JVP!(f_vec, prep_B_same, actual_backend, x_vec, contexts)
     return LinearOperator(
-        eltype(y), length(y), length(x), SYMMETRIC, HERMITIAN, prod!, typeof(x)
+        eltype(y), length(y), length(x), SYMMETRIC, HERMITIAN, prod!, typeof(x_vec)
     )
 end
 
@@ -148,8 +157,8 @@ end
 
 function build_Bᵀ(
     implicit::ImplicitFunction,
-    x::AbstractVector,
-    y::AbstractVector,
+    x::AbstractArray,
+    y::AbstractArray,
     z,
     args...;
     suggested_backend::AbstractADType,
@@ -172,11 +181,14 @@ function build_Bᵀ_aux(
     (; conditions, backend, prep_Bᵀ) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
+    f_vec = VecToVec(conditions, x)
+    x_vec = vec(x)
+    dc_vec = vec(zero(y))
     prep_Bᵀ_same = prepare_pullback_same_point(
-        conditions, prep_Bᵀ..., actual_backend, x, (zero(y),), contexts...
+        f_vec, prep_Bᵀ..., actual_backend, x_vec, (dc_vec,), contexts...
     )
-    prod! = VJP!(conditions, prep_Bᵀ_same, actual_backend, x, contexts)
+    prod! = VJP!(f_vec, prep_Bᵀ_same, actual_backend, x_vec, contexts)
     return LinearOperator(
-        eltype(y), length(x), length(y), SYMMETRIC, HERMITIAN, prod!, typeof(x)
+        eltype(y), length(x), length(y), SYMMETRIC, HERMITIAN, prod!, typeof(x_vec)
     )
 end

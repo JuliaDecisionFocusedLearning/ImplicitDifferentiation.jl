@@ -23,6 +23,7 @@ using Krylov: gmres
 using LinearOperators: LinearOperator
 using LinearAlgebra: factorize
 
+include("utils.jl")
 include("settings.jl")
 include("preparation.jl")
 include("implicit_function.jl")
