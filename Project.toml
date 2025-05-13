@@ -23,7 +23,7 @@ ImplicitDifferentiationZygoteExt = "Zygote"
 [compat]
 ADTypes = "1.9.0"
 ChainRulesCore = "1.25.0"
-DifferentiationInterface = "0.6.1"
+DifferentiationInterface = "0.6.1, 0.7"
 ForwardDiff = "0.10.36, 1"
 Krylov = "0.9.6, 0.10"
 LinearAlgebra = "1.10"
