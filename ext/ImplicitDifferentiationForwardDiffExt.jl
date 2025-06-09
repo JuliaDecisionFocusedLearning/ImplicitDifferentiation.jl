@@ -9,10 +9,11 @@ function (implicit::ImplicitFunction)(
 ) where {T,R,N}
     x = value.(x_and_dx)
     y, z = implicit(x, args...)
+    c = implicit.conditions(x, y, z, args...)
 
     suggested_backend = AutoForwardDiff()
-    A = build_A(implicit, x, y, z, args...; suggested_backend)
-    B = build_B(implicit, x, y, z, args...; suggested_backend)
+    A = build_A(implicit, x, y, z, c, args...; suggested_backend)
+    B = build_B(implicit, x, y, z, c, args...; suggested_backend)
 
     dX = ntuple(Val(N)) do k
         partials.(x_and_dx, k)
@@ -24,8 +25,8 @@ function (implicit::ImplicitFunction)(
     end
     dY_mat = implicit.linear_solver(A, -dC_mat)
 
-    y_and_dy = map(LinearIndices(y)) do i
-        Dual{T}(y[i], Partials(ntuple(k -> dY_mat[i, k], Val(N))))
+    y_and_dy = map(y, LinearIndices(y)) do yi, i
+        Dual{T}(yi, Partials(ntuple(k -> dY_mat[i, k], Val(N))))
     end
 
     return y_and_dy, z

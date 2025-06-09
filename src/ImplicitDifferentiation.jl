@@ -31,7 +31,7 @@ include("preparation.jl")
 include("implicit_function.jl")
 include("execution.jl")
 
-export KrylovLinearSolver
+export IterativeLinearSolver
 export MatrixRepresentation, OperatorRepresentation
 export NoPreparation, ForwardPreparation, ReversePreparation, BothPreparation
 export ImplicitFunction

@@ -20,7 +20,7 @@ ImplicitFunction
 ### Settings
 
 ```@docs
-KrylovLinearSolver
+IterativeLinearSolver
 MatrixRepresentation
 OperatorRepresentation
 NoPreparation

@@ -17,10 +17,11 @@ function ChainRulesCore.rrule(
     rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray, args::Vararg{Any,N};
 ) where {N}
     y, z = implicit(x, args...)
+    c = implicit.conditions(x, y, z, args...)
 
     suggested_backend = chainrules_suggested_backend(rc)
-    Aᵀ = build_Aᵀ(implicit, x, y, z, args...; suggested_backend)
-    Bᵀ = build_Bᵀ(implicit, x, y, z, args...; suggested_backend)
+    Aᵀ = build_Aᵀ(implicit, x, y, z, c, args...; suggested_backend)
+    Bᵀ = build_Bᵀ(implicit, x, y, z, c, args...; suggested_backend)
     project_x = ProjectTo(x)
 
     function implicit_pullback((dy, dz))

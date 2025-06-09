@@ -10,7 +10,7 @@ include("utils.jl")
 
 ## Parameter combinations
 
-linear_solver_candidates = [ID.KrylovLinearSolver(), \]
+linear_solver_candidates = [ID.IterativeLinearSolver(), \]
 representation_candidates = [MatrixRepresentation(), OperatorRepresentation()]
 backend_candidates = [nothing, AutoForwardDiff(), AutoZygote()]
 preparation_candidates = [nothing, ForwardMode(), ReverseMode()]
