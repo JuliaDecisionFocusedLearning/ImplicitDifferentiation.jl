@@ -57,20 +57,7 @@ function prepare_Aᵀ(
 end
 
 function prepare_B(
-    ::MatrixRepresentation,
-    x::AbstractArray,
-    y::AbstractArray,
-    z,
-    args...;
-    conditions,
-    backend::AbstractADType,
-)
-    contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    return prepare_jacobian(conditions, backend, x, contexts...)
-end
-
-function prepare_B(
-    ::OperatorRepresentation,
+    ::AbstractRepresentation,
     x::AbstractArray,
     y::AbstractArray,
     z,
@@ -86,20 +73,7 @@ function prepare_B(
 end
 
 function prepare_Bᵀ(
-    ::MatrixRepresentation,
-    x::AbstractArray,
-    y::AbstractArray,
-    z,
-    args...;
-    conditions,
-    backend::AbstractADType,
-)
-    contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    return prepare_jacobian(conditions, backend, x, contexts...)
-end
-
-function prepare_Bᵀ(
-    ::OperatorRepresentation,
+    ::AbstractRepresentation,
     x::AbstractArray,
     y::AbstractArray,
     z,

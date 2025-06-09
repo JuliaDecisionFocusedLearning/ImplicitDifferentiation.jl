@@ -123,21 +123,6 @@ function build_B(
     args...;
     suggested_backend::AbstractADType,
 )
-    return build_B_aux(
-        implicit.representation, implicit, x, y, z, args...; suggested_backend
-    )
-end
-
-function build_B_aux(::MatrixRepresentation, implicit, x, y, z, args...; suggested_backend)
-    (; conditions, backend, prep_B) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
-    contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    return jacobian(conditions, prep_B..., actual_backend, x, contexts...)
-end
-
-function build_B_aux(
-    ::OperatorRepresentation, implicit, x, y, z, args...; suggested_backend
-)
     (; conditions, backend, prep_B) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
@@ -147,10 +132,12 @@ function build_B_aux(
     prep_B_same = prepare_pushforward_same_point(
         f_vec, prep_B..., actual_backend, x_vec, (dx_vec,), contexts...
     )
-    prod! = JVP!(f_vec, prep_B_same, actual_backend, x_vec, contexts)
-    return LinearOperator(
-        eltype(y), length(y), length(x), SYMMETRIC, HERMITIAN, prod!, typeof(x_vec)
-    )
+    function B_fun(dx_vec_local)
+        return pushforward(
+            f_vec, prep_B_same, actual_backend, x_vec, (dx_vec_local,), contexts...
+        )[1]
+    end
+    return B_fun
 end
 
 ## Bᵀ
@@ -163,21 +150,6 @@ function build_Bᵀ(
     args...;
     suggested_backend::AbstractADType,
 )
-    return build_Bᵀ_aux(
-        implicit.representation, implicit, x, y, z, args...; suggested_backend
-    )
-end
-
-function build_Bᵀ_aux(::MatrixRepresentation, implicit, x, y, z, args...; suggested_backend)
-    (; conditions, backend, prep_Bᵀ) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
-    contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    return transpose(jacobian(conditions, prep_Bᵀ..., actual_backend, x, contexts...))
-end
-
-function build_Bᵀ_aux(
-    ::OperatorRepresentation, implicit, x, y, z, args...; suggested_backend
-)
     (; conditions, backend, prep_Bᵀ) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
@@ -187,8 +159,10 @@ function build_Bᵀ_aux(
     prep_Bᵀ_same = prepare_pullback_same_point(
         f_vec, prep_Bᵀ..., actual_backend, x_vec, (dc_vec,), contexts...
     )
-    prod! = VJP!(f_vec, prep_Bᵀ_same, actual_backend, x_vec, contexts)
-    return LinearOperator(
-        eltype(y), length(x), length(y), SYMMETRIC, HERMITIAN, prod!, typeof(x_vec)
-    )
+    function Bᵀ_fun(dc_vec_local)
+        return pullback(
+            f_vec, prep_Bᵀ_same, actual_backend, x_vec, (dc_vec_local,), contexts...
+        )[1]
+    end
+    return Bᵀ_fun
 end

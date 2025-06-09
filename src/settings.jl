@@ -51,7 +51,7 @@ abstract type AbstractRepresentation end
 """
     MatrixRepresentation
 
-Specify that the matrices involved in the implicit function theorem should be represented explicitly, with all their coefficients.
+Specify that the matrix `A` involved in the implicit function theorem should be represented explicitly, with all its coefficients.
 
 # See also
 
@@ -63,7 +63,7 @@ struct MatrixRepresentation <: AbstractRepresentation end
 """
     OperatorRepresentation
 
-Specify that the matrices involved in the implicit function theorem should be represented lazily, as linear operators from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl).
+Specify that the matrix `A` involved in the implicit function theorem should be represented lazily, as a linear operator from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl).
 
 # See also
 

@@ -18,7 +18,9 @@ using DifferentiationInterface:
     prepare_pushforward,
     prepare_pushforward_same_point,
     pullback!,
-    pushforward!
+    pullback,
+    pushforward!,
+    pushforward
 using Krylov: gmres
 using LinearOperators: LinearOperator
 using LinearAlgebra: factorize

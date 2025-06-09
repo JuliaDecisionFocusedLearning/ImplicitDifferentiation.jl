@@ -1,7 +1,7 @@
 name = "ImplicitDifferentiation"
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 authors = ["Guillaume Dalle", "Mohamed Tarek"]
-version = "0.7.3"
+version = "0.8.0"
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
@@ -23,7 +23,7 @@ ImplicitDifferentiationZygoteExt = "Zygote"
 [compat]
 ADTypes = "1.9.0"
 ChainRulesCore = "1.25.0"
-DifferentiationInterface = "0.6.1"
+DifferentiationInterface = "0.6.1,0.7"
 ForwardDiff = "0.10.36, 1"
 Krylov = "0.9.6, 0.10"
 LinearAlgebra = "1.10"
@@ -54,4 +54,24 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["ADTypes", "Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "DifferentiationInterface", "Documenter", "ExplicitImports", "FiniteDiff", "ForwardDiff", "JET", "JuliaFormatter", "NLsolve", "Optim", "Random", "SparseArrays", "StaticArrays", "Test", "Zygote"]
+test = [
+    "ADTypes",
+    "Aqua",
+    "ChainRulesCore",
+    "ChainRulesTestUtils",
+    "ComponentArrays",
+    "DifferentiationInterface",
+    "Documenter",
+    "ExplicitImports",
+    "FiniteDiff",
+    "ForwardDiff",
+    "JET",
+    "JuliaFormatter",
+    "NLsolve",
+    "Optim",
+    "Random",
+    "SparseArrays",
+    "StaticArrays",
+    "Test",
+    "Zygote",
+]

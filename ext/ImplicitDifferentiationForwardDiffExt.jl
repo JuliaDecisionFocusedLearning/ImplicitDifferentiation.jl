@@ -19,7 +19,8 @@ function (implicit::ImplicitFunction)(
     end
     dC_mat = mapreduce(hcat, dX) do dₖx
         dₖx_vec = vec(dₖx)
-        dₖc_vec = B * dₖx_vec
+        dₖc_vec = B(dₖx_vec)
+        return dₖc_vec
     end
     dY_mat = implicit.linear_solver(A, -dC_mat)
 

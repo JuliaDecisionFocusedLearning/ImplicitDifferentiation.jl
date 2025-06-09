@@ -27,7 +27,7 @@ function ChainRulesCore.rrule(
         dy = unthunk(dy)
         dy_vec = vec(dy)
         dc_vec = implicit.linear_solver(Aᵀ, -dy_vec)
-        dx_vec = Bᵀ * dc_vec
+        dx_vec = Bᵀ(dc_vec)
         dx = reshape(dx_vec, size(x))
         df = NoTangent()
         dargs = ntuple(unimplemented_tangent, N)
