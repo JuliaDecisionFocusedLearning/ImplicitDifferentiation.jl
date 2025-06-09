@@ -1,5 +1,4 @@
 ```@meta
-CurrentModule = ImplicitDifferentiation
 CollapsedDocStrings = true
 ```
 

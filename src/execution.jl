@@ -1,6 +1,3 @@
-const SYMMETRIC = false
-const HERMITIAN = false
-
 struct JVP!{F,P,B,I,C}
     f::F
     prep::P
@@ -48,8 +45,8 @@ end
 function build_A_aux(
     ::MatrixRepresentation, implicit, x, y, z, c, args...; suggested_backend
 )
-    (; conditions, backend, prep_A) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
+    (; conditions, backends, prep_A) = implicit
+    actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     if isnothing(prep_A)
         A = jacobian(Switch12(conditions), actual_backend, y, contexts...)
@@ -60,11 +57,18 @@ function build_A_aux(
 end
 
 function build_A_aux(
-    ::OperatorRepresentation{package}, implicit, x, y, z, c, args...; suggested_backend
-) where {package}
+    ::OperatorRepresentation{package,symmetric,hermitian},
+    implicit,
+    x,
+    y,
+    z,
+    c,
+    args...;
+    suggested_backend,
+) where {package,symmetric,hermitian}
     T = Base.promote_eltype(x, y, c)
-    (; conditions, backend, prep_A) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
+    (; conditions, backends, prep_A) = implicit
+    actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(Switch12(conditions), y)
     y_vec = vec(y)
@@ -81,7 +85,7 @@ function build_A_aux(
     prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, contexts)
     if package == :LinearOperators
         return LinearOperator(
-            T, length(c), length(y), SYMMETRIC, HERMITIAN, prod!; S=typeof(dy_vec)
+            T, length(c), length(y), symmetric, hermitian, prod!; S=typeof(dy_vec)
         )
     elseif package == :LinearMaps
         return FunctionMap{T}(
@@ -89,8 +93,8 @@ function build_A_aux(
             length(c),
             length(y);
             ismutating=true,
-            issymmetric=SYMMETRIC,
-            ishermitian=HERMITIAN,
+            issymmetric=symmetric,
+            ishermitian=hermitian,
         )
     end
 end
@@ -114,8 +118,8 @@ end
 function build_Aᵀ_aux(
     ::MatrixRepresentation, implicit, x, y, z, c, args...; suggested_backend
 )
-    (; conditions, backend, prep_Aᵀ) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
+    (; conditions, backends, prep_Aᵀ) = implicit
+    actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     if isnothing(prep_Aᵀ)
         Aᵀ = transpose(jacobian(Switch12(conditions), actual_backend, y, contexts...))
@@ -128,11 +132,18 @@ function build_Aᵀ_aux(
 end
 
 function build_Aᵀ_aux(
-    ::OperatorRepresentation{package}, implicit, x, y, z, c, args...; suggested_backend
-) where {package}
+    ::OperatorRepresentation{package,symmetric,hermitian},
+    implicit,
+    x,
+    y,
+    z,
+    c,
+    args...;
+    suggested_backend,
+) where {package,symmetric,hermitian}
     T = Base.promote_eltype(x, y, c)
-    (; conditions, backend, prep_Aᵀ) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
+    (; conditions, backends, prep_Aᵀ) = implicit
+    actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(Switch12(conditions), y)
     y_vec = vec(y)
@@ -149,7 +160,7 @@ function build_Aᵀ_aux(
     prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, contexts)
     if package == :LinearOperators
         return LinearOperator(
-            T, length(y), length(c), SYMMETRIC, HERMITIAN, prod!; S=typeof(dc_vec)
+            T, length(y), length(c), symmetric, hermitian, prod!; S=typeof(dc_vec)
         )
     elseif package == :LinearMaps
         return FunctionMap{T}(
@@ -157,8 +168,8 @@ function build_Aᵀ_aux(
             length(y),
             length(c);
             ismutating=true,
-            issymmetric=SYMMETRIC,
-            ishermitian=HERMITIAN,
+            issymmetric=symmetric,
+            ishermitian=hermitian,
         )
     end
 end
@@ -174,8 +185,8 @@ function build_B(
     args...;
     suggested_backend::AbstractADType,
 )
-    (; conditions, backend, prep_B) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
+    (; conditions, backends, prep_B) = implicit
+    actual_backend = isnothing(backends) ? suggested_backend : backends.x
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(conditions, x)
     x_vec = vec(x)
@@ -208,8 +219,8 @@ function build_Bᵀ(
     args...;
     suggested_backend::AbstractADType,
 )
-    (; conditions, backend, prep_Bᵀ) = implicit
-    actual_backend = isnothing(backend) ? suggested_backend : backend
+    (; conditions, backends, prep_Bᵀ) = implicit
+    actual_backend = isnothing(backends) ? suggested_backend : backends.x
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(conditions, x)
     x_vec = vec(x)

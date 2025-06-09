@@ -7,7 +7,6 @@ We demonstrate several features that may come in handy for some users.
 using ComponentArrays
 using ForwardDiff
 using ImplicitDifferentiation
-using IterativeSolvers
 using LinearAlgebra
 using Test  #src
 using Zygote

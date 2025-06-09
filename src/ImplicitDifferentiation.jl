@@ -21,7 +21,8 @@ using DifferentiationInterface:
     pullback,
     pushforward!,
     pushforward
-using Krylov: gmres
+using Krylov: Krylov
+using IterativeSolvers: IterativeSolvers
 using LinearOperators: LinearOperator
 using LinearMaps: FunctionMap
 using LinearAlgebra: factorize
