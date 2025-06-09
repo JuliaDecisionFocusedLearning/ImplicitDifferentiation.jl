@@ -60,16 +60,19 @@ Specify that the matrix `A` involved in the implicit function theorem should be 
 struct MatrixRepresentation <: AbstractRepresentation end
 
 """
-    OperatorRepresentation
+    OperatorRepresentation{package}
 
-Specify that the matrix `A` involved in the implicit function theorem should be represented lazily, as a linear operator from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl).
+Specify that the matrix `A` involved in the implicit function theorem should be represented lazily.
+The type parameter `package` can be either `:LinearOperators` or `:LinearMaps`.
 
 # See also
 
 - [`ImplicitFunction`](@ref)
 - [`MatrixRepresentation`](@ref)
 """
-struct OperatorRepresentation <: AbstractRepresentation end
+struct OperatorRepresentation{package} <: AbstractRepresentation end
+
+OperatorRepresentation() = OperatorRepresentation{:LinearOperators}()
 
 ## Preparation
 

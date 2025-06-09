@@ -23,6 +23,7 @@ using DifferentiationInterface:
     pushforward
 using Krylov: gmres
 using LinearOperators: LinearOperator
+using LinearMaps: FunctionMap
 using LinearAlgebra: factorize
 
 include("utils.jl")

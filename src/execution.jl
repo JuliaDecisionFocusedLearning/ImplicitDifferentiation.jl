@@ -60,8 +60,8 @@ function build_A_aux(
 end
 
 function build_A_aux(
-    ::OperatorRepresentation, implicit, x, y, z, c, args...; suggested_backend
-)
+    ::OperatorRepresentation{package}, implicit, x, y, z, c, args...; suggested_backend
+) where {package}
     T = Base.promote_eltype(x, y, c)
     (; conditions, backend, prep_A) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
@@ -79,7 +79,20 @@ function build_A_aux(
         )
     end
     prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, contexts)
-    return LinearOperator(T, length(c), length(y), SYMMETRIC, HERMITIAN, prod!)
+    if package == :LinearOperators
+        return LinearOperator(
+            T, length(c), length(y), SYMMETRIC, HERMITIAN, prod!; S=typeof(dy_vec)
+        )
+    elseif package == :LinearMaps
+        return FunctionMap{T}(
+            prod!,
+            length(c),
+            length(y);
+            ismutating=true,
+            issymmetric=SYMMETRIC,
+            ishermitian=HERMITIAN,
+        )
+    end
 end
 
 ## Aᵀ
@@ -115,8 +128,8 @@ function build_Aᵀ_aux(
 end
 
 function build_Aᵀ_aux(
-    ::OperatorRepresentation, implicit, x, y, z, c, args...; suggested_backend
-)
+    ::OperatorRepresentation{package}, implicit, x, y, z, c, args...; suggested_backend
+) where {package}
     T = Base.promote_eltype(x, y, c)
     (; conditions, backend, prep_Aᵀ) = implicit
     actual_backend = isnothing(backend) ? suggested_backend : backend
@@ -134,7 +147,20 @@ function build_Aᵀ_aux(
         )
     end
     prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, contexts)
-    return LinearOperator(T, length(y), length(c), SYMMETRIC, HERMITIAN, prod!)
+    if package == :LinearOperators
+        return LinearOperator(
+            T, length(y), length(c), SYMMETRIC, HERMITIAN, prod!; S=typeof(dc_vec)
+        )
+    elseif package == :LinearMaps
+        return FunctionMap{T}(
+            prod!,
+            length(y),
+            length(c);
+            ismutating=true,
+            issymmetric=SYMMETRIC,
+            ishermitian=HERMITIAN,
+        )
+    end
 end
 
 ## B

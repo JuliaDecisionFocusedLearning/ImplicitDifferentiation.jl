@@ -11,7 +11,9 @@ include("utils.jl")
 ## Parameter combinations
 
 linear_solver_candidates = [ID.IterativeLinearSolver(), \]
-representation_candidates = [MatrixRepresentation(), OperatorRepresentation()]
+representation_candidates = [
+    MatrixRepresentation(), OperatorRepresentation(), OperatorRepresentation{:LinearMaps}()
+]
 backend_candidates = [nothing, AutoForwardDiff(), AutoZygote()]
 preparation_candidates = [nothing, ForwardMode(), ReverseMode()]
 x_candidates = [float.(1:6), reshape(float.(1:12), 6, 2)]
