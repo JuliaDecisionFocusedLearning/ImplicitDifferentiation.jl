@@ -20,8 +20,8 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
     ImplicitFunction(
         solver,
         conditions;
-        representation=OperatorRepresentation{:LinearOperators}(),
-        linear_solver=IterativeLinearSolver{:Krylov}(),
+        representation=OperatorRepresentation(),
+        linear_solver=IterativeLinearSolver(),
         backend=nothing,
         preparation=nothing,
         input_example=nothing,
@@ -77,8 +77,8 @@ end
 function ImplicitFunction(
     solver,
     conditions;
-    representation=OperatorRepresentation{:LinearOperators}(),
-    linear_solver=IterativeLinearSolver{:Krylov}(),
+    representation=OperatorRepresentation(),
+    linear_solver=IterativeLinearSolver(),
     backends=nothing,
     preparation=nothing,
     input_example=nothing,
@@ -90,18 +90,32 @@ function ImplicitFunction(
         prep_B = nothing
         prep_Bᵀ = nothing
     else
-        if backends isa AbstractADType
-            backends = (backends, backends)
-        end
+        real_backends = backends isa AbstractADType ? (; x=backends, y=backends) : backends
         x, args = first(input_example), Base.tail(input_example)
         y, z = solver(x, args...)
         c = conditions(x, y, z, args...)
         if preparation isa Union{ForwardMode,ForwardOrReverseMode}
             prep_A = prepare_A(
-                representation, x, y, z, c, args...; conditions, backend=backends.y, strict
+                representation,
+                x,
+                y,
+                z,
+                c,
+                args...;
+                conditions,
+                backend=real_backends.y,
+                strict,
             )
             prep_B = prepare_B(
-                representation, x, y, z, c, args...; conditions, backend=backends.x, strict
+                representation,
+                x,
+                y,
+                z,
+                c,
+                args...;
+                conditions,
+                backend=real_backends.x,
+                strict,
             )
         else
             prep_A = nothing
@@ -109,10 +123,26 @@ function ImplicitFunction(
         end
         if preparation isa Union{ReverseMode,ForwardOrReverseMode}
             prep_Aᵀ = prepare_Aᵀ(
-                representation, x, y, z, c, args...; conditions, backend=backends.y, strict
+                representation,
+                x,
+                y,
+                z,
+                c,
+                args...;
+                conditions,
+                backend=real_backends.y,
+                strict,
             )
             prep_Bᵀ = prepare_Bᵀ(
-                representation, x, y, z, c, args...; conditions, backend=backends.x, strict
+                representation,
+                x,
+                y,
+                z,
+                c,
+                args...;
+                conditions,
+                backend=real_backends.x,
+                strict,
             )
         else
             prep_Aᵀ = nothing

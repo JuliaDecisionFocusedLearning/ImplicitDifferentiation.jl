@@ -1,28 +1,32 @@
-struct JVP!{F,P,B,I,C}
+struct JVP!{F,P,B,I,V,C}
     f::F
     prep::P
     backend::B
     input::I
+    v_buffer::V
     contexts::C
 end
 
-struct VJP!{F,P,B,I,C}
+struct VJP!{F,P,B,I,V,C}
     f::F
     prep::P
     backend::B
     input::I
+    v_buffer::V
     contexts::C
 end
 
-function (po::JVP!)(res::AbstractVector, v::AbstractVector)
-    (; f, backend, input, contexts, prep) = po
-    pushforward!(f, (res,), prep, backend, input, (v,), contexts...)
+function (po::JVP!)(res::AbstractVector, v_wrongtype::AbstractVector)
+    (; f, backend, input, v_buffer, contexts, prep) = po
+    copyto!(v_buffer, v_wrongtype)
+    pushforward!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
     return res
 end
 
-function (po::VJP!)(res::AbstractVector, v::AbstractVector)
-    (; f, backend, input, contexts, prep) = po
-    pullback!(f, (res,), prep, backend, input, (v,), contexts...)
+function (po::VJP!)(res::AbstractVector, v_wrongtype::AbstractVector)
+    (; f, backend, input, v_buffer, contexts, prep) = po
+    copyto!(v_buffer, v_wrongtype)
+    pullback!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
     return res
 end
 
@@ -82,7 +86,7 @@ function build_A_aux(
             f_vec, prep_A, actual_backend, y_vec, (dy_vec,), contexts...
         )
     end
-    prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, contexts)
+    prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, dy_vec, contexts)
     if package == :LinearOperators
         return LinearOperator(
             T, length(c), length(y), symmetric, hermitian, prod!; S=typeof(dy_vec)
@@ -157,7 +161,7 @@ function build_Aᵀ_aux(
             f_vec, prep_Aᵀ, actual_backend, y_vec, (dc_vec,), contexts...
         )
     end
-    prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, contexts)
+    prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, dc_vec, contexts)
     if package == :LinearOperators
         return LinearOperator(
             T, length(y), length(c), symmetric, hermitian, prod!; S=typeof(dc_vec)
@@ -200,9 +204,10 @@ function build_B(
             f_vec, prep_B, actual_backend, x_vec, (dx_vec,), contexts...
         )
     end
-    function B_fun(dx_vec_local)
+    function B_fun(dx_vec_wrongtype)
+        copyto!(dx_vec, dx_vec_wrongtype)
         return pushforward(
-            f_vec, prep_B_same, actual_backend, x_vec, (dx_vec_local,), contexts...
+            f_vec, prep_B_same, actual_backend, x_vec, (dx_vec,), contexts...
         )[1]
     end
     return B_fun
@@ -234,10 +239,9 @@ function build_Bᵀ(
             f_vec, prep_Bᵀ, actual_backend, x_vec, (dc_vec,), contexts...
         )
     end
-    function Bᵀ_fun(dc_vec_local)
-        return pullback(
-            f_vec, prep_Bᵀ_same, actual_backend, x_vec, (dc_vec_local,), contexts...
-        )[1]
+    function Bᵀ_fun(dc_vec_wrongtype)
+        copyto!(dc_vec, dc_vec_wrongtype)
+        return pullback(f_vec, prep_Bᵀ_same, actual_backend, x_vec, (dc_vec,), contexts...)[1]
     end
     return Bᵀ_fun
 end

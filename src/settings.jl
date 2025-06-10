@@ -34,6 +34,8 @@ struct IterativeLinearSolver{package,K}
     end
 end
 
+IterativeLinearSolver() = IterativeLinearSolver{:Krylov}()
+
 function (solver::IterativeLinearSolver{:Krylov})(A, b::AbstractVector)
     x, stats = Krylov.gmres(A, b; solver.kwargs...)
     return x
@@ -105,6 +107,8 @@ struct OperatorRepresentation{package,symmetric,hermitian} <: AbstractRepresenta
         return new{package,symmetric,hermitian}()
     end
 end
+
+OperatorRepresentation() = OperatorRepresentation{:LinearOperators}()
 
 ## Preparation
 
