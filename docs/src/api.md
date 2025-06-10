@@ -1,5 +1,4 @@
 ```@meta
-CurrentModule = ImplicitDifferentiation
 CollapsedDocStrings = true
 ```
 
@@ -20,7 +19,7 @@ ImplicitFunction
 ### Settings
 
 ```@docs
-KrylovLinearSolver
+IterativeLinearSolver
 MatrixRepresentation
 OperatorRepresentation
 NoPreparation

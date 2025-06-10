@@ -7,7 +7,6 @@ We demonstrate several features that may come in handy for some users.
 using ComponentArrays
 using ForwardDiff
 using ImplicitDifferentiation
-using Krylov
 using LinearAlgebra
 using Test  #src
 using Zygote
@@ -43,9 +42,13 @@ function conditions_components(x::ComponentVector, y::ComponentVector, _z)
     return c
 end;
 
-# And build your implicit function like so.
+# And build your implicit function like so, switching the operator representation to avoid errors with ComponentArrays.
 
-implicit_components = ImplicitFunction(forward_components, conditions_components);
+implicit_components = ImplicitFunction(
+    forward_components,
+    conditions_components;
+    representation=OperatorRepresentation{:LinearMaps}(),
+);
 
 # Now we're good to go.
 

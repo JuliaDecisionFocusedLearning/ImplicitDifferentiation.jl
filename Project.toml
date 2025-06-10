@@ -1,13 +1,15 @@
 name = "ImplicitDifferentiation"
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 authors = ["Guillaume Dalle", "Mohamed Tarek"]
-version = "0.7.3"
+version = "0.8.0"
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
+IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 
 [weakdeps]
@@ -22,12 +24,30 @@ ImplicitDifferentiationZygoteExt = "Zygote"
 
 [compat]
 ADTypes = "1.9.0"
+Aqua = "0.8.13"
 ChainRulesCore = "1.25.0"
-DifferentiationInterface = "0.6.1"
+ChainRulesTestUtils = "1.13.0"
+ComponentArrays = "0.15.27"
+DifferentiationInterface = "0.6.1,0.7"
+Documenter = "1.12.0"
+ExplicitImports = "1"
+FiniteDiff = "2.27.0"
 ForwardDiff = "0.10.36, 1"
+IterativeSolvers = "0.9.4"
+JET = "0.9, 0.10"
+JuliaFormatter = "2.1.2"
 Krylov = "0.9.6, 0.10"
 LinearAlgebra = "1.10"
+LinearMaps = "3.11.4"
 LinearOperators = "2.8.0"
+NLsolve = "4.5.1"
+Optim = "1.12.0"
+Random = "1"
+SparseArrays = "1"
+StaticArrays = "1.9.13"
+Test = "1"
+TestItemRunner = "1.1.0"
+TestItems = "1.0.0"
 Zygote = "0.7.4"
 julia = "1.10"
 
@@ -51,7 +71,9 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["ADTypes", "Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "DifferentiationInterface", "Documenter", "ExplicitImports", "FiniteDiff", "ForwardDiff", "JET", "JuliaFormatter", "NLsolve", "Optim", "Random", "SparseArrays", "StaticArrays", "Test", "Zygote"]
+test = ["ADTypes", "Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "DifferentiationInterface", "Documenter", "ExplicitImports", "FiniteDiff", "ForwardDiff", "JET", "JuliaFormatter", "NLsolve", "Optim", "Random", "SparseArrays", "StaticArrays", "Test", "TestItems", "TestItemRunner", "Zygote"]

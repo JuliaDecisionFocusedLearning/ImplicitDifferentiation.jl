@@ -1,45 +1,63 @@
 ## Linear solver
 
 """
-    KrylovLinearSolver
+    IterativeLinearSolver
 
 Callable object that can solve linear systems `Ax = b` and `AX = B` in the same way as the built-in `\\`.
-Uses an iterative solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) under the hood.
 
 # Constructor
 
-    KrylovLinearSolver(; verbose=true)
+    IterativeLinearSolver{package}(; kwargs...)
 
-If `verbose` is `true`, the solver logs a warning in case of failure.
-Otherwise it will fail silently, and may return solutions that do not exactly satisfy the linear system.
+The type parameter `package` can be either:
+
+- `:Krylov` to use the solver `gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl)
+- `:IterativeSolvers` to use the solver `gmres` from [IterativeSolvers.jl](https://github.com/JuliaLinearAlgebra/IterativeSolvers.jl)
+
+Keyword arguments are passed on to the respective solver.
 
 # Callable behavior
 
-    (::KylovLinearSolver)(A, b::AbstractVector)
+    (::IterativeLinearSolver)(A, b::AbstractVector)
 
 Solve a linear system with a single right-hand side.
 
-    (::KrylovLinearSolver)(A, B::AbstractMatrix)
+    (::IterativeLinearSolver)(A, B::AbstractMatrix)
 
 Solve a linear system with multiple right-hand sides.
 """
-Base.@kwdef struct KrylovLinearSolver
-    verbose::Bool = true
+struct IterativeLinearSolver{package,K}
+    kwargs::K
+    function IterativeLinearSolver{package}(; kwargs...) where {package}
+        @assert package in [:Krylov, :IterativeSolvers]
+        return new{package,typeof(kwargs)}(kwargs)
+    end
 end
 
-function (solver::KrylovLinearSolver)(A, b::AbstractVector)
-    x, stats = gmres(A, b)
-    if !stats.solved || stats.inconsistent
-        solver.verbose &&
-            @warn "Failed to solve the linear system in the implicit function theorem with `Krylov.gmres`" stats
-    end
+IterativeLinearSolver() = IterativeLinearSolver{:Krylov}()
+
+function (solver::IterativeLinearSolver{:Krylov})(A, b::AbstractVector)
+    x, stats = Krylov.gmres(A, b; solver.kwargs...)
     return x
 end
 
-function (solver::KrylovLinearSolver)(A, B::AbstractMatrix)
-    # X, stats = block_gmres(A, B)  # https://github.com/JuliaSmoothOptimizers/Krylov.jl/issues/854
+function (solver::IterativeLinearSolver{:Krylov})(A, B::AbstractMatrix)
+    # TODO: use block_gmres
     X = mapreduce(hcat, eachcol(B)) do b
-        solver(A, b)
+        x, _ = Krylov.gmres(A, b; solver.kwargs...)
+        x
+    end
+    return X
+end
+
+function (solver::IterativeLinearSolver{:IterativeSolvers})(A, b::AbstractVector)
+    x = IterativeSolvers.gmres(A, b; solver.kwargs...)
+    return x
+end
+
+function (solver::IterativeLinearSolver{:IterativeSolvers})(A, B::AbstractMatrix)
+    X = mapreduce(hcat, eachcol(B)) do b
+        IterativeSolvers.gmres(A, b; solver.kwargs...)
     end
     return X
 end
@@ -51,7 +69,7 @@ abstract type AbstractRepresentation end
 """
     MatrixRepresentation
 
-Specify that the matrices involved in the implicit function theorem should be represented explicitly, with all their coefficients.
+Specify that the matrix `A` involved in the implicit function theorem should be represented explicitly, with all its coefficients.
 
 # See also
 
@@ -63,14 +81,34 @@ struct MatrixRepresentation <: AbstractRepresentation end
 """
     OperatorRepresentation
 
-Specify that the matrices involved in the implicit function theorem should be represented lazily, as linear operators from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl).
+Specify that the matrix `A` involved in the implicit function theorem should be represented lazily.
+
+# Constructors
+
+    OperatorRepresentation{package}(; symmetric=false, hermitian=false)
+
+The type parameter `package` can be either:
+
+- `:LinearOperators` to use a wrapper from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (the default)
+- `:LinearMaps` to use a wrapper from [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl)
+
+The keyword arguments `symmetric` and `hermitian` give additional properties of the Jacobian of the `conditions` with respect to the solution `y`, in case you can prove them.
 
 # See also
 
 - [`ImplicitFunction`](@ref)
 - [`MatrixRepresentation`](@ref)
 """
-struct OperatorRepresentation <: AbstractRepresentation end
+struct OperatorRepresentation{package,symmetric,hermitian} <: AbstractRepresentation
+    function OperatorRepresentation{package}(;
+        symmetric::Bool=false, hermitian::Bool=false
+    ) where {package}
+        @assert package in [:LinearOperators, :LinearMaps]
+        return new{package,symmetric,hermitian}()
+    end
+end
+
+OperatorRepresentation() = OperatorRepresentation{:LinearOperators}()
 
 ## Preparation
 

@@ -46,7 +46,10 @@ Say your forward mapping takes multiple inputs and returns multiple outputs, suc
 The trick is to leverage [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) to wrap all the inputs inside a single a `ComponentVector`, and do the same for all the outputs.
 See the examples for a demonstration.
 
-!!! warning "Warning"
+!!! warning
+    The default linear operator representation does not support ComponentArrays.jl: you need to select `representation=OperatorRepresentation{:LinearMaps}()` in the [`ImplicitFunction`](@ref) constructor for it to work.
+
+!!! warning
     You may run into issues trying to differentiate through the `ComponentVector` constructor.
     For instance, Zygote.jl will throw `ERROR: Mutating arrays is not supported`.
     Check out [this issue](https://github.com/gdalle/ImplicitDifferentiation.jl/issues/67) for a dirty workaround involving custom chain rules for the constructor.
