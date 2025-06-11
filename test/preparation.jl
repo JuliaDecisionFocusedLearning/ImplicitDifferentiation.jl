@@ -1,6 +1,7 @@
 @testitem "Preparation" begin
     using ImplicitDifferentiation
-    using ADTypes: AutoForwardDiff, ForwardOrReverseMode, ForwardMode, ReverseMode
+    using ADTypes
+    using ADTypes: ForwardOrReverseMode, ForwardMode, ReverseMode
     using ForwardDiff: ForwardDiff
     using Zygote: Zygote
     using Test
