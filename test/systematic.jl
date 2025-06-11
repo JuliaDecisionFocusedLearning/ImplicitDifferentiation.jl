@@ -1,54 +1,80 @@
 using TestItems
 
-@testitem "Systematic tests" begin
-    using ADTypes
-    using ADTypes: ForwardMode, ReverseMode
-    using ForwardDiff: ForwardDiff
-    using ImplicitDifferentiation
-    using Test
-    using Zygote: Zygote, ZygoteRuleConfig
-    using FiniteDiff: FiniteDiff
+@testitem "Matrix" setup = [TestUtils] begin
+    using ADTypes, .TestUtils
+    for (backends, preparation, x) in Iterators.product(
+        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
+        [nothing, ADTypes.ForwardOrReverseMode()],
+        [float.(1:3), reshape(float.(1:6), 3, 2)],
+    )
+        yield()
+        scen = Scenario(;
+            solver=default_solver,
+            conditions=default_conditions,
+            x=x,
+            implicit_kwargs=(;
+                representation=MatrixRepresentation(),
+                linear_solver=\,
+                backends,
+                preparation,
+                input_example=(x,),
+            ),
+        )
+        scen2 = add_arg_mult(scen)
+        @info "$scen"
+        test_implicit(scen)
+        test_implicit(scen2)
+    end
+end;
 
-    include("utils.jl")
+@testitem "Krylov" setup = [TestUtils] begin
+    using ADTypes, .TestUtils
+    for (backends, preparation, x) in Iterators.product(
+        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
+        [nothing, ADTypes.ForwardOrReverseMode()],
+        [float.(1:3), reshape(float.(1:6), 3, 2)],
+    )
+        yield()
+        scen = Scenario(;
+            solver=default_solver,
+            conditions=default_conditions,
+            x=x,
+            implicit_kwargs=(;
+                representation=OperatorRepresentation{:LinearOperators}(),
+                linear_solver=IterativeLinearSolver{:Krylov}(),
+                backends,
+                preparation,
+                input_example=(x,),
+            ),
+        )
+        @info "$scen"
+        scen2 = add_arg_mult(scen)
+        test_implicit(scen)
+        test_implicit(scen2)
+    end
+end;
 
-    ## Parameter combinations
-
-    representation_linear_solver_candidates = [
-        (MatrixRepresentation(), \),  #
-        (OperatorRepresentation{:LinearOperators}(), IterativeLinearSolver{:Krylov}()),
-        (OperatorRepresentation{:LinearMaps}(), IterativeLinearSolver{:IterativeSolvers}()),
-    ]
-    backend_candidates = [nothing, AutoForwardDiff(), AutoZygote()]
-    preparation_candidates = [nothing, ForwardMode(), ReverseMode()]
-    x_candidates = [float.(1:6), reshape(float.(1:12), 6, 2)]
-
-    ## Test loop
-
-    @testset for (representation, linear_solver) in representation_linear_solver_candidates
-        for (backend, preparation, x) in
-            Iterators.product(backend_candidates, preparation_candidates, x_candidates)
-            x_type = typeof(x)
-            @info "Testing" linear_solver backend representation preparation x_type
-            if (representation isa OperatorRepresentation && linear_solver == \)
-                continue
-            end
-            outer_backends = [AutoForwardDiff(), AutoZygote()]
-            x = Float64.(1:6)
-            @testset "$((; linear_solver, backend, preparation, x_type))" begin
-                test_implicit(
-                    outer_backends,
-                    x;
-                    representation,
-                    backends=isnothing(backend) ? nothing : (; x=backend, y=backend),
-                    preparation,
-                    linear_solver,
-                    strict=if linear_solver isa IterativeLinearSolver{:IterativeSolvers}
-                        Val(false)
-                    else
-                        Val(true)
-                    end,
-                )
-            end
-        end
+@testitem "IterativeSolvers" setup = [TestUtils] begin
+    using ADTypes, .TestUtils
+    for (backends, preparation, x) in Iterators.product(
+        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
+        [nothing, ADTypes.ForwardOrReverseMode()],
+        [float.(1:3), reshape(float.(1:6), 3, 2)],
+    )
+        yield()
+        scen = Scenario(;
+            solver=default_solver,
+            conditions=default_conditions,
+            x=x,
+            implicit_kwargs=(;
+                representation=OperatorRepresentation{:LinearMap}(),
+                linear_solver=IterativeLinearSolver{:IterativeSolvers}(),
+                backends,
+                preparation,
+                input_example=(x,),
+            ),
+        )
+        @info "$scen"
+        test_implicit(scen)
     end
 end;
