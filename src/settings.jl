@@ -7,11 +7,12 @@ Callable object that can solve linear systems `Ax = b` and `AX = B` in the same 
 
 # Constructor
 
+    IterativeLinearSolver(; kwargs...)
     IterativeLinearSolver{package}(; kwargs...)
 
 The type parameter `package` can be either:
 
-- `:Krylov` to use the solver `gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl)
+- `:Krylov` to use the solver `gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) (the default)
 - `:IterativeSolvers` to use the solver `gmres` from [IterativeSolvers.jl](https://github.com/JuliaLinearAlgebra/IterativeSolvers.jl)
 
 Keyword arguments are passed on to the respective solver.
@@ -34,7 +35,15 @@ struct IterativeLinearSolver{package,K}
     end
 end
 
-IterativeLinearSolver() = IterativeLinearSolver{:Krylov}()
+function Base.show(io::IO, linear_solver::IterativeLinearSolver{package}) where {package}
+    print(io, "IterativeLinearSolver{$(repr(package))}(; ")
+    for (k, v) in pairs(linear_solver.kwargs)
+        print(io, "$k=$v, ")
+    end
+    return print(io, ")")
+end
+
+IterativeLinearSolver(; kwargs...) = IterativeLinearSolver{:Krylov}(; kwargs...)
 
 function (solver::IterativeLinearSolver{:Krylov})(A, b::AbstractVector)
     x, stats = Krylov.gmres(A, b; solver.kwargs...)
@@ -85,6 +94,7 @@ Specify that the matrix `A` involved in the implicit function theorem should be 
 
 # Constructors
 
+    OperatorRepresentation(; symmetric=false, hermitian=false)
     OperatorRepresentation{package}(; symmetric=false, hermitian=false)
 
 The type parameter `package` can be either:
@@ -108,38 +118,15 @@ struct OperatorRepresentation{package,symmetric,hermitian} <: AbstractRepresenta
     end
 end
 
-OperatorRepresentation() = OperatorRepresentation{:LinearOperators}()
+function Base.show(
+    io::IO, ::OperatorRepresentation{package,symmetric,hermitian}
+) where {package,symmetric,hermitian}
+    return print(
+        io,
+        "OperatorRepresentation{$(repr(package))}(; symmetric=$symmetric, hermitian=$hermitian)",
+    )
+end
 
-## Preparation
-
-abstract type AbstractPreparation end
-
-"""
-    ForwardPreparation
-
-Specify that the derivatives of the conditions should be prepared for subsequent forward-mode differentiation of the implicit function.
-"""
-struct ForwardPreparation <: AbstractPreparation end
-
-"""
-    ReversePreparation
-
-Specify that the derivatives of the conditions should be prepared for subsequent reverse-mode differentiation of the implicit function.
-"""
-struct ReversePreparation <: AbstractPreparation end
-
-"""
-    BothPreparation
-
-Specify that the derivatives of the conditions should be prepared for subsequent forward- or reverse-mode differentiation of the implicit function.
-"""
-struct BothPreparation <: AbstractPreparation end
-
-"""
-    NoPreparation
-
-Specify that the derivatives of the conditions should not be prepared for subsequent differentiation of the implicit function.
-"""
-struct NoPreparation <: AbstractPreparation end
+OperatorRepresentation(; kwargs...) = OperatorRepresentation{:LinearOperators}(; kwargs...)
 
 function chainrules_suggested_backend end

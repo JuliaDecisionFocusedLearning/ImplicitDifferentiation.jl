@@ -22,7 +22,7 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
         conditions;
         representation=OperatorRepresentation(),
         linear_solver=IterativeLinearSolver(),
-        backend=nothing,
+        backends=nothing,
         preparation=nothing,
         input_example=nothing,
     )
@@ -30,19 +30,16 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
 ## Positional arguments
 
 - `solver`: a callable returning `(x, args...) -> (y, z)` where `z` is an arbitrary byproduct of the solve. Both `x` and `y` must be subtypes of `AbstractArray`, while `z` and `args` can be anything.
-- `conditions`: a callable returning a vector of optimality conditions `(x, y, z, args...) -> c`, must be compatible with automatic differentiation
+- `conditions`: a callable returning a vector of optimality conditions `(x, y, z, args...) -> c`, must be compatible with automatic differentiation.
 
 ## Keyword arguments
 
-- `representation`: either [`MatrixRepresentation`](@ref) or [`OperatorRepresentation`](@ref)
-- `linear_solver`: a callable to solve linear systems with two required methods, one for `(A, b)` (single solve) and one for `(A, B)` (batched solve). It defaults to [`IterativeLinearSolver`](@ref) but can also be the built-in `\\`, or a user-provided function.
-- `backend::AbstractADType`: specifies how the `conditions` will be differentiated with respect to `x` and `y`. It can be either
-    - `nothing`, which means that the external autodiff system will be used
-    - a single object from [ADTypes.jl](https://github.com/SciML/ADTypes.jl)
-    - a named tuple `(; x, y)` of objects from [ADTypes.jl](https://github.com/SciML/ADTypes.jl)
+- `representation`: defines how the partial Jacobian `A` of the conditions with respect to the output is represented, either [`MatrixRepresentation`](@ref) or [`OperatorRepresentation`](@ref).
+- `linear_solver`: a callable to solve linear systems with two required methods, one for `(A, b::AbstractVector)` (single solve) and one for `(A, B::AbstractMatrix)` (batched solve). It defaults to [`IterativeLinearSolver`](@ref) but can also be the built-in `\\`, or a user-provided function.
+- `backends::AbstractADType`: specifies how the `conditions` will be differentiated with respect to `x` and `y`. It can be either, `nothing`, which means that the external autodiff system will be used, or a named tuple `(; x=AutoSomething(), y=AutoSomethingElse())` of backend objects from [ADTypes.jl](https://github.com/SciML/ADTypes.jl).
 - `preparation`: either `nothing` or a mode object from [ADTypes.jl](https://github.com/SciML/ADTypes.jl): `ADTypes.ForwardMode()`, `ADTypes.ReverseMode()` or `ADTypes.ForwardOrReverseMode()`.
 - `input_example`: either `nothing` or a tuple `(x, args...)` used to prepare differentiation.
-- `strict::Val=Val(true)`: whether or not to enforce a strict match in [DifferentiationInterface.jl](https://github.com/JuliaDiff/DifferentiationInterface.jl) between the preparation and the execution types. Relaxing this to `strict=Val(false)` can prove necessary when working with custom array types like ComponentArrays.jl, which are not always compatible with iterative linear solvers.
+- `strict::Val=Val(true)`: whether or not to enforce a strict match in [DifferentiationInterface.jl](https://github.com/JuliaDiff/DifferentiationInterface.jl) between the preparation and the execution types.
 """
 struct ImplicitFunction{
     F,
@@ -51,7 +48,6 @@ struct ImplicitFunction{
     R<:AbstractRepresentation,
     B<:Union{
         Nothing,  #
-        AbstractADType,
         NamedTuple{(:x, :y),<:Tuple{AbstractADType,AbstractADType}},
     },
     P<:Union{Nothing,AbstractMode},
@@ -90,32 +86,15 @@ function ImplicitFunction(
         prep_B = nothing
         prep_Bᵀ = nothing
     else
-        real_backends = backends isa AbstractADType ? (; x=backends, y=backends) : backends
         x, args = first(input_example), Base.tail(input_example)
         y, z = solver(x, args...)
         c = conditions(x, y, z, args...)
         if preparation isa Union{ForwardMode,ForwardOrReverseMode}
             prep_A = prepare_A(
-                representation,
-                x,
-                y,
-                z,
-                c,
-                args...;
-                conditions,
-                backend=real_backends.y,
-                strict,
+                representation, x, y, z, c, args...; conditions, backend=backends.y, strict
             )
             prep_B = prepare_B(
-                representation,
-                x,
-                y,
-                z,
-                c,
-                args...;
-                conditions,
-                backend=real_backends.x,
-                strict,
+                representation, x, y, z, c, args...; conditions, backend=backends.x, strict
             )
         else
             prep_A = nothing
@@ -123,26 +102,10 @@ function ImplicitFunction(
         end
         if preparation isa Union{ReverseMode,ForwardOrReverseMode}
             prep_Aᵀ = prepare_Aᵀ(
-                representation,
-                x,
-                y,
-                z,
-                c,
-                args...;
-                conditions,
-                backend=real_backends.y,
-                strict,
+                representation, x, y, z, c, args...; conditions, backend=backends.y, strict
             )
             prep_Bᵀ = prepare_Bᵀ(
-                representation,
-                x,
-                y,
-                z,
-                c,
-                args...;
-                conditions,
-                backend=real_backends.x,
-                strict,
+                representation, x, y, z, c, args...; conditions, backend=backends.x, strict
             )
         else
             prep_Aᵀ = nothing

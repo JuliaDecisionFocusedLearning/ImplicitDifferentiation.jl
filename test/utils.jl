@@ -1,16 +1,37 @@
 using ADTypes
 using ChainRulesCore
 using ChainRulesTestUtils
-using DifferentiationInterface: DifferentiationInterface
+import DifferentiationInterface as DI
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction
 using JET
 using LinearAlgebra
+using Random: rand!
 using Test
 using Zygote: Zygote, ZygoteRuleConfig
 
-##
+@kwdef struct Scenario{S,C,X,A,K}
+    solver::S
+    conditions::C
+    x::X
+    args::A = ()
+    implicit_kwargs::K = (;)
+end
+
+function Base.show(io::IO, scen::Scenario)
+    print(
+        io,
+        "Scenario(; solver=$(scen.solver), conditions=$(scen.conditions), x::$(typeof(scen.x))",
+    )
+    if !isempty(scen.args)
+        print(io, ", args::$(typeof(scen.args))")
+    end
+    if !isempty(scen.implicit_kwargs)
+        print(io, ", implicit_kwargs::$(typeof(scen.implicit_kwargs))")
+    end
+    return print(io, ")")
+end
 
 function identity_break_autodiff(x::AbstractArray{R}) where {R}
     float(first(x))  # break ForwardDiff
@@ -18,134 +39,138 @@ function identity_break_autodiff(x::AbstractArray{R}) where {R}
     result = try
         throw(copy(x))
     catch y
-        y
+        y  # presumably break Enzyme
     end
     return result
 end
 
-mysqrt(x::AbstractArray) = identity_break_autodiff(sqrt.(x))
-
-## Various signatures
-
-function make_implicit_sqrt_byproduct(x; kwargs...)
-    forward(x) = 1 .* vcat(mysqrt(x), -mysqrt(x)), 1
-    conditions(x, y, z) = abs2.(y ./ z) .- vcat(x, x)
-    input_example = (copy(x),)
-    implicit = ImplicitFunction(forward, conditions; input_example, kwargs...)
-    return implicit
+struct NonDifferentiable{S}
+    solver::S
 end
 
-function make_implicit_sqrt_args(x; kwargs...)
-    forward(x, p) = p .* vcat(mysqrt(x), -mysqrt(x)), nothing
-    conditions(x, y, z, p) = abs2.(y ./ p) .- vcat(x, x)
-    input_example = (copy(x), 2)
-    implicit = ImplicitFunction(forward, conditions; input_example, kwargs...)
-    return implicit
+(nd::NonDifferentiable)(x, args...) = nd.solver(identity_break_autodiff(x), args...)
+
+function add_arg_mult(scen::Scenario, a=3)
+    @assert isempty(scen.args)
+    function solver_with_arg_mult(x, a)
+        y, z = scen.solver(x)
+        return y .* a, z
+    end
+    function conditions_with_arg_mult(x, y, z, a)
+        return scen.conditions(x, y ./ a, z)
+    end
+    implicit_kwargs_with_arg_mult = NamedTuple(
+        Dict(k => if k == :input_example
+            (only(v), a)
+        else
+            v
+        end for (k, v) in pairs(scen.implicit_kwargs))
+    )
+
+    return Scenario(;
+        solver=solver_with_arg_mult,
+        conditions=conditions_with_arg_mult,
+        x=scen.x,
+        args=(a,),
+        implicit_kwargs=implicit_kwargs_with_arg_mult,
+    )
 end
 
-function test_implicit_call(x::AbstractArray{T}; kwargs...) where {T}
-    imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
-    imf2 = make_implicit_sqrt_args(x; kwargs...)
+function test_implicit_call(scen::Scenario)
+    implicit = ImplicitFunction(
+        NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
+    )
+    y, z = implicit(scen.x, scen.args...)
+    y_true, z_true = scen.solver(scen.x, scen.args...)
 
-    y_true = vcat(mysqrt(x), -mysqrt(x))
-    y1, z1 = imf1(x)
-    y2, z2 = imf2(x, 3)
-
-    @testset "Primal value" begin
-        @test y1 ≈ y_true
-        @test y2 ≈ 3y_true
-        @test z1 == 1
-        @test z2 === nothing
+    @testset "Call" begin
+        @test y ≈ y_true
+        @test z == z_true
     end
 end
 
 tag(::AbstractArray{<:ForwardDiff.Dual{T}}) where {T} = T
 
-function test_implicit_duals(x::AbstractArray{T}; kwargs...) where {T}
-    imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
-    imf2 = make_implicit_sqrt_args(x; kwargs...)
+function test_implicit_duals(scen::Scenario)
+    implicit = ImplicitFunction(
+        NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
+    )
 
-    y_true = vcat(mysqrt(x), -mysqrt(x))
-    dx = similar(x)
-    dx .= 2 * one(T)
-    x_and_dx = ForwardDiff.Dual.(x, dx)
+    dx = similar(scen.x)
+    rand!(dx)
+    x_and_dx = ForwardDiff.Dual.(scen.x, dx)
 
-    y_and_dy1, z1 = imf1(x_and_dx)
-    y_and_dy2, z2 = imf2(x_and_dx, 3)
+    y_and_dy, z = implicit(x_and_dx, scen.args...)
+    T = tag(y_and_dy)
+    y = ForwardDiff.value.(y_and_dy)
+    dy = ForwardDiff.extract_derivative.(T, y_and_dy)
 
-    @testset "Dual numbers" begin
-        @test ForwardDiff.value.(y_and_dy1) ≈ y_true
-        @test ForwardDiff.value.(y_and_dy2) ≈ 3y_true
-        @test ForwardDiff.extract_derivative(tag(y_and_dy1), y_and_dy1) ≈
-            2 .* inv.(2 .* vcat(sqrt.(x), -sqrt.(x)))
-        @test ForwardDiff.extract_derivative(tag(y_and_dy2), y_and_dy2) ≈
-            3 .* 2 .* inv.(2 .* vcat(sqrt.(x), -sqrt.(x)))
-        @test z1 == 1
-        @test z2 === nothing
-    end
-end
+    y_true, z_true = scen.solver(scen.x, scen.args...)
+    dy_true = DI.pushforward(
+        first ∘ scen.solver,
+        AutoForwardDiff(),
+        scen.x,
+        (dx,),
+        map(DI.Constant, scen.args)...,
+    )[1]
 
-function test_implicit_rrule(rc, x::AbstractArray{T}; kwargs...) where {T}
-    imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
-    imf2 = make_implicit_sqrt_args(x; kwargs...)
-
-    y_true = vcat(mysqrt(x), -mysqrt(x))
-    dy = zero(y_true)
-    dy[1:(end ÷ 2)] .= one(eltype(y_true))
-    dz = nothing
-
-    (y1, z1), pb1 = rrule(rc, imf1, x)
-    (y2, z2), pb2 = rrule(rc, imf2, x, 3)
-
-    dimf1, dx1 = pb1((dy, dz))
-    dimf2, dx2, dp2 = pb2((dy, dz))
-
-    @testset "Pullbacks" begin
-        @test y1 ≈ y_true
-        @test y2 ≈ 3y_true
-        @test z1 == 1
-        @test z2 === nothing
-
-        @test dimf1 isa NoTangent
-        @test dimf2 isa NoTangent
-
-        @test dx2 ≈ 3 .* dx1
-        @test dp2 isa ChainRulesCore.NotImplemented
-    end
-end
-
-## High-level tests per backend
-
-function test_implicit_backend(
-    outer_backend::ADTypes.AbstractADType, x::AbstractArray{T}; kwargs...
-) where {T}
-    imf1 = make_implicit_sqrt_byproduct(x; kwargs...)
-    imf2 = make_implicit_sqrt_args(x; kwargs...)
-
-    J1 = DifferentiationInterface.jacobian(first ∘ imf1, outer_backend, x)
-    J2 = DifferentiationInterface.jacobian(_x -> (first ∘ imf2)(_x, 3), outer_backend, x)
-
-    J_true = ForwardDiff.jacobian(_x -> vcat(sqrt.(_x), -sqrt.(_x)), x)
-
-    @testset "Exact Jacobian" begin
-        @test J1 ≈ J_true
-        @test J2 ≈ 3 .* J_true
-    end
-    return nothing
-end
-
-function test_implicit(outer_backends, x; kwargs...)
-    @testset "Call" begin
-        test_implicit_call(x; kwargs...)
-    end
     @testset "Duals" begin
-        test_implicit_duals(x; kwargs...)
+        @test y ≈ y_true
+        @test dy ≈ dy_true
+        @test z == z_true
     end
-    @testset "ChainRule" begin
-        test_implicit_rrule(ZygoteRuleConfig(), x; kwargs...)
-    end
-    @testset "Jacobian - $outer_backend" for outer_backend in outer_backends
-        test_implicit_backend(outer_backend, x; kwargs...)
-    end
-    return nothing
 end
+
+function test_implicit_rrule(scen::Scenario)
+    implicit = ImplicitFunction(
+        NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
+    )
+    y_true, z_true = scen.solver(scen.x, scen.args...)
+
+    dy = similar(y_true)
+    rand!(dy)
+    dz = NoTangent()
+    (y, z), pb = rrule(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
+    dimpl, dx = pb((dy, dz))
+
+    dx_true = DI.pullback(
+        first ∘ scen.solver, AutoZygote(), scen.x, (dy,), map(DI.Constant, scen.args)...
+    )[1]
+
+    @testset "ChainRule" begin
+        @test y ≈ y_true
+        @test z == z_true
+        @test dimpl isa NoTangent
+        @test dx ≈ dx_true
+    end
+end
+
+function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
+    implicit = ImplicitFunction(
+        NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
+    )
+    jac = DI.jacobian(
+        first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
+    )
+    jac_true = DI.jacobian(
+        first ∘ scen.solver, outer_backend, scen.x, map(DI.Constant, scen.args)...
+    )
+
+    @testset "Jacobian - $outer_backend" begin
+        @test jac ≈ jac_true
+    end
+end
+
+function test_implicit(scen::Scenario, outer_backends=[AutoForwardDiff(), AutoZygote()])
+    @testset "$scen" begin
+        test_implicit_call(scen)
+        test_implicit_duals(scen)
+        test_implicit_rrule(scen)
+        for outer_backend in outer_backends
+            test_implicit_jacobian(scen, outer_backend)
+        end
+    end
+end
+
+default_solver(x) = vcat(sqrt.(x .+ 2), -sqrt.(x)), 2
+default_conditions(x, y, z) = abs2.(y) .- vcat(x .+ z, x)

@@ -19,13 +19,9 @@ ImplicitFunction
 ### Settings
 
 ```@docs
-IterativeLinearSolver
 MatrixRepresentation
 OperatorRepresentation
-NoPreparation
-ForwardPreparation
-ReversePreparation
-BothPreparation
+IterativeLinearSolver
 ```
 
 ## Internals
