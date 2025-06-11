@@ -12,7 +12,7 @@
     input_example = (x,)
 
     @testset "None" begin
-        implicit_nones = ImplicitFunction(solver, conditions)
+        implicit_none = ImplicitFunction(solver, conditions)
         @test implicit_none.prep_A === nothing
         @test implicit_none.prep_Aᵀ === nothing
         @test implicit_none.prep_B === nothing
