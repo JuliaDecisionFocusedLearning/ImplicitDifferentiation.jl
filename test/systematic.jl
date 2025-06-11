@@ -21,7 +21,6 @@ using TestItems
             ),
         )
         scen2 = add_arg_mult(scen)
-        @info "$scen"
         test_implicit(scen)
         test_implicit(scen2)
     end
@@ -47,7 +46,6 @@ end;
                 input_example=(x,),
             ),
         )
-        @info "$scen"
         scen2 = add_arg_mult(scen)
         test_implicit(scen)
         test_implicit(scen2)
@@ -67,14 +65,13 @@ end;
             conditions=default_conditions,
             x=x,
             implicit_kwargs=(;
-                representation=OperatorRepresentation{:LinearMap}(),
+                representation=OperatorRepresentation{:LinearMaps}(),
                 linear_solver=IterativeLinearSolver{:IterativeSolvers}(),
                 backends,
                 preparation,
                 input_example=(x,),
             ),
         )
-        @info "$scen"
         test_implicit(scen)
     end
 end;
