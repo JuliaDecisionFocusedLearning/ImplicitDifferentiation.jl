@@ -142,6 +142,14 @@ function test_implicit_rrule(scen::Scenario)
         @test z == z_true
         @test dimpl isa NoTangent
         @test dx ≈ dx_true
+        ChainRulesTestUtils.test_rrule(
+            implicit,
+            scen.x,
+            scen.args...;
+            rtol=1e-3,
+            check_inferred=false,
+            output_tangent=(copy(y), copy(z)),
+        )
     end
 end
 
