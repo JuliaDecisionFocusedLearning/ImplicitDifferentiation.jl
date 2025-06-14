@@ -12,7 +12,7 @@ Callable object that can solve linear systems `Ax = b` and `AX = B` in the same 
 
 The type parameter `package` can be either:
 
-- `:Krylov` to use the solver `gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) (the default)
+- `:Krylov` to use the solver `gmres` or `block_gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) (the default)
 - `:IterativeSolvers` to use the solver `gmres` from [IterativeSolvers.jl](https://github.com/JuliaLinearAlgebra/IterativeSolvers.jl)
 
 Keyword arguments are passed on to the respective solver.
@@ -94,36 +94,46 @@ Specify that the matrix `A` involved in the implicit function theorem should be 
 
 # Constructors
 
-    OperatorRepresentation(; symmetric=false, hermitian=false)
-    OperatorRepresentation{package}(; symmetric=false, hermitian=false)
+    OperatorRepresentation(;
+        symmetric=false, hermitian=false, posdef=false, keep_input_type=false
+    )
+    OperatorRepresentation{package}(;
+        symmetric=false, hermitian=false, posdef=false, keep_input_type=false
+    )
 
 The type parameter `package` can be either:
 
 - `:LinearOperators` to use a wrapper from [LinearOperators.jl](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl) (the default)
 - `:LinearMaps` to use a wrapper from [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl)
 
-The keyword arguments `symmetric` and `hermitian` give additional properties of the Jacobian of the `conditions` with respect to the solution `y`, in case you can prove them.
+The keyword arguments `symmetric`, `hermitian` and `posdef` give additional properties of the Jacobian of the `conditions` with respect to the solution `y`, which are useful to the solver in case you can prove them.
+
+The keyword argument `keep_input_type` dictates whether to force the linear operator to work with the provided input type, or fall back on a default.
 
 # See also
 
 - [`ImplicitFunction`](@ref)
 - [`MatrixRepresentation`](@ref)
 """
-struct OperatorRepresentation{package,symmetric,hermitian} <: AbstractRepresentation
+struct OperatorRepresentation{package,symmetric,hermitian,posdef,keep_input_type} <:
+       AbstractRepresentation
     function OperatorRepresentation{package}(;
-        symmetric::Bool=false, hermitian::Bool=false
+        symmetric::Bool=false,
+        hermitian::Bool=false,
+        posdef::Bool=false,
+        keep_input_type::Bool=false,
     ) where {package}
         @assert package in [:LinearOperators, :LinearMaps]
-        return new{package,symmetric,hermitian}()
+        return new{package,symmetric,hermitian,posdef,keep_input_type}()
     end
 end
 
 function Base.show(
-    io::IO, ::OperatorRepresentation{package,symmetric,hermitian}
-) where {package,symmetric,hermitian}
+    io::IO, ::OperatorRepresentation{package,symmetric,hermitian,posdef,keep_input_type}
+) where {package,symmetric,hermitian,posdef,keep_input_type}
     return print(
         io,
-        "OperatorRepresentation{$(repr(package))}(; symmetric=$symmetric, hermitian=$hermitian)",
+        "OperatorRepresentation{$(repr(package))}(; symmetric=$symmetric, hermitian=$hermitian, posdef=$posdef, keep_input_type=$keep_input_type)",
     )
 end
 
