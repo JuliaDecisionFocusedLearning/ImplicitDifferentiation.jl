@@ -12,7 +12,7 @@ Callable object that can solve linear systems `Ax = b` and `AX = B` in the same 
 
 The type parameter `package` can be either:
 
-- `:Krylov` to use the solver `gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) (the default)
+- `:Krylov` to use the solver `gmres` or `block_gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) (the default)
 - `:IterativeSolvers` to use the solver `gmres` from [IterativeSolvers.jl](https://github.com/JuliaLinearAlgebra/IterativeSolvers.jl)
 
 Keyword arguments are passed on to the respective solver.
