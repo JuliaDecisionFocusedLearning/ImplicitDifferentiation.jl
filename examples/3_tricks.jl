@@ -42,13 +42,9 @@ function conditions_components(x::ComponentVector, y::ComponentVector, _z)
     return c
 end;
 
-# And build your implicit function like so, switching the operator representation to avoid errors with ComponentArrays.
+# And build your implicit function like so:
 
-implicit_components = ImplicitFunction(
-    forward_components,
-    conditions_components;
-    representation=OperatorRepresentation{:LinearMaps}(),
-);
+implicit_components = ImplicitFunction(forward_components, conditions_components);
 
 # Now we're good to go.
 

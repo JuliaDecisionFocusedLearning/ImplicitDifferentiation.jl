@@ -61,7 +61,7 @@ function build_A_aux(
 end
 
 function build_A_aux(
-    ::OperatorRepresentation{package,symmetric,hermitian},
+    ::OperatorRepresentation{package,symmetric,hermitian,posdef,keep_input_type},
     implicit,
     x,
     y,
@@ -69,7 +69,7 @@ function build_A_aux(
     c,
     args...;
     suggested_backend,
-) where {package,symmetric,hermitian}
+) where {package,symmetric,hermitian,posdef,keep_input_type}
     T = Base.promote_eltype(x, y, c)
     (; conditions, backends, prep_A) = implicit
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
@@ -89,7 +89,13 @@ function build_A_aux(
     prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, dy_vec, contexts)
     if package == :LinearOperators
         return LinearOperator(
-            T, length(c), length(y), symmetric, hermitian, prod!; S=typeof(dy_vec)
+            T,
+            length(c),
+            length(y),
+            symmetric,
+            hermitian,
+            prod!;
+            S=keep_input_type ? typeof(dy_vec) : Vector{T},
         )
     elseif package == :LinearMaps
         return FunctionMap{T}(
@@ -99,6 +105,7 @@ function build_A_aux(
             ismutating=true,
             issymmetric=symmetric,
             ishermitian=hermitian,
+            isposdef=posdef,
         )
     end
 end
@@ -136,7 +143,7 @@ function build_Aᵀ_aux(
 end
 
 function build_Aᵀ_aux(
-    ::OperatorRepresentation{package,symmetric,hermitian},
+    ::OperatorRepresentation{package,symmetric,hermitian,posdef,keep_input_type},
     implicit,
     x,
     y,
@@ -144,7 +151,7 @@ function build_Aᵀ_aux(
     c,
     args...;
     suggested_backend,
-) where {package,symmetric,hermitian}
+) where {package,symmetric,hermitian,posdef,keep_input_type}
     T = Base.promote_eltype(x, y, c)
     (; conditions, backends, prep_Aᵀ) = implicit
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
@@ -164,7 +171,13 @@ function build_Aᵀ_aux(
     prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, dc_vec, contexts)
     if package == :LinearOperators
         return LinearOperator(
-            T, length(y), length(c), symmetric, hermitian, prod!; S=typeof(dc_vec)
+            T,
+            length(y),
+            length(c),
+            symmetric,
+            hermitian,
+            prod!;
+            S=keep_input_type ? typeof(dc_vec) : Vector{T},
         )
     elseif package == :LinearMaps
         return FunctionMap{T}(
@@ -174,6 +187,7 @@ function build_Aᵀ_aux(
             ismutating=true,
             issymmetric=symmetric,
             ishermitian=hermitian,
+            isposdef=posdef,
         )
     end
 end
