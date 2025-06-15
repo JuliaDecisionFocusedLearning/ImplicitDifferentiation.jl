@@ -53,7 +53,7 @@ end;
 end;
 
 @testitem "ComponentVector" setup = [TestUtils] begin
-    using .TestUtils
+    using ComponentArrays, .TestUtils
     x = ComponentVector(; a=float.(1:3), b=float.(4:6))
     scen = Scenario(;
         solver=default_solver,
