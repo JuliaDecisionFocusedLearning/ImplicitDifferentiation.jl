@@ -21,8 +21,8 @@ using DifferentiationInterface:
     pullback,
     pushforward!,
     pushforward
-using Krylov: Krylov
-using IterativeSolvers: IterativeSolvers
+using Krylov: KrylovConstructor, krylov_workspace, krylov_solve!, solution
+using LinearAlgebra: ldiv!
 using LinearOperators: LinearOperator
 using LinearMaps: FunctionMap
 using LinearAlgebra: factorize
@@ -34,7 +34,7 @@ include("implicit_function.jl")
 include("execution.jl")
 
 export MatrixRepresentation, OperatorRepresentation
-export IterativeLinearSolver
+export IterativeLinearSolver, DirectLinearSolver
 export ImplicitFunction
 
 end

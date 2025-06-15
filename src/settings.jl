@@ -1,74 +1,62 @@
 ## Linear solver
 
 """
+    DirectLinearSolver
+
+Specify that linear systems `Ax = b` should be solved with a direct method.
+"""
+struct DirectLinearSolver end
+
+function (solver::DirectLinearSolver)(x::AbstractVector, A, b::AbstractVector)
+    ldiv!(x, A, b)
+    return x
+end
+
+"""
     IterativeLinearSolver
 
-Callable object that can solve linear systems `Ax = b` and `AX = B` in the same way as the built-in `\\`.
+Specify that linear systems `Ax = b` should be solved with an iterative method.
 
 # Constructor
 
-    IterativeLinearSolver(; kwargs...)
-    IterativeLinearSolver{package}(; kwargs...)
+    IterativeLinearSolver(::Val{method}=Val(:gmres); kwargs...)
 
-The type parameter `package` can be either:
-
-- `:Krylov` to use the solver `gmres` or `block_gmres` from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) (the default)
-- `:IterativeSolvers` to use the solver `gmres` from [IterativeSolvers.jl](https://github.com/JuliaLinearAlgebra/IterativeSolvers.jl)
-
-Keyword arguments are passed on to the respective solver.
-
-# Callable behavior
-
-    (::IterativeLinearSolver)(A, b::AbstractVector)
-
-Solve a linear system with a single right-hand side.
-
-    (::IterativeLinearSolver)(A, B::AbstractMatrix)
-
-Solve a linear system with multiple right-hand sides.
+The `method` symbol is used to pick the appropriate algorithm from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
+Keyword arguments are passed on to that algorithm.
 """
-struct IterativeLinearSolver{package,K}
+struct IterativeLinearSolver{method,K}
+    _method::Val{method}
     kwargs::K
-    function IterativeLinearSolver{package}(; kwargs...) where {package}
-        @assert package in [:Krylov, :IterativeSolvers]
-        return new{package,typeof(kwargs)}(kwargs)
+    function IterativeLinearSolver((::Val{method})=Val(:gmres); kwargs...) where {method}
+        return new{method,typeof(kwargs)}(Val(method), kwargs)
     end
 end
 
-function Base.show(io::IO, linear_solver::IterativeLinearSolver{package}) where {package}
-    print(io, "IterativeLinearSolver{$(repr(package))}(; ")
-    for (k, v) in pairs(linear_solver.kwargs)
-        print(io, "$k=$v, ")
+function Base.show(io::IO, linear_solver::IterativeLinearSolver{method}) where {method}
+    print(io, "IterativeLinearSolver{$(repr(method))}")
+    if isempty(linear_solver.kwargs)
+        print(io, "()")
+    else
+        print(io, "(; ")
+        for (k, v) in pairs(linear_solver.kwargs)
+            print(io, "$k=$(repr(v)), ")
+        end
+        print(io, ")")
     end
-    return print(io, ")")
 end
 
-IterativeLinearSolver(; kwargs...) = IterativeLinearSolver{:Krylov}(; kwargs...)
-
-function (solver::IterativeLinearSolver{:Krylov})(A, b::AbstractVector)
-    x, stats = Krylov.gmres(A, b; solver.kwargs...)
+function (solver::IterativeLinearSolver{method})(
+    x::AbstractVector, A, b::AbstractVector
+) where {method}
+    if typeof(b) == typeof(x)
+        constructor = KrylovConstructor(b, x)
+        workspace = krylov_workspace(Val(method), constructor)
+    else
+        workspace = krylov_workspace(Val(method), A, b)
+    end
+    krylov_solve!(workspace, A, b)
+    copyto!(x, solution(workspace))
     return x
-end
-
-function (solver::IterativeLinearSolver{:Krylov})(A, B::AbstractMatrix)
-    # TODO: use block_gmres
-    X = mapreduce(hcat, eachcol(B)) do b
-        x, _ = Krylov.gmres(A, b; solver.kwargs...)
-        x
-    end
-    return X
-end
-
-function (solver::IterativeLinearSolver{:IterativeSolvers})(A, b::AbstractVector)
-    x = IterativeSolvers.gmres(A, b; solver.kwargs...)
-    return x
-end
-
-function (solver::IterativeLinearSolver{:IterativeSolvers})(A, B::AbstractMatrix)
-    X = mapreduce(hcat, eachcol(B)) do b
-        IterativeSolvers.gmres(A, b; solver.kwargs...)
-    end
-    return X
 end
 
 ## Representation
@@ -94,12 +82,8 @@ Specify that the matrix `A` involved in the implicit function theorem should be 
 
 # Constructors
 
-    OperatorRepresentation(;
-        symmetric=false, hermitian=false, posdef=false, keep_input_type=false
-    )
-    OperatorRepresentation{package}(;
-        symmetric=false, hermitian=false, posdef=false, keep_input_type=false
-    )
+    OperatorRepresentation(; symmetric=false, hermitian=false, posdef=false)
+    OperatorRepresentation{package}(; symmetric=false, hermitian=false, posdef=false)
 
 The type parameter `package` can be either:
 
@@ -108,32 +92,26 @@ The type parameter `package` can be either:
 
 The keyword arguments `symmetric`, `hermitian` and `posdef` give additional properties of the Jacobian of the `conditions` with respect to the solution `y`, which are useful to the solver in case you can prove them.
 
-The keyword argument `keep_input_type` dictates whether to force the linear operator to work with the provided input type, or fall back on a default.
-
 # See also
 
 - [`ImplicitFunction`](@ref)
 - [`MatrixRepresentation`](@ref)
 """
-struct OperatorRepresentation{package,symmetric,hermitian,posdef,keep_input_type} <:
-       AbstractRepresentation
+struct OperatorRepresentation{package,symmetric,hermitian,posdef} <: AbstractRepresentation
     function OperatorRepresentation{package}(;
-        symmetric::Bool=false,
-        hermitian::Bool=false,
-        posdef::Bool=false,
-        keep_input_type::Bool=false,
+        symmetric::Bool=false, hermitian::Bool=false, posdef::Bool=false
     ) where {package}
         @assert package in [:LinearOperators, :LinearMaps]
-        return new{package,symmetric,hermitian,posdef,keep_input_type}()
+        return new{package,symmetric,hermitian,posdef}()
     end
 end
 
 function Base.show(
-    io::IO, ::OperatorRepresentation{package,symmetric,hermitian,posdef,keep_input_type}
-) where {package,symmetric,hermitian,posdef,keep_input_type}
+    io::IO, ::OperatorRepresentation{package,symmetric,hermitian,posdef}
+) where {package,symmetric,hermitian,posdef}
     return print(
         io,
-        "OperatorRepresentation{$(repr(package))}(; symmetric=$symmetric, hermitian=$hermitian, posdef=$posdef, keep_input_type=$keep_input_type)",
+        "OperatorRepresentation{$(repr(package))}(; symmetric=$symmetric, hermitian=$hermitian, posdef=$posdef)",
     )
 end
 

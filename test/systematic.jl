@@ -1,6 +1,6 @@
 using TestItems
 
-@testitem "Matrix" setup = [TestUtils] begin
+@testitem "Direct" setup = [TestUtils] begin
     using ADTypes, .TestUtils
     for (backends, preparation, x) in Iterators.product(
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
@@ -14,7 +14,7 @@ using TestItems
             x=x,
             implicit_kwargs=(;
                 representation=MatrixRepresentation(),
-                linear_solver=\,
+                linear_solver=DirectLinearSolver(),
                 backends,
                 preparation,
                 input_example=(x,),
@@ -26,7 +26,7 @@ using TestItems
     end
 end;
 
-@testitem "Krylov" setup = [TestUtils] begin
+@testitem "Iterative" setup = [TestUtils] begin
     using ADTypes, .TestUtils
     for (backends, preparation, x) in Iterators.product(
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
@@ -40,7 +40,7 @@ end;
             x=x,
             implicit_kwargs=(;
                 representation=OperatorRepresentation{:LinearOperators}(),
-                linear_solver=IterativeLinearSolver{:Krylov}(),
+                linear_solver=IterativeLinearSolver(),
                 backends,
                 preparation,
                 input_example=(x,),
@@ -52,26 +52,16 @@ end;
     end
 end;
 
-@testitem "IterativeSolvers" setup = [TestUtils] begin
-    using ADTypes, .TestUtils
-    for (backends, preparation, x) in Iterators.product(
-        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
-        [nothing, ADTypes.ForwardOrReverseMode()],
-        [float.(1:3), reshape(float.(1:6), 3, 2)],
+@testitem "ComponentVector" setup = [TestUtils] begin
+    using .TestUtils
+    x = ComponentVector(; a=float.(1:3), b=float.(4:6))
+    scen = Scenario(;
+        solver=default_solver,
+        conditions=default_conditions,
+        x=x,
+        implicit_kwargs=(; strict=Val(false)),
     )
-        yield()
-        scen = Scenario(;
-            solver=default_solver,
-            conditions=default_conditions,
-            x=x,
-            implicit_kwargs=(;
-                representation=OperatorRepresentation{:LinearMaps}(),
-                linear_solver=IterativeLinearSolver{:IterativeSolvers}(),
-                backends,
-                preparation,
-                input_example=(x,),
-            ),
-        )
-        test_implicit(scen)
-    end
+    scen2 = add_arg_mult(scen)
+    test_implicit(scen)
+    test_implicit(scen2)
 end;

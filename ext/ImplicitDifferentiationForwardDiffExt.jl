@@ -18,15 +18,20 @@ function (implicit::ImplicitFunction)(
     dX = ntuple(Val(N)) do k
         partials.(x_and_dx, k)
     end
-    dC_mat = mapreduce(hcat, dX) do dₖx
+    dC_vec = map(dX) do dₖx
         dₖx_vec = vec(dₖx)
         dₖc_vec = B(dₖx_vec)
         return dₖc_vec
     end
-    dY_mat = implicit.linear_solver(A, -dC_mat)
+    dY = map(dC_vec) do dₖc_vec
+        dₖy_vec = similar(vec(y))
+        implicit.linear_solver(dₖy_vec, A, -dₖc_vec)
+        dₖy = reshape(dₖy_vec, size(y))
+        return dₖy
+    end
 
     y_and_dy = map(y, LinearIndices(y)) do yi, i
-        Dual{T}(yi, Partials(ntuple(k -> dY_mat[i, k], Val(N))))
+        Dual{T}(yi, Partials(ntuple(k -> dY[k][i], Val(N))))
     end
 
     return y_and_dy, z
