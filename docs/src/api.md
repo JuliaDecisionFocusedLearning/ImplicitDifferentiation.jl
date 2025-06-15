@@ -22,6 +22,7 @@ ImplicitFunction
 MatrixRepresentation
 OperatorRepresentation
 IterativeLinearSolver
+DirectLinearSolver
 ```
 
 ## Internals

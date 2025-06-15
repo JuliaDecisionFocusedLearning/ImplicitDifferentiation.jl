@@ -1,6 +1,7 @@
 using ADTypes
 using ChainRulesCore
 using ChainRulesTestUtils
+using ComponentArrays
 import DifferentiationInterface as DI
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
@@ -174,3 +175,8 @@ end
 
 default_solver(x) = vcat(sqrt.(x .+ 2), -sqrt.(x)), 2
 default_conditions(x, y, z) = abs2.(y) .- vcat(x .+ z, x)
+
+flip(v::ComponentVector) = ComponentVector(; b=v.a, a=v.b)
+unflip(v::ComponentVector) = ComponentVector(; a=v.b, b=v.a)
+default_solver(x::ComponentVector) = flip(sqrt.(x .+ 2)), 2
+default_conditions(x::ComponentVector, y::ComponentVector, z) = abs2.(unflip(y)) .- (x .+ z)
