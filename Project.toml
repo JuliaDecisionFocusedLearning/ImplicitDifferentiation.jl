@@ -35,7 +35,7 @@ ForwardDiff = "0.10.36, 1"
 JET = "0.9, 0.10"
 JuliaFormatter = "2.1.2"
 Krylov = "0.9.6, 0.10"
-LinearAlgebra = "1.11.0"
+LinearAlgebra = "1"
 LinearMaps = "3.11.4"
 LinearOperators = "2.8.0"
 NLsolve = "4.5.1"
@@ -75,4 +75,27 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["ADTypes", "Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "DifferentiationInterface", "Documenter", "ExplicitImports", "FiniteDiff", "ForwardDiff", "JET", "JuliaFormatter", "LinearAlgebra", "NLsolve", "Optim", "Random", "SparseArrays", "StaticArrays", "Test", "TestItems", "TestItemRunner", "Zygote"]
+test = [
+    "ADTypes",
+    "Aqua",
+    "ChainRulesCore",
+    "ChainRulesTestUtils",
+    "ComponentArrays",
+    "DifferentiationInterface",
+    "Documenter",
+    "ExplicitImports",
+    "FiniteDiff",
+    "ForwardDiff",
+    "JET",
+    "JuliaFormatter",
+    "LinearAlgebra",
+    "NLsolve",
+    "Optim",
+    "Random",
+    "SparseArrays",
+    "StaticArrays",
+    "Test",
+    "TestItems",
+    "TestItemRunner",
+    "Zygote",
+]

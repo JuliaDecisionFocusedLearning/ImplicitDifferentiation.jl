@@ -23,6 +23,7 @@ MatrixRepresentation
 OperatorRepresentation
 IterativeLinearSolver
 DirectLinearSolver
+prepare_implicit
 ```
 
 ## Internals

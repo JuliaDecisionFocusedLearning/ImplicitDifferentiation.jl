@@ -18,14 +18,24 @@ end
 
 function (po::JVP!)(res::AbstractVector, v_wrongtype::AbstractVector)
     (; f, backend, input, v_buffer, contexts, prep) = po
-    copyto!(v_buffer, v_wrongtype)
+    if typeof(v_buffer) == typeof(v_wrongtype)
+        v = v_wrongtype
+    else
+        copyto!(v_buffer, v_wrongtype)
+        v = v_buffer
+    end
     pushforward!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
     return res
 end
 
 function (po::VJP!)(res::AbstractVector, v_wrongtype::AbstractVector)
     (; f, backend, input, v_buffer, contexts, prep) = po
-    copyto!(v_buffer, v_wrongtype)
+    if typeof(v_buffer) == typeof(v_wrongtype)
+        v = v_wrongtype
+    else
+        copyto!(v_buffer, v_wrongtype)
+        v = v_buffer
+    end
     pullback!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
     return res
 end
@@ -213,7 +223,11 @@ function build_B(
         )
     end
     function B_fun(dx_vec_wrongtype)
-        copyto!(dx_vec, dx_vec_wrongtype)
+        if typeof(dx_vec) == typeof(dx_vec_wrongtype)
+            dx_vec = dx_vec_wrongtype
+        else
+            copyto!(dx_vec, dx_vec_wrongtype)
+        end
         return pushforward(
             f_vec, prep_B_same, actual_backend, x_vec, (dx_vec,), contexts...
         )[1]
@@ -250,7 +264,11 @@ function build_Bᵀ(
         )
     end
     function Bᵀ_fun(dc_vec_wrongtype)
-        copyto!(dc_vec, dc_vec_wrongtype)
+        if typeof(dc_vec) == typeof(dc_vec_wrongtype)
+            dc_vec = dc_vec_wrongtype
+        else
+            copyto!(dc_vec, dc_vec_wrongtype)
+        end
         return pullback(f_vec, prep_Bᵀ_same, actual_backend, x_vec, (dc_vec,), contexts...)[1]
     end
     return Bᵀ_fun
