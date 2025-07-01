@@ -1,12 +1,12 @@
 using ADTypes
-using ADTypes: ForwardMode, ReverseMode
+using ADTypes: ForwardMode, ReverseMode, ForwardOrReverseMode
 using ChainRulesCore
 using ChainRulesTestUtils
 using ComponentArrays
 import DifferentiationInterface as DI
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
-using ImplicitDifferentiation: ImplicitFunction
+using ImplicitDifferentiation: ImplicitFunction, prepare_implicit
 using JET
 using LinearAlgebra
 using Random: rand!
@@ -165,7 +165,7 @@ function test_implicit_rrule(scen::Scenario)
             @test dx ≈ dx_true
         end
         @testset "Unprepared" begin
-            (y, z), pb = rrule(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
+            (y, z), pb = rrule_via_ad(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
             dimpl, dx = pb((dy, dz))
             @test y ≈ y_true
             @test z == z_true
