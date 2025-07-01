@@ -223,11 +223,8 @@ function build_B(
         )
     end
     function B_fun(dx_vec_wrongtype)
-        if typeof(dx_vec) == typeof(dx_vec_wrongtype)
-            dx_vec = dx_vec_wrongtype
-        else
-            copyto!(dx_vec, dx_vec_wrongtype)
-        end
+        @assert typeof(dx_vec) == typeof(dx_vec_wrongtype)
+        dx_vec = dx_vec_wrongtype
         return pushforward(
             f_vec, prep_B_same, actual_backend, x_vec, (dx_vec,), contexts...
         )[1]
