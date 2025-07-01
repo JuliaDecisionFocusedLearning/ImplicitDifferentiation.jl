@@ -24,7 +24,7 @@ function (po::JVP!)(res::AbstractVector, v_wrongtype::AbstractVector)
         copyto!(v_buffer, v_wrongtype)
         v = v_buffer
     end
-    pushforward!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
+    pushforward!(f, (res,), prep, backend, input, (v,), contexts...)
     return res
 end
 
@@ -36,7 +36,7 @@ function (po::VJP!)(res::AbstractVector, v_wrongtype::AbstractVector)
         copyto!(v_buffer, v_wrongtype)
         v = v_buffer
     end
-    pullback!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
+    pullback!(f, (res,), prep, backend, input, (v,), contexts...)
     return res
 end
 
