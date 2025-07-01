@@ -2,9 +2,8 @@ using TestItems
 
 @testitem "Direct" setup = [TestUtils] begin
     using ADTypes, .TestUtils
-    for (backends, preparation, x) in Iterators.product(
+    for (backends, x) in Iterators.product(
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
-        [nothing, ADTypes.ForwardOrReverseMode()],
         [float.(1:3), reshape(float.(1:6), 3, 2)],
     )
         yield()
@@ -16,8 +15,6 @@ using TestItems
                 representation=MatrixRepresentation(),
                 linear_solver=DirectLinearSolver(),
                 backends,
-                preparation,
-                input_example=(x,),
             ),
         )
         scen2 = add_arg_mult(scen)
@@ -28,9 +25,8 @@ end;
 
 @testitem "Iterative" setup = [TestUtils] begin
     using ADTypes, .TestUtils
-    for (backends, preparation, x) in Iterators.product(
+    for (backends, x) in Iterators.product(
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
-        [nothing, ADTypes.ForwardOrReverseMode()],
         [float.(1:3), reshape(float.(1:6), 3, 2)],
     )
         yield()
@@ -42,8 +38,6 @@ end;
                 representation=OperatorRepresentation{:LinearOperators}(),
                 linear_solver=IterativeLinearSolver(),
                 backends,
-                preparation,
-                input_example=(x,),
             ),
         )
         scen2 = add_arg_mult(scen)

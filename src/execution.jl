@@ -1,28 +1,32 @@
-struct JVP!{F,P,B,I,C}
+struct JVP!{F,P,B,I,V,C}
     f::F
     prep::P
     backend::B
     input::I
+    v_buffer::V
     contexts::C
 end
 
-struct VJP!{F,P,B,I,C}
+struct VJP!{F,P,B,I,V,C}
     f::F
     prep::P
     backend::B
     input::I
+    v_buffer::V
     contexts::C
 end
 
-function (po::JVP!)(res::AbstractVector, v::AbstractVector)
-    (; f, backend, input, contexts, prep) = po
-    pushforward!(f, (res,), prep, backend, input, (v,), contexts...)
+function (po::JVP!)(res::AbstractVector, v_wrongtype::AbstractVector)
+    (; f, backend, input, v_buffer, contexts, prep) = po
+    copyto!(v_buffer, v_wrongtype)
+    pushforward!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
     return res
 end
 
-function (po::VJP!)(res::AbstractVector, v::AbstractVector)
-    (; f, backend, input, contexts, prep) = po
-    pullback!(f, (res,), prep, backend, input, (v,), contexts...)
+function (po::VJP!)(res::AbstractVector, v_wrongtype::AbstractVector)
+    (; f, backend, input, v_buffer, contexts, prep) = po
+    copyto!(v_buffer, v_wrongtype)
+    pullback!(f, (res,), prep, backend, input, (v_buffer,), contexts...)
     return res
 end
 
@@ -30,6 +34,7 @@ end
 
 function build_A(
     implicit::ImplicitFunction,
+    prep::ImplicitFunctionPreparation,
     x::AbstractArray,
     y::AbstractArray,
     z,
@@ -38,14 +43,15 @@ function build_A(
     suggested_backend::AbstractADType,
 )
     return build_A_aux(
-        implicit.representation, implicit, x, y, z, c, args...; suggested_backend
+        implicit.representation, implicit, prep, x, y, z, c, args...; suggested_backend
     )
 end
 
 function build_A_aux(
-    ::MatrixRepresentation, implicit, x, y, z, c, args...; suggested_backend
+    ::MatrixRepresentation, implicit, prep, x, y, z, c, args...; suggested_backend
 )
-    (; conditions, backends, prep_A) = implicit
+    (; conditions, backends) = implicit
+    (; prep_A) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     if isnothing(prep_A)
@@ -59,6 +65,7 @@ end
 function build_A_aux(
     ::OperatorRepresentation{package,symmetric,hermitian,posdef},
     implicit,
+    prep,
     x,
     y,
     z,
@@ -67,7 +74,8 @@ function build_A_aux(
     suggested_backend,
 ) where {package,symmetric,hermitian,posdef}
     T = Base.promote_eltype(x, y, c)
-    (; conditions, backends, prep_A) = implicit
+    (; conditions, backends) = implicit
+    (; prep_A) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(Switch12(conditions), y)
@@ -82,9 +90,9 @@ function build_A_aux(
             f_vec, prep_A, actual_backend, y_vec, (dy_vec,), contexts...
         )
     end
-    prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, contexts)
+    prod! = JVP!(f_vec, prep_A_same, actual_backend, y_vec, dy_vec, contexts)
     if package == :LinearOperators
-        return LinearOperator(T, length(c), length(y), symmetric, hermitian, prod!;)
+        return LinearOperator(T, length(c), length(y), symmetric, hermitian, prod!)
     elseif package == :LinearMaps
         return FunctionMap{T}(
             prod!,
@@ -102,6 +110,7 @@ end
 
 function build_Aᵀ(
     implicit::ImplicitFunction,
+    prep::ImplicitFunctionPreparation,
     x::AbstractArray,
     y::AbstractArray,
     z,
@@ -110,14 +119,15 @@ function build_Aᵀ(
     suggested_backend::AbstractADType,
 )
     return build_Aᵀ_aux(
-        implicit.representation, implicit, x, y, z, c, args...; suggested_backend
+        implicit.representation, implicit, prep, x, y, z, c, args...; suggested_backend
     )
 end
 
 function build_Aᵀ_aux(
-    ::MatrixRepresentation, implicit, x, y, z, c, args...; suggested_backend
+    ::MatrixRepresentation, implicit, prep, x, y, z, c, args...; suggested_backend
 )
-    (; conditions, backends, prep_Aᵀ) = implicit
+    (; conditions, backends) = implicit
+    (; prep_Aᵀ) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     if isnothing(prep_Aᵀ)
@@ -133,6 +143,7 @@ end
 function build_Aᵀ_aux(
     ::OperatorRepresentation{package,symmetric,hermitian,posdef},
     implicit,
+    prep,
     x,
     y,
     z,
@@ -141,7 +152,8 @@ function build_Aᵀ_aux(
     suggested_backend,
 ) where {package,symmetric,hermitian,posdef}
     T = Base.promote_eltype(x, y, c)
-    (; conditions, backends, prep_Aᵀ) = implicit
+    (; conditions, backends) = implicit
+    (; prep_Aᵀ) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(Switch12(conditions), y)
@@ -156,9 +168,9 @@ function build_Aᵀ_aux(
             f_vec, prep_Aᵀ, actual_backend, y_vec, (dc_vec,), contexts...
         )
     end
-    prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, contexts)
+    prod! = VJP!(f_vec, prep_Aᵀ_same, actual_backend, y_vec, dc_vec, contexts)
     if package == :LinearOperators
-        return LinearOperator(T, length(y), length(c), symmetric, hermitian, prod!;)
+        return LinearOperator(T, length(y), length(c), symmetric, hermitian, prod!)
     elseif package == :LinearMaps
         return FunctionMap{T}(
             prod!,
@@ -176,6 +188,7 @@ end
 
 function build_B(
     implicit::ImplicitFunction,
+    prep::ImplicitFunctionPreparation,
     x::AbstractArray,
     y::AbstractArray,
     z,
@@ -183,7 +196,8 @@ function build_B(
     args...;
     suggested_backend::AbstractADType,
 )
-    (; conditions, backends, prep_B) = implicit
+    (; conditions, backends) = implicit
+    (; prep_B) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.x
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(conditions, x)
@@ -198,7 +212,8 @@ function build_B(
             f_vec, prep_B, actual_backend, x_vec, (dx_vec,), contexts...
         )
     end
-    function B_fun(dx_vec)
+    function B_fun(dx_vec_wrongtype)
+        copyto!(dx_vec, dx_vec_wrongtype)
         return pushforward(
             f_vec, prep_B_same, actual_backend, x_vec, (dx_vec,), contexts...
         )[1]
@@ -210,6 +225,7 @@ end
 
 function build_Bᵀ(
     implicit::ImplicitFunction,
+    prep::ImplicitFunctionPreparation,
     x::AbstractArray,
     y::AbstractArray,
     z,
@@ -217,7 +233,8 @@ function build_Bᵀ(
     args...;
     suggested_backend::AbstractADType,
 )
-    (; conditions, backends, prep_Bᵀ) = implicit
+    (; conditions, backends) = implicit
+    (; prep_Bᵀ) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.x
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
     f_vec = VecToVec(conditions, x)
@@ -232,7 +249,8 @@ function build_Bᵀ(
             f_vec, prep_Bᵀ, actual_backend, x_vec, (dc_vec,), contexts...
         )
     end
-    function Bᵀ_fun(dc_vec)
+    function Bᵀ_fun(dc_vec_wrongtype)
+        copyto!(dc_vec, dc_vec_wrongtype)
         return pullback(f_vec, prep_Bᵀ_same, actual_backend, x_vec, (dc_vec,), contexts...)[1]
     end
     return Bᵀ_fun

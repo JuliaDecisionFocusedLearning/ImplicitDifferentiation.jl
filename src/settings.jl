@@ -7,9 +7,8 @@ Specify that linear systems `Ax = b` should be solved with a direct method.
 """
 struct DirectLinearSolver end
 
-function (solver::DirectLinearSolver)(x::AbstractVector, A, b::AbstractVector)
-    ldiv!(x, A, b)
-    return x
+function (solver::DirectLinearSolver)(A, b::AbstractVector)
+    return A \ b
 end
 
 """
@@ -45,18 +44,10 @@ function Base.show(io::IO, linear_solver::IterativeLinearSolver{method}) where {
     end
 end
 
-function (solver::IterativeLinearSolver{method})(
-    x::AbstractVector, A, b::AbstractVector
-) where {method}
-    if typeof(b) == typeof(x)
-        constructor = KrylovConstructor(b, x)
-        workspace = krylov_workspace(Val(method), constructor)
-    else
-        workspace = krylov_workspace(Val(method), A, b)
-    end
+function (solver::IterativeLinearSolver{method})(A, b::AbstractVector) where {method}
+    workspace = krylov_workspace(Val(method), A, b)
     krylov_solve!(workspace, A, b)
-    copyto!(x, solution(workspace))
-    return x
+    return solution(workspace)
 end
 
 ## Representation

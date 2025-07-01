@@ -2,18 +2,19 @@ module ImplicitDifferentiationForwardDiffExt
 
 using ADTypes: AutoForwardDiff
 using ForwardDiff: Dual, Partials, partials, value
-using ImplicitDifferentiation: ImplicitFunction, build_A, build_B
+using ImplicitDifferentiation:
+    ImplicitFunction, ImplicitFunctionPreparation, build_A, build_B
 
 function (implicit::ImplicitFunction)(
-    x_and_dx::AbstractArray{Dual{T,R,N}}, args...
+    prep::ImplicitFunctionPreparation, x_and_dx::AbstractArray{Dual{T,R,N}}, args...
 ) where {T,R,N}
     x = value.(x_and_dx)
     y, z = implicit(x, args...)
     c = implicit.conditions(x, y, z, args...)
 
     suggested_backend = AutoForwardDiff()
-    A = build_A(implicit, x, y, z, c, args...; suggested_backend)
-    B = build_B(implicit, x, y, z, c, args...; suggested_backend)
+    A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend)
+    B = build_B(implicit, prep, x, y, z, c, args...; suggested_backend)
 
     dX = ntuple(Val(N)) do k
         partials.(x_and_dx, k)
@@ -24,8 +25,7 @@ function (implicit::ImplicitFunction)(
         return dₖc_vec
     end
     dY = map(dC_vec) do dₖc_vec
-        dₖy_vec = similar(vec(y))
-        implicit.linear_solver(dₖy_vec, A, -dₖc_vec)
+        dₖy_vec = implicit.linear_solver(A, -dₖc_vec)
         dₖy = reshape(dₖy_vec, size(y))
         return dₖy
     end
