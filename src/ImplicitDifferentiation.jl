@@ -17,13 +17,9 @@ using DifferentiationInterface:
     prepare_pullback_same_point,
     prepare_pushforward,
     prepare_pushforward_same_point,
-    pullback!,
     pullback,
-    pushforward!,
     pushforward
-using Krylov: Krylov, krylov_workspace, krylov_solve!, solution
-using LinearOperators: LinearOperator
-using LinearMaps: FunctionMap
+using KrylovKit: GMRES, linsolve
 using LinearAlgebra: factorize
 
 include("utils.jl")

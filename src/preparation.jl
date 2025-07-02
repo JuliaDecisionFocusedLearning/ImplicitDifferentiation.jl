@@ -8,15 +8,16 @@
 - `prep_B`: preparation for `B` (derivative of conditions with respect to `x`) in forward mode
 - `prep_Bᵀ`: preparation for `B` (derivative of conditions with respect to `x`) in reverse mode
 """
-struct ImplicitFunctionPreparation{PA,PAT,PB,PBT}
+struct ImplicitFunctionPreparation{R<:Real,PA,PAT,PB,PBT}
+    _R::Type{R}
     prep_A::PA
     prep_Aᵀ::PAT
     prep_B::PB
     prep_Bᵀ::PBT
 end
 
-function ImplicitFunctionPreparation()
-    return ImplicitFunctionPreparation(nothing, nothing, nothing, nothing)
+function ImplicitFunctionPreparation(::Type{R}) where {R<:Real}
+    return ImplicitFunctionPreparation(R, nothing, nothing, nothing, nothing)
 end
 
 """
@@ -65,7 +66,7 @@ function prepare_implicit(
             prep_Bᵀ = nothing
         end
     end
-    return ImplicitFunctionPreparation(prep_A, prep_Aᵀ, prep_B, prep_Bᵀ)
+    return ImplicitFunctionPreparation(eltype(x), prep_A, prep_Aᵀ, prep_B, prep_Bᵀ)
 end
 
 function prepare_A(
@@ -95,10 +96,9 @@ function prepare_A(
     strict::Val,
 )
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
-    f_vec = VecToVec(Switch12(conditions), y)
-    y_vec = vec(y)
-    dy_vec = vec(zero(y))
-    return prepare_pushforward(f_vec, backend, y_vec, (dy_vec,), contexts...; strict)
+    return prepare_pushforward(
+        Switch12(conditions), backend, y, (zero(y),), contexts...; strict
+    )
 end
 
 function prepare_Aᵀ(
@@ -128,10 +128,9 @@ function prepare_Aᵀ(
     strict::Val,
 )
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
-    f_vec = VecToVec(Switch12(conditions), y)
-    y_vec = vec(y)
-    dc_vec = vec(zero(c))
-    return prepare_pullback(f_vec, backend, y_vec, (dc_vec,), contexts...; strict)
+    return prepare_pullback(
+        Switch12(conditions), backend, y, (zero(c),), contexts...; strict
+    )
 end
 
 function prepare_B(
@@ -146,10 +145,7 @@ function prepare_B(
     strict::Val,
 )
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    f_vec = VecToVec(conditions, x)
-    x_vec = vec(x)
-    dx_vec = vec(zero(x))
-    return prepare_pushforward(f_vec, backend, x_vec, (dx_vec,), contexts...; strict)
+    return prepare_pushforward(conditions, backend, x, (zero(x),), contexts...; strict)
 end
 
 function prepare_Bᵀ(
@@ -164,8 +160,5 @@ function prepare_Bᵀ(
     strict::Val,
 )
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
-    f_vec = VecToVec(conditions, x)
-    x_vec = vec(x)
-    dc_vec = vec(zero(c))
-    return prepare_pullback(f_vec, backend, x_vec, (dc_vec,), contexts...; strict)
+    return prepare_pullback(conditions, backend, x, (zero(c),), contexts...; strict)
 end

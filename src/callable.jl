@@ -1,9 +1,9 @@
 function (implicit::ImplicitFunction)(x::AbstractArray, args::Vararg{Any,N}) where {N}
-    return implicit(ImplicitFunctionPreparation(), x, args...)
+    return implicit(ImplicitFunctionPreparation(eltype(x)), x, args...)
 end
 
 function (implicit::ImplicitFunction)(
-    ::ImplicitFunctionPreparation, x::AbstractArray, args::Vararg{Any,N}
-) where {N}
+    ::ImplicitFunctionPreparation{R}, x::AbstractArray{R}, args::Vararg{Any,N}
+) where {R<:Real,N}
     return implicit.solver(x, args...)
 end

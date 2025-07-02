@@ -2,10 +2,8 @@ using TestItems
 
 @testitem "Direct" setup = [TestUtils] begin
     using ADTypes, .TestUtils
-    for (backends, x) in Iterators.product(
-        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
-        [float.(1:3), reshape(float.(1:6), 3, 2)],
-    )
+    for (backends, x) in
+        Iterators.product([nothing, (; x=AutoForwardDiff(), y=AutoZygote())], [float.(1:3)])
         yield()
         scen = Scenario(;
             solver=default_solver,

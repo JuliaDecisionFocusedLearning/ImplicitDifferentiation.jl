@@ -44,13 +44,16 @@ end;
 
 # And build your implicit function like so:
 
-implicit_components = ImplicitFunction(forward_components, conditions_components);
+implicit_components = ImplicitFunction(
+    forward_components, conditions_components; strict=Val(false)
+);
 
 # Now we're good to go.
 
 a, b, m = [1.0, 2.0], [3.0, 4.0, 5.0], 6.0
 x = ComponentVector(; a=a, b=b, m=m)
 y, z = implicit_components(x)
+conditions_components(x, y, z)
 
 # And it works with both ForwardDiff.jl and Zygote.jl
 
