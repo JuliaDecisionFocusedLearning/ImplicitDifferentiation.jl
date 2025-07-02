@@ -26,19 +26,26 @@ Specify that linear systems `Ax = b` should be solved with an iterative method.
 - [`ImplicitFunction`](@ref)
 - [`DirectLinearSolver`](@ref)
 """
-struct IterativeLinearSolver{A,K}
-    algorithm::A
+struct IterativeLinearSolver{K}
     kwargs::K
-    function IterativeLinearSolver(algorithm=GMRES(); kwargs...)
-        return new{typeof(algorithm),typeof(kwargs)}(algorithm, kwargs)
+    function IterativeLinearSolver(; kwargs...)
+        return new{typeof(kwargs)}(kwargs)
     end
 end
 
 function (solver::IterativeLinearSolver)(A, b)
-    x0 = zero(b)
-    sol, info = linsolve(A, b, x0, solver.algorithm; solver.kwargs...)
+    sol, info = linsolve(A, b; solver.kwargs...)
     @assert info.converged == 1
     return sol
+end
+
+function Base.show(io::IO, linear_solver::IterativeLinearSolver)
+    (; kwargs) = linear_solver
+    print(io, repr(IterativeLinearSolver; context=io), "(;")
+    for p in pairs(kwargs)
+        print(io, " ", p[1], "=", repr(p[2]; context=io), ",")
+    end
+    return print(io, ")")
 end
 
 ## Representation
