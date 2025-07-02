@@ -33,7 +33,7 @@ end;
             conditions=default_conditions,
             x=x,
             implicit_kwargs=(;
-                representation=OperatorRepresentation{:LinearOperators}(),
+                representation=OperatorRepresentation(),
                 linear_solver=IterativeLinearSolver(),
                 backends,
             ),
