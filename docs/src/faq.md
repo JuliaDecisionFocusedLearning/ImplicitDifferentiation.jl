@@ -18,8 +18,7 @@ However, this can be switched to any other "inner" backend compatible with [Diff
 ### Arrays
 
 Functions that eat or spit out arbitrary arrays are supported, as long as the forward mapping _and_ conditions return arrays of the same size.
-
-If you deal with small arrays (say, less than 100 elements), consider using [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) for increased performance.
+The array types involved should be mutable.
 
 ### Scalars
 

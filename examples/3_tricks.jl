@@ -38,7 +38,7 @@ end
 
 function conditions_components(x::ComponentVector, y::ComponentVector, _z)
     c_d, c_e = conditions_components_aux(x.a, x.b, x.m, y.d, y.e)
-    c = ComponentVector(; c_d=c_d, c_e=c_e)
+    c = ComponentVector(; d=c_d, e=c_e)
     return c
 end;
 
@@ -50,7 +50,7 @@ implicit_components = ImplicitFunction(forward_components, conditions_components
 
 a, b, m = [1.0, 2.0], [3.0, 4.0, 5.0], 6.0
 x = ComponentVector(; a=a, b=b, m=m)
-implicit_components(x)
+y, z = implicit_components(x)
 
 # And it works with both ForwardDiff.jl and Zygote.jl
 

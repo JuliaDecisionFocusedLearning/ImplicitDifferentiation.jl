@@ -23,8 +23,6 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
         representation=OperatorRepresentation(),
         linear_solver=IterativeLinearSolver(),
         backends=nothing,
-        preparation=nothing,
-        input_example=nothing,
     )
 
 ## Positional arguments
@@ -35,11 +33,8 @@ This requires solving a linear system `A * J = -B` where `A = ∂₂c`, `B = ∂
 ## Keyword arguments
 
 - `representation`: defines how the partial Jacobian `A` of the conditions with respect to the output is represented, either [`MatrixRepresentation`](@ref) or [`OperatorRepresentation`](@ref).
-- `linear_solver`: a callable to solve linear systems with two required methods, one for `(A, b::AbstractVector)` (single solve) and one for `(A, B::AbstractMatrix)` (batched solve). It defaults to [`IterativeLinearSolver`](@ref) but can also be the built-in `\\`, or a user-provided function.
+- `linear_solver`: specifies how the linear system `A * J = -B` will be solved in the implicit function theorem. It can be either [`DirectLinearSolver`](@ref) or [`IterativeLinearSolver`](@ref).
 - `backends::AbstractADType`: specifies how the `conditions` will be differentiated with respect to `x` and `y`. It can be either, `nothing`, which means that the external autodiff system will be used, or a named tuple `(; x=AutoSomething(), y=AutoSomethingElse())` of backend objects from [ADTypes.jl](https://github.com/SciML/ADTypes.jl).
-- `preparation`: either `nothing` or a mode object from [ADTypes.jl](https://github.com/SciML/ADTypes.jl): `ADTypes.ForwardMode()`, `ADTypes.ReverseMode()` or `ADTypes.ForwardOrReverseMode()`.
-- `input_example`: either `nothing` or a tuple `(x, args...)` used to prepare differentiation.
-- `strict::Val=Val(true)`: whether or not to enforce a strict match in [DifferentiationInterface.jl](https://github.com/JuliaDiff/DifferentiationInterface.jl) between the preparation and the execution types.
 """
 struct ImplicitFunction{
     F,
@@ -50,24 +45,14 @@ struct ImplicitFunction{
         Nothing,  #
         NamedTuple{(:x, :y),<:Tuple{AbstractADType,AbstractADType}},
     },
-    P<:Union{Nothing,AbstractMode},
-    PA,
-    PAT,
-    PB,
-    PBT,
-    _strict,
+    S,
 }
     solver::F
     conditions::C
     linear_solver::L
     representation::R
     backends::B
-    preparation::P
-    prep_A::PA
-    prep_Aᵀ::PAT
-    prep_B::PB
-    prep_Bᵀ::PBT
-    strict::Val{_strict}
+    strict::Val{S}
 end
 
 function ImplicitFunction(
@@ -76,59 +61,15 @@ function ImplicitFunction(
     representation=OperatorRepresentation(),
     linear_solver=IterativeLinearSolver(),
     backends=nothing,
-    preparation=nothing,
-    input_example=nothing,
     strict::Val=Val(true),
 )
-    if isnothing(preparation) || isnothing(backends) || isnothing(input_example)
-        prep_A = nothing
-        prep_Aᵀ = nothing
-        prep_B = nothing
-        prep_Bᵀ = nothing
-    else
-        x, args = first(input_example), Base.tail(input_example)
-        y, z = solver(x, args...)
-        c = conditions(x, y, z, args...)
-        if preparation isa Union{ForwardMode,ForwardOrReverseMode}
-            prep_A = prepare_A(
-                representation, x, y, z, c, args...; conditions, backend=backends.y, strict
-            )
-            prep_B = prepare_B(
-                representation, x, y, z, c, args...; conditions, backend=backends.x, strict
-            )
-        else
-            prep_A = nothing
-            prep_B = nothing
-        end
-        if preparation isa Union{ReverseMode,ForwardOrReverseMode}
-            prep_Aᵀ = prepare_Aᵀ(
-                representation, x, y, z, c, args...; conditions, backend=backends.y, strict
-            )
-            prep_Bᵀ = prepare_Bᵀ(
-                representation, x, y, z, c, args...; conditions, backend=backends.x, strict
-            )
-        else
-            prep_Aᵀ = nothing
-            prep_Bᵀ = nothing
-        end
-    end
     return ImplicitFunction(
-        solver,
-        conditions,
-        linear_solver,
-        representation,
-        backends,
-        preparation,
-        prep_A,
-        prep_Aᵀ,
-        prep_B,
-        prep_Bᵀ,
-        strict,
+        solver, conditions, linear_solver, representation, backends, strict
     )
 end
 
 function Base.show(io::IO, implicit::ImplicitFunction)
-    (; solver, conditions, backends, linear_solver, representation, preparation) = implicit
+    (; solver, conditions, backends, linear_solver, representation) = implicit
     return print(
         io,
         """
@@ -138,12 +79,7 @@ function Base.show(io::IO, implicit::ImplicitFunction)
             representation=$representation,
             linear_solver=$linear_solver,
             backends=$backends,
-            preparation=$preparation,
         )
         """,
     )
-end
-
-function (implicit::ImplicitFunction)(x::AbstractArray, args::Vararg{Any,N}) where {N}
-    return implicit.solver(x, args...)
 end

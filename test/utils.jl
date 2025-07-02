@@ -1,22 +1,26 @@
 using ADTypes
+using ADTypes: ForwardMode, ReverseMode, ForwardOrReverseMode
 using ChainRulesCore
 using ChainRulesTestUtils
+using ComponentArrays
 import DifferentiationInterface as DI
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
-using ImplicitDifferentiation: ImplicitFunction
+using ImplicitDifferentiation: ImplicitFunction, prepare_implicit
 using JET
 using LinearAlgebra
 using Random: rand!
 using Test
 using Zygote: Zygote, ZygoteRuleConfig
 
-@kwdef struct Scenario{S,C,X,A,K}
+@kwdef struct Scenario{S,C,X,A,K,Xp,Ap}
     solver::S
     conditions::C
     x::X
     args::A = ()
     implicit_kwargs::K = (;)
+    x_prep::Xp = zero(x)
+    args_prep::Ap = map(zero, args)
 end
 
 function Base.show(io::IO, scen::Scenario)
@@ -73,6 +77,8 @@ function add_arg_mult(scen::Scenario, a=3)
         x=scen.x,
         args=(a,),
         implicit_kwargs=implicit_kwargs_with_arg_mult,
+        x_prep=scen.x_prep,
+        args_prep=(zero(a),),
     )
 end
 
@@ -95,15 +101,11 @@ function test_implicit_duals(scen::Scenario)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
     )
+    prep = prepare_implicit(ForwardMode(), implicit, scen.x_prep, scen.args_prep...)
 
     dx = similar(scen.x)
     rand!(dx)
     x_and_dx = ForwardDiff.Dual.(scen.x, dx)
-
-    y_and_dy, z = implicit(x_and_dx, scen.args...)
-    T = tag(y_and_dy)
-    y = ForwardDiff.value.(y_and_dy)
-    dy = ForwardDiff.extract_derivative.(T, y_and_dy)
 
     y_true, z_true = scen.solver(scen.x, scen.args...)
     dy_true = DI.pushforward(
@@ -115,33 +117,61 @@ function test_implicit_duals(scen::Scenario)
     )[1]
 
     @testset "Duals" begin
-        @test y ≈ y_true
-        @test dy ≈ dy_true
-        @test z == z_true
+        @testset "Prepared" begin
+            y_and_dy, z = implicit(prep, x_and_dx, scen.args...)
+            T = tag(y_and_dy)
+            y = ForwardDiff.value.(y_and_dy)
+            dy = ForwardDiff.extract_derivative.(T, y_and_dy)
+            @test y ≈ y_true
+            @test dy ≈ dy_true
+            @test z == z_true
+        end
+        @testset "Unrepared" begin
+            y_and_dy, z = implicit(x_and_dx, scen.args...)
+            T = tag(y_and_dy)
+            y = ForwardDiff.value.(y_and_dy)
+            dy = ForwardDiff.extract_derivative.(T, y_and_dy)
+            @test y ≈ y_true
+            @test dy ≈ dy_true
+            @test z == z_true
+        end
     end
 end
+
+function compare_pullbacks(dimpl, dx, dx_true) end
 
 function test_implicit_rrule(scen::Scenario)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
     )
+    prep = prepare_implicit(ReverseMode(), implicit, scen.x_prep, scen.args_prep...)
     y_true, z_true = scen.solver(scen.x, scen.args...)
 
     dy = similar(y_true)
     rand!(dy)
     dz = NoTangent()
-    (y, z), pb = rrule(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
-    dimpl, dx = pb((dy, dz))
 
     dx_true = DI.pullback(
         first ∘ scen.solver, AutoZygote(), scen.x, (dy,), map(DI.Constant, scen.args)...
     )[1]
 
     @testset "ChainRule" begin
-        @test y ≈ y_true
-        @test z == z_true
-        @test dimpl isa NoTangent
-        @test dx ≈ dx_true
+        @testset "Prepared" begin
+            (y, z), pb = rrule(ZygoteRuleConfig(), implicit, prep, scen.x, scen.args...)
+            dimpl, dprep, dx = pb((dy, dz))
+            @test y ≈ y_true
+            @test z == z_true
+            @test dimpl isa NoTangent
+            @test dx ≈ dx_true
+        end
+        @testset "Unprepared" begin
+            (y, z), pb = rrule_via_ad(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
+            dimpl, dx = pb((dy, dz))
+            @test y ≈ y_true
+            @test z == z_true
+            @test dimpl isa NoTangent
+            @test dx ≈ dx_true
+        end
     end
 end
 
@@ -149,15 +179,26 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
     )
-    jac = DI.jacobian(
-        first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
+    prep = prepare_implicit(
+        ForwardOrReverseMode(), implicit, scen.x_prep, scen.args_prep...
     )
     jac_true = DI.jacobian(
         first ∘ scen.solver, outer_backend, scen.x, map(DI.Constant, scen.args)...
     )
 
     @testset "Jacobian - $outer_backend" begin
-        @test jac ≈ jac_true
+        @testset "Prepared" begin
+            jac = DI.jacobian(
+                x -> first(implicit(prep, x, scen.args...)), outer_backend, scen.x
+            )
+            @test jac ≈ jac_true
+        end
+        @testset "Unprepared" begin
+            jac = DI.jacobian(
+                first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
+            )
+            @test jac ≈ jac_true
+        end
     end
 end
 

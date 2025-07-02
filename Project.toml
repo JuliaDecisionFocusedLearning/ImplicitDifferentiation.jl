@@ -1,12 +1,11 @@
 name = "ImplicitDifferentiation"
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
 authors = ["Guillaume Dalle", "Mohamed Tarek"]
-version = "0.8.1"
+version = "0.9.0"
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
-IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
@@ -33,11 +32,10 @@ Documenter = "1.12.0"
 ExplicitImports = "1"
 FiniteDiff = "2.27.0"
 ForwardDiff = "0.10.36, 1"
-IterativeSolvers = "0.9.4"
 JET = "0.9, 0.10"
 JuliaFormatter = "2.1.2"
 Krylov = "0.9.6, 0.10"
-LinearAlgebra = "1.10"
+LinearAlgebra = "1"
 LinearMaps = "3.11.4"
 LinearOperators = "2.8.0"
 NLsolve = "4.5.1"
@@ -65,6 +63,7 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -76,4 +75,27 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["ADTypes", "Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "DifferentiationInterface", "Documenter", "ExplicitImports", "FiniteDiff", "ForwardDiff", "JET", "JuliaFormatter", "NLsolve", "Optim", "Random", "SparseArrays", "StaticArrays", "Test", "TestItems", "TestItemRunner", "Zygote"]
+test = [
+    "ADTypes",
+    "Aqua",
+    "ChainRulesCore",
+    "ChainRulesTestUtils",
+    "ComponentArrays",
+    "DifferentiationInterface",
+    "Documenter",
+    "ExplicitImports",
+    "FiniteDiff",
+    "ForwardDiff",
+    "JET",
+    "JuliaFormatter",
+    "LinearAlgebra",
+    "NLsolve",
+    "Optim",
+    "Random",
+    "SparseArrays",
+    "StaticArrays",
+    "Test",
+    "TestItems",
+    "TestItemRunner",
+    "Zygote",
+]
