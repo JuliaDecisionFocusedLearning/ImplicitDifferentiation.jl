@@ -19,7 +19,7 @@ using DifferentiationInterface:
     prepare_pushforward_same_point,
     pullback,
     pushforward
-using KrylovKit: GMRES, linsolve
+using KrylovKit: linsolve
 using LinearAlgebra: factorize
 
 include("utils.jl")
