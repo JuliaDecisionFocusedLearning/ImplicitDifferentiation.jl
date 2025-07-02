@@ -2,10 +2,8 @@ using TestItems
 
 @testitem "Direct" setup = [TestUtils] begin
     using ADTypes, .TestUtils
-    for (backends, x) in Iterators.product(
-        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
-        [float.(1:3), reshape(float.(1:6), 3, 2)],
-    )
+    for (backends, x) in
+        Iterators.product([nothing, (; x=AutoForwardDiff(), y=AutoZygote())], [float.(1:3)])
         yield()
         scen = Scenario(;
             solver=default_solver,
@@ -25,8 +23,13 @@ end;
 
 @testitem "Iterative" setup = [TestUtils] begin
     using ADTypes, .TestUtils
-    for (backends, x) in Iterators.product(
+    for (backends, linear_solver, x) in Iterators.product(
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
+        [
+            IterativeLinearSolver(),
+            IterativeLinearSolver(; rtol=1e-8),
+            IterativeLinearSolver(; issymmetric=true, isposdef=true),
+        ],
         [float.(1:3), reshape(float.(1:6), 3, 2)],
     )
         yield()
@@ -35,14 +38,12 @@ end;
             conditions=default_conditions,
             x=x,
             implicit_kwargs=(;
-                representation=OperatorRepresentation{:LinearOperators}(),
-                linear_solver=IterativeLinearSolver(),
-                backends,
+                representation=OperatorRepresentation(), linear_solver, backends
             ),
         )
         scen2 = add_arg_mult(scen)
-        test_implicit(scen)
-        test_implicit(scen2)
+        test_implicit(scen; type_stability=VERSION >= v"1.11")
+        test_implicit(scen2; type_stability=VERSION >= v"1.11")
     end
 end;
 

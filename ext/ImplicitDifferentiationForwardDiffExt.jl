@@ -6,7 +6,7 @@ using ImplicitDifferentiation:
     ImplicitFunction, ImplicitFunctionPreparation, build_A, build_B
 
 function (implicit::ImplicitFunction)(
-    prep::ImplicitFunctionPreparation, x_and_dx::AbstractArray{Dual{T,R,N}}, args...
+    prep::ImplicitFunctionPreparation{R}, x_and_dx::AbstractArray{Dual{T,R,N}}, args...
 ) where {T,R,N}
     x = value.(x_and_dx)
     y, z = implicit(x, args...)
@@ -19,14 +19,9 @@ function (implicit::ImplicitFunction)(
     dX = ntuple(Val(N)) do k
         partials.(x_and_dx, k)
     end
-    dC_vec = map(dX) do dₖx
-        dₖx_vec = vec(dₖx)
-        dₖc_vec = B(dₖx_vec)
-        return dₖc_vec
-    end
-    dY = map(dC_vec) do dₖc_vec
-        dₖy_vec = implicit.linear_solver(A, -dₖc_vec)
-        dₖy = reshape(dₖy_vec, size(y))
+    dC = map(B, dX)
+    dY = map(dC) do dₖc
+        dₖy = implicit.linear_solver(A, -dₖc)
         return dₖy
     end
 
@@ -35,6 +30,13 @@ function (implicit::ImplicitFunction)(
     end
 
     return y_and_dy, z
+end
+
+function (implicit::ImplicitFunction)(
+    x_and_dx::AbstractArray{Dual{T,R,N}}, args...
+) where {T,R,N}
+    prep = ImplicitFunctionPreparation(R)
+    return implicit(prep, x_and_dx, args...)
 end
 
 end

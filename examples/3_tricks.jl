@@ -44,7 +44,9 @@ end;
 
 # And build your implicit function like so:
 
-implicit_components = ImplicitFunction(forward_components, conditions_components);
+implicit_components = ImplicitFunction(
+    forward_components, conditions_components; strict=Val(false)
+);
 
 # Now we're good to go.
 

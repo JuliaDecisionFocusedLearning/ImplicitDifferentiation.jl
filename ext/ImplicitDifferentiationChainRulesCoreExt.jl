@@ -14,34 +14,38 @@ using ImplicitDifferentiation:
 # not covered by Codecov for now
 ImplicitDifferentiation.chainrules_suggested_backend(rc::RuleConfig) = AutoChainRules(rc)
 
+struct ImplicitPullback{TA,TB,TL,TP,Nargs}
+    Aᵀ::TA
+    Bᵀ::TB
+    linear_solver::TL
+    project_x::TP
+    _Nargs::Val{Nargs}
+end
+
+function (pb::ImplicitPullback{TA,TB,TL,TP,Nargs})((dy, dz)) where {TA,TB,TL,TP,Nargs}
+    (; Aᵀ, Bᵀ, linear_solver, project_x) = pb
+    dc = linear_solver(Aᵀ, -unthunk(dy))
+    dx = Bᵀ(dc)
+    df = NoTangent()
+    dargs = ntuple(unimplemented_tangent, Val(Nargs))
+    return (df, project_x(dx), dargs...)
+end
+
 function ChainRulesCore.rrule(
-    rc::RuleConfig,
-    implicit::ImplicitFunction,
-    prep::ImplicitFunctionPreparation,
-    x::AbstractArray,
-    args::Vararg{Any,N};
+    rc::RuleConfig, implicit::ImplicitFunction, x::AbstractArray, args::Vararg{Any,N};
 ) where {N}
+    (; conditions, linear_solver) = implicit
     y, z = implicit(x, args...)
-    c = implicit.conditions(x, y, z, args...)
+    c = conditions(x, y, z, args...)
 
     suggested_backend = chainrules_suggested_backend(rc)
+    prep = ImplicitFunctionPreparation(eltype(x))
     Aᵀ = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend)
     Bᵀ = build_Bᵀ(implicit, prep, x, y, z, c, args...; suggested_backend)
     project_x = ProjectTo(x)
 
-    function implicit_pullback_prepared((dy, dz))
-        dy = unthunk(dy)
-        dy_vec = vec(dy)
-        dc_vec = implicit.linear_solver(Aᵀ, -dy_vec)
-        dx_vec = Bᵀ(dc_vec)
-        dx = reshape(dx_vec, size(x))
-        df = NoTangent()
-        dprep = @not_implemented("Tangents for mutable arguments are not defined")
-        dargs = ntuple(unimplemented_tangent, N)
-        return (df, dprep, project_x(dx), dargs...)
-    end
-
-    return (y, z), implicit_pullback_prepared
+    implicit_pullback = ImplicitPullback(Aᵀ, Bᵀ, linear_solver, project_x, Val(N))
+    return (y, z), implicit_pullback
 end
 
 function unimplemented_tangent(_)
@@ -49,5 +53,4 @@ function unimplemented_tangent(_)
         "Tangents for positional arguments of an `ImplicitFunction` beyond `x` (the first one) are not implemented"
     )
 end
-
 end
