@@ -152,7 +152,7 @@ function build_B(
     contexts = (Constant(y), Constant(z), map(Constant, args)...)
     if isnothing(prep_B)
         prep_B_same = prepare_pushforward_same_point(
-            conditions, actual_backend, x, (zero(x),), contexts...
+            conditions, actual_backend, x, (zero(x),), contexts...; strict=implicit.strict
         )
     else
         prep_B_same = prepare_pushforward_same_point(
