@@ -5,8 +5,11 @@
     using ADTypes
     using ADTypes: ForwardOrReverseMode, ForwardMode, ReverseMode
     using ForwardDiff: ForwardDiff
+    using LinearAlgebra: Factorization, TransposeFactorization
     using Zygote: Zygote
     using Test
+
+    const GenericMatrix = Union{AbstractMatrix,Factorization,TransposeFactorization}
 
     solver(x) = sqrt.(x), nothing
     conditions(x, y, z) = y .^ 2 .- x
@@ -41,8 +44,8 @@
         @test prep.prep_Aᵀ === nothing
         @test prep.prep_B !== nothing
         @test prep.prep_Bᵀ === nothing
-        @test build_A(implicit, prep, x, y, z, c; suggested_backend) isa AbstractMatrix
-        @test build_Aᵀ(implicit, prep, x, y, z, c; suggested_backend) isa AbstractMatrix
+        @test build_A(implicit, prep, x, y, z, c; suggested_backend) isa GenericMatrix
+        @test build_Aᵀ(implicit, prep, x, y, z, c; suggested_backend) isa GenericMatrix
         @test build_B(implicit, prep, x, y, z, c; suggested_backend) isa JVP
         @test build_Bᵀ(implicit, prep, x, y, z, c; suggested_backend) isa VJP
     end
@@ -53,8 +56,8 @@
         @test prep.prep_Aᵀ !== nothing
         @test prep.prep_B === nothing
         @test prep.prep_Bᵀ !== nothing
-        @test build_A(implicit, prep, x, y, z, c; suggested_backend) isa AbstractMatrix
-        @test build_Aᵀ(implicit, prep, x, y, z, c; suggested_backend) isa AbstractMatrix
+        @test build_A(implicit, prep, x, y, z, c; suggested_backend) isa GenericMatrix
+        @test build_Aᵀ(implicit, prep, x, y, z, c; suggested_backend) isa GenericMatrix
         @test build_B(implicit, prep, x, y, z, c; suggested_backend) isa JVP
         @test build_Bᵀ(implicit, prep, x, y, z, c; suggested_backend) isa VJP
     end

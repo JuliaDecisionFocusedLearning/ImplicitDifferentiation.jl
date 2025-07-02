@@ -1,19 +1,19 @@
 using TestItems
 
-@testitem "Direct" setup = [TestUtils] begin
+@testitem "Matrix" setup = [TestUtils] begin
     using ADTypes, .TestUtils
-    for (backends, x) in
-        Iterators.product([nothing, (; x=AutoForwardDiff(), y=AutoZygote())], [float.(1:3)])
+    representation = MatrixRepresentation()
+    for (linear_solver, backends, x) in Iterators.product(
+        [DirectLinearSolver(), IterativeLinearSolver()],
+        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
+        [float.(1:3)],
+    )
         yield()
         scen = Scenario(;
             solver=default_solver,
             conditions=default_conditions,
             x=x,
-            implicit_kwargs=(;
-                representation=MatrixRepresentation(),
-                linear_solver=DirectLinearSolver(),
-                backends,
-            ),
+            implicit_kwargs=(; representation, linear_solver, backends),
         )
         scen2 = add_arg_mult(scen)
         test_implicit(scen)
@@ -21,15 +21,16 @@ using TestItems
     end
 end;
 
-@testitem "Iterative" setup = [TestUtils] begin
+@testitem "Operator" setup = [TestUtils] begin
     using ADTypes, .TestUtils
-    for (backends, linear_solver, x) in Iterators.product(
-        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
+    representation = OperatorRepresentation()
+    for (linear_solver, backends, x) in Iterators.product(
         [
             IterativeLinearSolver(),
             IterativeLinearSolver(; rtol=1e-8),
             IterativeLinearSolver(; issymmetric=true, isposdef=true),
         ],
+        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
         [float.(1:3), reshape(float.(1:6), 3, 2)],
     )
         yield()
@@ -37,9 +38,7 @@ end;
             solver=default_solver,
             conditions=default_conditions,
             x=x,
-            implicit_kwargs=(;
-                representation=OperatorRepresentation(), linear_solver, backends
-            ),
+            implicit_kwargs=(; representation, linear_solver, backends),
         )
         scen2 = add_arg_mult(scen)
         test_implicit(scen; type_stability=VERSION >= v"1.11")

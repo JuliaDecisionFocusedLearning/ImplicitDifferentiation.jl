@@ -46,7 +46,7 @@ end
 function build_A_aux(
     ::MatrixRepresentation, implicit, prep, x, y, z, c, args...; suggested_backend
 )
-    (; conditions, backends) = implicit
+    (; conditions, linear_solver, backends) = implicit
     (; prep_A) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
@@ -56,7 +56,11 @@ function build_A_aux(
     else
         A = jacobian(f, prep_A, actual_backend, y, contexts...)
     end
-    return factorize(A)
+    if linear_solver isa DirectLinearSolver
+        return factorize(A)
+    else
+        return A
+    end
 end
 
 function build_A_aux(
@@ -100,7 +104,7 @@ end
 function build_Aᵀ_aux(
     ::MatrixRepresentation, implicit, prep, x, y, z, c, args...; suggested_backend
 )
-    (; conditions, backends) = implicit
+    (; conditions, linear_solver, backends) = implicit
     (; prep_Aᵀ) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
     contexts = (Constant(x), Constant(z), map(Constant, args)...)
@@ -110,7 +114,11 @@ function build_Aᵀ_aux(
     else
         Aᵀ = transpose(jacobian(f, prep_Aᵀ, actual_backend, y, contexts...))
     end
-    return factorize(Aᵀ)
+    if linear_solver isa DirectLinearSolver
+        return factorize(Aᵀ)
+    else
+        return Aᵀ
+    end
 end
 
 function build_Aᵀ_aux(
