@@ -74,14 +74,17 @@ function Base.show(io::IO, implicit::ImplicitFunction)
     (; solver, conditions, backends, linear_solver, representation) = implicit
     return print(
         io,
-        """
-        ImplicitFunction(
-            $solver,
-            $conditions;
-            representation=$representation,
-            linear_solver=$linear_solver,
-            backends=$backends,
-        )
-        """,
+        repr(ImplicitFunction; context=io),
+        "(",
+        repr(solver; context=io),
+        ", ",
+        repr(conditions; context=io),
+        "; representation=",
+        repr(representation; context=io),
+        ", linear_solver=",
+        repr(linear_solver; context=io),
+        ", backends=",
+        repr(backends; context=io),
+        ")",
     )
 end
