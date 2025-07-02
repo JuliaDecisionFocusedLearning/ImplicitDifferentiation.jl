@@ -32,6 +32,5 @@ include("callable.jl")
 export MatrixRepresentation, OperatorRepresentation
 export IterativeLinearSolver, DirectLinearSolver
 export ImplicitFunction
-export prepare_implicit
 
 end

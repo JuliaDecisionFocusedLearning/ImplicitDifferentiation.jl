@@ -62,7 +62,6 @@ end
 function build_A_aux(
     ::OperatorRepresentation, implicit, prep, x, y, z, c, args...; suggested_backend
 )
-    T = Base.promote_eltype(x, y, c)
     (; conditions, backends) = implicit
     (; prep_A) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y
@@ -117,7 +116,6 @@ end
 function build_Aᵀ_aux(
     ::OperatorRepresentation, implicit, prep, x, y, z, c, args...; suggested_backend
 )
-    T = Base.promote_eltype(x, y, c)
     (; conditions, backends) = implicit
     (; prep_Aᵀ) = prep
     actual_backend = isnothing(backends) ? suggested_backend : backends.y

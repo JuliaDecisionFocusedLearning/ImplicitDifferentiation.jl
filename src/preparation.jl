@@ -29,7 +29,12 @@ end
         strict=Val(true)
     )
 
-Uses the preparation mechanism from [DifferentiationInterface.jl](https://github.com/JuliaDiff/DifferentiationInterface.jl) to speed up subsequent calls to `implicit(x, args...)` where `(x, args...)` are similar to `(x_prep, args_prep...)`.
+Uses the preparation mechanism from [DifferentiationInterface.jl](https://github.com/JuliaDiff/DifferentiationInterface.jl) to speed up subsequent differentiated calls to `implicit(x, args...)` where `(x, args...)` are similar to `(x_prep, args_prep...)`.
+
+The `mode` argument is an object from [ADTypes.jl](https://github.com/SciML/ADTypes.jl) that specifies whether the preparation should target [`ForwardMode`](@extref ADTypes.ForwardMode), [`ReverseMode`](@extref ADTypes.ReverseMode) or both ([`ForwardOrReverseMode`](ext@ref ADTypes.ForwardOrReverseMode)).
+
+!!! warning
+    This mechanism is not yet part of the public API, use it at your own risk.
 """
 function prepare_implicit(
     mode::AbstractMode, implicit::ImplicitFunction, x, args::Vararg{Any,N}; strict=Val(true)
