@@ -39,8 +39,8 @@ end;
             ),
         )
         scen2 = add_arg_mult(scen)
-        test_implicit(scen)
-        test_implicit(scen2)
+        test_implicit(scen; type_stability=true)
+        test_implicit(scen2; type_stability=true)
     end
 end;
 

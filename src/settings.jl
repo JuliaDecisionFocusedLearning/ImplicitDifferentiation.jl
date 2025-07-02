@@ -4,6 +4,11 @@
     DirectLinearSolver
 
 Specify that linear systems `Ax = b` should be solved with a direct method.
+
+# See also
+
+- [`ImplicitFunction`](@ref)
+- [`IterativeLinearSolver`](@ref)
 """
 struct DirectLinearSolver end
 
@@ -15,6 +20,11 @@ end
     IterativeLinearSolver
 
 Specify that linear systems `Ax = b` should be solved with an iterative method.
+
+# See also
+
+- [`ImplicitFunction`](@ref)
+- [`DirectLinearSolver`](@ref)
 """
 struct IterativeLinearSolver{A,K}
     algorithm::A

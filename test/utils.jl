@@ -97,7 +97,7 @@ end
 
 tag(::AbstractArray{<:ForwardDiff.Dual{T}}) where {T} = T
 
-function test_implicit_duals(scen::Scenario)
+function test_implicit_duals(scen::Scenario; type_stability::Bool)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
     )
@@ -118,29 +118,33 @@ function test_implicit_duals(scen::Scenario)
 
     @testset "Duals" begin
         @testset "Prepared" begin
-            y_and_dy, z = @inferred implicit(prep, x_and_dx, scen.args...)
+            y_and_dy, z = implicit(prep, x_and_dx, scen.args...)
             T = tag(y_and_dy)
             y = ForwardDiff.value.(y_and_dy)
             dy = ForwardDiff.extract_derivative.(T, y_and_dy)
             @test y ≈ y_true
             @test dy ≈ dy_true
             @test z == z_true
+            if type_stability
+                @inferred implicit(prep, x_and_dx, scen.args...)
+            end
         end
         @testset "Unrepared" begin
-            y_and_dy, z = @inferred implicit(x_and_dx, scen.args...)
+            y_and_dy, z = implicit(x_and_dx, scen.args...)
             T = tag(y_and_dy)
             y = ForwardDiff.value.(y_and_dy)
             dy = ForwardDiff.extract_derivative.(T, y_and_dy)
             @test y ≈ y_true
             @test dy ≈ dy_true
             @test z == z_true
+            if type_stability
+                @inferred implicit(x_and_dx, scen.args...)
+            end
         end
     end
 end
 
-function compare_pullbacks(dimpl, dx, dx_true) end
-
-function test_implicit_rrule(scen::Scenario)
+function test_implicit_rrule(scen::Scenario; type_stability::Bool)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
     )
@@ -155,15 +159,15 @@ function test_implicit_rrule(scen::Scenario)
     )[1]
 
     @testset "ChainRule" begin
-        @testset "Unprepared" begin
-            (y, z), pb = @inferred rrule_via_ad(
-                ZygoteRuleConfig(), implicit, scen.x, scen.args...
-            )
-            dimpl, dx = @inferred pb((dy, dz))
-            @test y ≈ y_true
-            @test z == z_true
-            @test dimpl isa NoTangent
-            @test dx ≈ dx_true
+        (y, z), pb = rrule_via_ad(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
+        dimpl, dx = pb((dy, dz))
+        @test y ≈ y_true
+        @test z == z_true
+        @test dimpl isa NoTangent
+        @test dx ≈ dx_true
+        if type_stability
+            @inferred rrule_via_ad(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
+            @inferred pb((dy, dz))
         end
     end
 end
@@ -197,11 +201,15 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
     end
 end
 
-function test_implicit(scen::Scenario, outer_backends=[AutoForwardDiff(), AutoZygote()])
+function test_implicit(
+    scen::Scenario,
+    outer_backends=[AutoForwardDiff(), AutoZygote()];
+    type_stability::Bool=false,
+)
     return @testset "$scen" begin
         test_implicit_call(scen)
-        test_implicit_duals(scen)
-        test_implicit_rrule(scen)
+        test_implicit_duals(scen; type_stability)
+        test_implicit_rrule(scen; type_stability)
         for outer_backend in outer_backends
             test_implicit_jacobian(scen, outer_backend)
         end
