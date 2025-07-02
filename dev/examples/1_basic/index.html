@@ -16,14 +16,7 @@ using Zygote</code></pre><p>In all three cases, we will use the square root as o
 end;</code></pre><p>Even though they are defined as a gradient, it is better to provide optimality conditions explicitly: that way we avoid nesting autodiff calls. By default, the conditions should accept two arguments as input. The forward mapping and the conditions should accept the same set of positional arguments.</p><pre><code class="language-julia hljs">function conditions_optim(x, y, _z, _method)
     ∇₂f = 4 .* (y .^ 2 .- x) .* y
     return ∇₂f
-end;</code></pre><p>We now have all the ingredients to construct our implicit function.</p><pre><code class="language-julia hljs">implicit_optim = ImplicitFunction(forward_optim, conditions_optim)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ImplicitFunction(
-    forward_optim,
-    conditions_optim;
-    representation=OperatorRepresentation{:LinearOperators}(; symmetric=false, hermitian=false, posdef=false),
-    linear_solver=IterativeLinearSolver{:gmres}(),
-    backends=nothing,
-)
-</code></pre><p>And indeed, it behaves as it should when we call it:</p><pre><code class="language-julia hljs">first(implicit_optim(x, LBFGS())) .^ 2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
+end;</code></pre><p>We now have all the ingredients to construct our implicit function.</p><pre><code class="language-julia hljs">implicit_optim = ImplicitFunction(forward_optim, conditions_optim)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ImplicitFunction(Main.forward_optim, Main.conditions_optim; representation=OperatorRepresentation(), linear_solver=IterativeLinearSolver(;), backends=nothing)</code></pre><p>And indeed, it behaves as it should when we call it:</p><pre><code class="language-julia hljs">first(implicit_optim(x, LBFGS())) .^ 2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
  3.9999999998710107
  8.999999999664347</code></pre><p>Forward mode autodiff</p><pre><code class="language-julia hljs">ForwardDiff.jacobian(_x -&gt; first(implicit_optim(_x, LBFGS())), x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2×2 Matrix{Float64}:
  0.25  0.0
@@ -46,14 +39,7 @@ end</code></pre><pre class="documenter-example-output"><code class="nohighlight 
 end;</code></pre><pre><code class="language-julia hljs">function conditions_nlsolve(x, y, _z, _method)
     c = y .^ 2 .- x
     return c
-end;</code></pre><pre><code class="language-julia hljs">implicit_nlsolve = ImplicitFunction(forward_nlsolve, conditions_nlsolve)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ImplicitFunction(
-    forward_nlsolve,
-    conditions_nlsolve;
-    representation=OperatorRepresentation{:LinearOperators}(; symmetric=false, hermitian=false, posdef=false),
-    linear_solver=IterativeLinearSolver{:gmres}(),
-    backends=nothing,
-)
-</code></pre><pre><code class="language-julia hljs">first(implicit_nlsolve(x, :newton)) .^ 2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
+end;</code></pre><pre><code class="language-julia hljs">implicit_nlsolve = ImplicitFunction(forward_nlsolve, conditions_nlsolve)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ImplicitFunction(Main.forward_nlsolve, Main.conditions_nlsolve; representation=OperatorRepresentation(), linear_solver=IterativeLinearSolver(;), backends=nothing)</code></pre><pre><code class="language-julia hljs">first(implicit_nlsolve(x, :newton)) .^ 2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
  4.000000000000009
  9.000000008381901</code></pre><p>Forward mode autodiff</p><pre><code class="language-julia hljs">ForwardDiff.jacobian(_x -&gt; first(implicit_nlsolve(_x, :newton)), x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2×2 Matrix{Float64}:
  0.25  0.0
@@ -75,14 +61,7 @@ end</code></pre><pre class="documenter-example-output"><code class="nohighlight 
 end;</code></pre><pre><code class="language-julia hljs">function conditions_fixedpoint(x, y, _z, _iterations)
     g = (y .+ x ./ y) ./ 2
     return g .- y
-end;</code></pre><pre><code class="language-julia hljs">implicit_fixedpoint = ImplicitFunction(forward_fixedpoint, conditions_fixedpoint)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ImplicitFunction(
-    forward_fixedpoint,
-    conditions_fixedpoint;
-    representation=OperatorRepresentation{:LinearOperators}(; symmetric=false, hermitian=false, posdef=false),
-    linear_solver=IterativeLinearSolver{:gmres}(),
-    backends=nothing,
-)
-</code></pre><pre><code class="language-julia hljs">first(implicit_fixedpoint(x, 10)) .^ 2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
+end;</code></pre><pre><code class="language-julia hljs">implicit_fixedpoint = ImplicitFunction(forward_fixedpoint, conditions_fixedpoint)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ImplicitFunction(Main.forward_fixedpoint, Main.conditions_fixedpoint; representation=OperatorRepresentation(), linear_solver=IterativeLinearSolver(;), backends=nothing)</code></pre><pre><code class="language-julia hljs">first(implicit_fixedpoint(x, 10)) .^ 2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
  4.0
  9.0</code></pre><p>Forward mode autodiff</p><pre><code class="language-julia hljs">ForwardDiff.jacobian(_x -&gt; first(implicit_fixedpoint(_x, 10)), x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2×2 Matrix{Float64}:
  0.25  0.0
@@ -94,4 +73,4 @@ end;</code></pre><pre><code class="language-julia hljs">implicit_fixedpoint = Im
     Zygote.jacobian(_x -&gt; first(forward_fixedpoint(_x, 10)), x)[1]
 catch e
     e
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ErrorException(&quot;Mutating arrays is not supported -- called copyto!(Vector{Float64}, ...)\nThis error occurs when you ask Zygote to differentiate operations that change\nthe elements of arrays in place (e.g. setting values with x .= ...)\n\nPossible fixes:\n- avoid mutating operations (preferred)\n- or read the documentation and solutions for this error\n  https://fluxml.ai/Zygote.jl/latest/limitations\n&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../0_intro/">« Introduction</a><a class="docs-footer-nextpage" href="../2_advanced/">Advanced use cases »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.13.0 on <span class="colophon-date" title="Wednesday 2 July 2025 04:44">Wednesday 2 July 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ErrorException(&quot;Mutating arrays is not supported -- called copyto!(Vector{Float64}, ...)\nThis error occurs when you ask Zygote to differentiate operations that change\nthe elements of arrays in place (e.g. setting values with x .= ...)\n\nPossible fixes:\n- avoid mutating operations (preferred)\n- or read the documentation and solutions for this error\n  https://fluxml.ai/Zygote.jl/latest/limitations\n&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../0_intro/">« Introduction</a><a class="docs-footer-nextpage" href="../2_advanced/">Advanced use cases »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.13.0 on <span class="colophon-date" title="Wednesday 2 July 2025 10:48">Wednesday 2 July 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
