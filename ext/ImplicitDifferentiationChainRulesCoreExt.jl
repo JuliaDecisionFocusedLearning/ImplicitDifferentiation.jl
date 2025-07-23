@@ -24,7 +24,7 @@ struct ImplicitPullback{TA,TB,TL,TC,TP,Nargs}
 end
 
 function (pb::ImplicitPullback{TA,TB,TL,TP,Nargs})((dy, dz)) where {TA,TB,TL,TP,Nargs}
-    (; Aᵀ, Bᵀ, linear_solver, project_x) = pb
+    (; Aᵀ, Bᵀ, linear_solver, c0, project_x) = pb
     dc = linear_solver(Aᵀ, -unthunk(dy), c0)
     dx = Bᵀ(dc)
     df = NoTangent()
