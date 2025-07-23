@@ -23,7 +23,7 @@ struct ImplicitPullback{TA,TB,TL,TC,TP,Nargs}
     _Nargs::Val{Nargs}
 end
 
-function (pb::ImplicitPullback{TA,TB,TL,TP,Nargs})((dy, dz)) where {TA,TB,TL,TP,Nargs}
+function (pb::ImplicitPullback{TA,TB,TL,TC,TP,Nargs})((dy, dz)) where {TA,TB,TL,TP,TC,Nargs}
     (; Aᵀ, Bᵀ, linear_solver, c0, project_x) = pb
     dc = linear_solver(Aᵀ, -unthunk(dy), c0)
     dx = Bᵀ(dc)
