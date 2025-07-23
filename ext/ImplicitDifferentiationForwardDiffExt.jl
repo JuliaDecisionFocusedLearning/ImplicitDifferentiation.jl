@@ -11,6 +11,7 @@ function (implicit::ImplicitFunction)(
     x = value.(x_and_dx)
     y, z = implicit(x, args...)
     c = implicit.conditions(x, y, z, args...)
+    y0 = zero(y)
 
     suggested_backend = AutoForwardDiff()
     A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend)
@@ -21,7 +22,7 @@ function (implicit::ImplicitFunction)(
     end
     dC = map(B, dX)
     dY = map(dC) do dₖc
-        dₖy = implicit.linear_solver(A, -dₖc)
+        dₖy = implicit.linear_solver(A, -dₖc, y0)
         return dₖy
     end
 
