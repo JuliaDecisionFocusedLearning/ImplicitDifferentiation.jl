@@ -14,17 +14,18 @@ using ImplicitDifferentiation:
 # not covered by Codecov for now
 ImplicitDifferentiation.chainrules_suggested_backend(rc::RuleConfig) = AutoChainRules(rc)
 
-struct ImplicitPullback{TA,TB,TL,TP,Nargs}
+struct ImplicitPullback{TA,TB,TL,TC,TP,Nargs}
     Aᵀ::TA
     Bᵀ::TB
     linear_solver::TL
+    c0::TC
     project_x::TP
     _Nargs::Val{Nargs}
 end
 
-function (pb::ImplicitPullback{TA,TB,TL,TP,Nargs})((dy, dz)) where {TA,TB,TL,TP,Nargs}
-    (; Aᵀ, Bᵀ, linear_solver, project_x) = pb
-    dc = linear_solver(Aᵀ, -unthunk(dy))
+function (pb::ImplicitPullback{TA,TB,TL,TC,TP,Nargs})((dy, dz)) where {TA,TB,TL,TP,TC,Nargs}
+    (; Aᵀ, Bᵀ, linear_solver, c0, project_x) = pb
+    dc = linear_solver(Aᵀ, -unthunk(dy), c0)
     dx = Bᵀ(dc)
     df = NoTangent()
     dargs = ntuple(unimplemented_tangent, Val(Nargs))
@@ -37,6 +38,7 @@ function ChainRulesCore.rrule(
     (; conditions, linear_solver) = implicit
     y, z = implicit(x, args...)
     c = conditions(x, y, z, args...)
+    c0 = zero(c)
 
     suggested_backend = chainrules_suggested_backend(rc)
     prep = ImplicitFunctionPreparation(eltype(x))
@@ -44,7 +46,7 @@ function ChainRulesCore.rrule(
     Bᵀ = build_Bᵀ(implicit, prep, x, y, z, c, args...; suggested_backend)
     project_x = ProjectTo(x)
 
-    implicit_pullback = ImplicitPullback(Aᵀ, Bᵀ, linear_solver, project_x, Val(N))
+    implicit_pullback = ImplicitPullback(Aᵀ, Bᵀ, linear_solver, c0, project_x, Val(N))
     return (y, z), implicit_pullback
 end
 

@@ -12,7 +12,7 @@ Specify that linear systems `Ax = b` should be solved with a direct method.
 """
 struct DirectLinearSolver end
 
-function (solver::DirectLinearSolver)(A, b::AbstractVector)
+function (solver::DirectLinearSolver)(A, b::AbstractVector, x0::AbstractVector)
     return A \ b
 end
 
@@ -33,8 +33,8 @@ struct IterativeLinearSolver{K}
     end
 end
 
-function (solver::IterativeLinearSolver)(A, b)
-    sol, info = linsolve(A, b; solver.kwargs...)
+function (solver::IterativeLinearSolver)(A, b, x0)
+    sol, info = linsolve(A, b, x0; solver.kwargs...)
     @assert info.converged == 1
     return sol
 end
