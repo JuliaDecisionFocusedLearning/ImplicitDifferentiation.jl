@@ -20,7 +20,7 @@ using DifferentiationInterface:
     pullback,
     pushforward
 using KrylovKit: linsolve, lssolve
-using LinearAlgebra: factorize
+using LinearAlgebra: Factorization, factorize
 
 include("utils.jl")
 include("settings.jl")

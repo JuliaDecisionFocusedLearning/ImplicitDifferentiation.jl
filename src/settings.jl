@@ -19,7 +19,7 @@ Specify that linear systems `Ax = b` should be solved with a direct method.
 struct DirectLinearSolver <: AbstractSolver end
 
 function (solver::DirectLinearSolver)(
-    A::AbstractMatrix, _Aᵀ, b::AbstractVector, x0::AbstractVector
+    A::Union{AbstractMatrix,Factorization}, _Aᵀ, b::AbstractVector, x0::AbstractVector
 )
     return A \ b
 end
