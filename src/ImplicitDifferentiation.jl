@@ -19,8 +19,8 @@ using DifferentiationInterface:
     prepare_pushforward_same_point,
     pullback,
     pushforward
-using KrylovKit: linsolve
-using LinearAlgebra: factorize
+using KrylovKit: linsolve, lssolve
+using LinearAlgebra: Factorization, factorize
 
 include("utils.jl")
 include("settings.jl")
@@ -30,7 +30,7 @@ include("execution.jl")
 include("callable.jl")
 
 export MatrixRepresentation, OperatorRepresentation
-export IterativeLinearSolver, DirectLinearSolver
+export IterativeLinearSolver, IterativeLeastSquaresSolver, DirectLinearSolver
 export ImplicitFunction
 
 end
