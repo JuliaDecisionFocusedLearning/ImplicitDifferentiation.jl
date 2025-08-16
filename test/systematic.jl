@@ -29,7 +29,7 @@ end;
             IterativeLinearSolver(),
             IterativeLinearSolver(; rtol=1e-8),
             IterativeLinearSolver(; issymmetric=true, isposdef=true),
-            IterativeLeastSquaresSolver(; issymmetric=true, isposdef=true),
+            IterativeLeastSquaresSolver(),
         ],
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
         [float.(1:3), reshape(float.(1:6), 3, 2)],
