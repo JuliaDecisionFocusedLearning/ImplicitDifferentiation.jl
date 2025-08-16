@@ -216,5 +216,7 @@ function test_implicit(
     end
 end
 
-default_solver(x) = vcat(sqrt.(x .+ 2), -sqrt.(x)), 2
-default_conditions(x, y, z) = abs2.(y) .- vcat(x .+ z, x)
+# use vcat to ensure Bᵀ != B
+# use reverse to ensure Aᵀ != A
+default_solver(x) = reverse(vcat(sqrt.(x .+ 2), -sqrt.(x))), 2
+default_conditions(x, y, z) = reverse(abs2.(y)) .- vcat(x .+ z, x)

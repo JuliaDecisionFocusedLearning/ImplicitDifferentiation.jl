@@ -1,9 +1,10 @@
 module ImplicitDifferentiationZygoteExt
 
-using ADTypes: AutoZygote
+using ADTypes: AutoForwardDiff, AutoZygote
 using ImplicitDifferentiation: ImplicitDifferentiation
 using Zygote: ZygoteRuleConfig
 
-ImplicitDifferentiation.chainrules_suggested_backend(::ZygoteRuleConfig) = AutoZygote()
+ImplicitDifferentiation.suggested_forward_backend(::ZygoteRuleConfig) = AutoForwardDiff()
+ImplicitDifferentiation.suggested_reverse_backend(::ZygoteRuleConfig) = AutoZygote()
 
 end
