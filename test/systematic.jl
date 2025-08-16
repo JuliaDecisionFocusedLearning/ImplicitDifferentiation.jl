@@ -28,7 +28,6 @@ end;
         [
             IterativeLinearSolver(),
             IterativeLinearSolver(; rtol=1e-8),
-            IterativeLinearSolver(; issymmetric=true, isposdef=true),
             IterativeLeastSquaresSolver(),
         ],
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],

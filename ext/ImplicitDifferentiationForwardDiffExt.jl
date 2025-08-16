@@ -22,10 +22,10 @@ function (implicit::ImplicitFunction)(
     suggested_backend = AutoForwardDiff()
     A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend)
     B = build_B(implicit, prep, x, y, z, c, args...; suggested_backend)
-    if linear_solver isa IterativeLeastSquaresSolver
-        Aᵀ = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend)
+    Aᵀ = if linear_solver isa IterativeLeastSquaresSolver
+        build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend)
     else
-        Aᵀ = nothing
+        nothing
     end
 
     dX = ntuple(k -> partials.(x_and_dx, k), Val(N))
