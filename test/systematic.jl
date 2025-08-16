@@ -29,6 +29,7 @@ end;
             IterativeLinearSolver(),
             IterativeLinearSolver(; rtol=1e-8),
             IterativeLinearSolver(; issymmetric=true, isposdef=true),
+            IterativeLeastSquaresSolver(; issymmetric=true, isposdef=true),
         ],
         [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
         [float.(1:3), reshape(float.(1:6), 3, 2)],
@@ -53,7 +54,7 @@ end;
         solver=default_solver,
         conditions=default_conditions,
         x=x,
-        implicit_kwargs=(; strict=Val(false)),
+        implicit_kwargs=(; linear_solver=IterativeLeastSquaresSolver()),
     )
     scen2 = add_arg_mult(scen)
     test_implicit(scen)
