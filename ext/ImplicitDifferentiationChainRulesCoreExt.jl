@@ -8,6 +8,7 @@ using ImplicitDifferentiation:
     ImplicitFunction,
     ImplicitFunctionPreparation,
     IterativeLeastSquaresSolver,
+    build_A,
     build_Aᵀ,
     build_Bᵀ,
     suggested_forward_backend,
@@ -50,7 +51,7 @@ function ChainRulesCore.rrule(
     Aᵀ = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
     Bᵀ = build_Bᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
     if linear_solver isa IterativeLeastSquaresSolver
-        A = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
+        A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
     else
         A = nothing
     end

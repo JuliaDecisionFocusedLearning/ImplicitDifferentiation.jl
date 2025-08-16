@@ -4,4 +4,7 @@ using TestItems
     @test contains(string(ImplicitFunction(nothing, nothing)), "ImplicitFunction")
     @test contains(string(IterativeLinearSolver()), "IterativeLinearSolver")
     @test contains(string(IterativeLinearSolver(; rtol=1e-3)), "IterativeLinearSolver")
+    @test contains(
+        string(IterativeLeastSquaresSolver(; rtol=1e-3)), "IterativeLeastSquaresSolver"
+    )
 end
