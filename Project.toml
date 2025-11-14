@@ -11,11 +11,13 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [weakdeps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [extensions]
 ImplicitDifferentiationChainRulesCoreExt = "ChainRulesCore"
+ImplicitDifferentiationEnzymeExt = ["EnzymeCore", "ADTypes"]
 ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
 ImplicitDifferentiationZygoteExt = "Zygote"
 
@@ -27,6 +29,7 @@ ChainRulesTestUtils = "1.13.0"
 ComponentArrays = "0.15.27"
 DifferentiationInterface = "0.6.1,0.7"
 Documenter = "1.12.0"
+EnzymeCore = "0.8"
 ExplicitImports = "1"
 FiniteDiff = "2.27.0"
 ForwardDiff = "0.10.36, 1"
@@ -54,6 +57,8 @@ ChainRulesTestUtils = "cdddcdb0-9152-4a09-a978-84456f9df70a"
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
 FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -80,6 +85,7 @@ test = [
     "ComponentArrays",
     "DifferentiationInterface",
     "Documenter",
+    "Enzyme",
     "ExplicitImports",
     "FiniteDiff",
     "ForwardDiff",
