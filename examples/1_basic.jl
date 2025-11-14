@@ -1,5 +1,7 @@
 # # Basic use cases
 
+versioninfo()
+
 #=
 We show how to differentiate through very common routines:
 - an unconstrained optimization problem
@@ -16,6 +18,7 @@ using NLsolve
 using Optim
 using Test  #src
 using Zygote
+using Enzyme
 
 #=
 In all three cases, we will use the square root as our forward mapping, but expressed in three different ways.
@@ -75,7 +78,7 @@ end;
 We now have all the ingredients to construct our implicit function.
 =#
 
-implicit_optim = ImplicitFunction(forward_optim, conditions_optim)
+const implicit_optim = ImplicitFunction(forward_optim, conditions_optim)
 
 # And indeed, it behaves as it should when we call it:
 
@@ -86,6 +89,12 @@ first(implicit_optim(x, LBFGS())) .^ 2
 
 ForwardDiff.jacobian(_x -> first(implicit_optim(_x, LBFGS())), x)
 @test ForwardDiff.jacobian(_x -> first(implicit_optim(_x, LBFGS())), x) ≈ J  #src
+
+Enzyme.jacobian(Forward, _x -> first(implicit_optim(_x, LBFGS())), x) |> only
+Enzyme.jacobian(Reverse, _x -> first(implicit_optim(_x, LBFGS())), x) |> only
+
+# Fails due to mismatched activity.
+# Enzyme.jacobian(Forward, _x -> first(forward_optim(_x, LBFGS())), x)
 
 #=
 In this instance, we could use ForwardDiff.jl directly on the solver:
