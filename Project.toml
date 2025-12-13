@@ -1,7 +1,7 @@
 name = "ImplicitDifferentiation"
 uuid = "57b37032-215b-411a-8a7c-41a003a55207"
-authors = ["Guillaume Dalle", "Mohamed Tarek"]
 version = "0.9.1"
+authors = ["Guillaume Dalle", "Mohamed Tarek"]
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
@@ -30,7 +30,7 @@ Documenter = "1.12.0"
 ExplicitImports = "1"
 FiniteDiff = "2.27.0"
 ForwardDiff = "0.10.36, 1"
-JET = "0.9, 0.10"
+JET = "0.9, 0.10, 0.11"
 JuliaFormatter = "2.1.2"
 Krylov = "0.9.6, 0.10"
 KrylovKit = "0.10.0"
@@ -72,27 +72,4 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = [
-    "ADTypes",
-    "Aqua",
-    "ChainRulesCore",
-    "ChainRulesTestUtils",
-    "ComponentArrays",
-    "DifferentiationInterface",
-    "Documenter",
-    "ExplicitImports",
-    "FiniteDiff",
-    "ForwardDiff",
-    "JET",
-    "JuliaFormatter",
-    "LinearAlgebra",
-    "NLsolve",
-    "Optim",
-    "Random",
-    "SparseArrays",
-    "StaticArrays",
-    "Test",
-    "TestItems",
-    "TestItemRunner",
-    "Zygote",
-]
+test = ["ADTypes", "Aqua", "ChainRulesCore", "ChainRulesTestUtils", "ComponentArrays", "DifferentiationInterface", "Documenter", "ExplicitImports", "FiniteDiff", "ForwardDiff", "JET", "JuliaFormatter", "LinearAlgebra", "NLsolve", "Optim", "Random", "SparseArrays", "StaticArrays", "Test", "TestItems", "TestItemRunner", "Zygote"]
