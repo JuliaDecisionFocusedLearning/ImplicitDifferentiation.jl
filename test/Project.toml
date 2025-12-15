@@ -11,6 +11,7 @@ FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 ImplicitDifferentiation = "57b37032-215b-411a-8a7c-41a003a55207"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
@@ -21,6 +22,9 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[sources]
+ImplicitDifferentiation = { path = ".." }
 
 [compat]
 ADTypes = "1.9.0"
@@ -46,6 +50,3 @@ TestItemRunner = "1.1.0"
 TestItems = "1.0.0"
 Zygote = "0.7.4"
 julia = "1.10"
-
-[sources]
-ImplicitDifferentiation = { path = ".." }
