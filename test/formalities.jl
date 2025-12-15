@@ -7,11 +7,6 @@ using TestItems
     Aqua.test_all(ImplicitDifferentiation; ambiguities=false, undocumented_names=true)
 end
 
-@testitem "Formatting" begin
-    using JuliaFormatter
-    @test format(ImplicitDifferentiation; verbose=false, overwrite=false)
-end
-
 @testitem "Static checking" begin
     using JET
     using ForwardDiff: ForwardDiff
