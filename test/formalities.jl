@@ -11,7 +11,7 @@ end
     using JET
     using ForwardDiff: ForwardDiff
     using Zygote: Zygote
-    JET.test_package(ImplicitDifferentiation; target_defined_modules=true)
+    JET.test_package(ImplicitDifferentiation; target_modules=(ImplicitDifferentiation,))
 end
 
 @testitem "Imports" begin
