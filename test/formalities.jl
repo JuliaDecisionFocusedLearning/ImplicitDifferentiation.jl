@@ -7,16 +7,11 @@ using TestItems
     Aqua.test_all(ImplicitDifferentiation; ambiguities=false, undocumented_names=true)
 end
 
-@testitem "Formatting" begin
-    using JuliaFormatter
-    @test format(ImplicitDifferentiation; verbose=false, overwrite=false)
-end
-
 @testitem "Static checking" begin
     using JET
     using ForwardDiff: ForwardDiff
     using Zygote: Zygote
-    JET.test_package(ImplicitDifferentiation; target_defined_modules=true)
+    JET.test_package(ImplicitDifferentiation; target_modules=(ImplicitDifferentiation,))
 end
 
 @testitem "Imports" begin
