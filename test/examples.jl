@@ -13,3 +13,7 @@ end
 @testitem "Tricks" begin
     include(joinpath(dirname(@__DIR__), "examples", "3_tricks.jl"))
 end
+
+@testitem "Gallery" begin
+    include(joinpath(dirname(@__DIR__), "examples", "4_gallery.jl"))
+end
