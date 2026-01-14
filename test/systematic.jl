@@ -19,6 +19,23 @@ using TestItems
         test_implicit(scen)
         test_implicit(scen2)
     end
+
+    # Test for output vector of length 1
+    for (linear_solver, backends) in Iterators.product(
+        [DirectLinearSolver(), IterativeLinearSolver()],
+        [nothing, (; x=AutoForwardDiff(), y=AutoZygote())],
+    )
+        yield()
+        scen = Scenario(;
+            solver=x -> (sqrt.(x), nothing),
+            conditions=(x, y, z) -> y .^ 2 .- x,
+            x=[1.0],
+            implicit_kwargs=(; representation, linear_solver, backends),
+        )
+        scen2 = add_arg_mult(scen)
+        test_implicit(scen)
+        test_implicit(scen2)
+    end
 end;
 
 @testitem "Operator" setup = [TestUtils] begin
