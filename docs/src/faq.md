@@ -102,3 +102,18 @@ Packages such as [Memoize.jl](https://github.com/JuliaCollections/Memoize.jl) an
 using Memoize
 @memoize Dict forward(x, args...; kwargs...) = y, z
 ```
+
+### Linear solver selection
+
+Differentiating your implicit function requires to solve a linear system. By default, an iterative solver (see [`IterativeLinearSolver`](@ref)) combined with a matrix-free representation of the jacobian (see [`OperatorRepresentation`](@ref)) is used. You can change the linear solver using the `linear_solver` keyword argument of the `ImplicitFunction` constructor, choosing between:
+
+- [`IterativeLinearSolver`](@ref);
+- [`IterativeLeastSquaresSolver`](@ref);
+- [`DirectLinearSolver`](@ref).
+
+Keyword arguments can be passed to the constructors of `IterativeLinearSolver` and `IterativeLeastSquaresSolver`, they will be forwarded to the solver that is currently being used.
+
+!!! warning
+    The specific choice of solver is not part of the public API, and may thus change without a breaking release. If you rely on keyword arguments, please freeze the exact version of ImplicitDifferentiation in your `Project.toml`.
+
+Note that for the `DirectLinearSolver`, you must switch to a [`MatrixRepresentation`](@ref) using the `representation` argument : `ImplicitFunction(forward, conditions; linear_solver = DirectLinearSolver(), representation = MatrixRepresentation())`.
