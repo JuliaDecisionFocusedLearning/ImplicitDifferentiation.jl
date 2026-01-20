@@ -12,14 +12,13 @@ Specify that linear systems `Ax = b` should be solved with a direct method.
 
     Additionnaly, this solver requires a [`MatrixRepresentation`](@ref) of the matrix `A`. To do so,
     use the `representation` keyword of the [`ImplicitFunction`](@ref) constructor :
-    ```
-    f = ImplicitFunction(
-        forward,
-        conditions;
-        solver = DirectLinearSolver(),
-        representation = MatrixRepresentation()
-    )
-    ```
+
+        f = ImplicitFunction(
+            forward,
+            conditions;
+            solver = DirectLinearSolver(),
+            representation = MatrixRepresentation()
+        )
 
 # See also
 
