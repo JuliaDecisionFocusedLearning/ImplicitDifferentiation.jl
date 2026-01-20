@@ -111,6 +111,9 @@ Differentiating your implicit function requires to solve a linear system. By def
 - [`IterativeLeastSquaresSolver`](@ref);
 - [`DirectLinearSolver`](@ref).
 
-Keyword arguments can be passed to the constructors of `IterativeLinearSolver` and `IterativeLeastSquaresSolver`, they will be forwarded to the `KrylovKit.linsolve` and `KrylovKit.lssolve` functions, respectively.
+Keyword arguments can be passed to the constructors of `IterativeLinearSolver` and `IterativeLeastSquaresSolver`, they will be forwarded to the solver that is currently being used.
+
+!!! warning
+    The specific choice of solver is not part of the public API, and may thus change without a breaking release. If you rely on keyword arguments, please freeze the exact version of ImplicitDifferentiation in your `Project.toml`.
 
 Note that for the `DirectLinearSolver`, you must switch to a [`MatrixRepresentation`](@ref) using the `representation` argument : `ImplicitFunction(forward, conditions; linear_solver = DirectLinearSolver(), representation = MatrixRepresentation())`.
