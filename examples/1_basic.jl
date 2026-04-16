@@ -12,7 +12,7 @@ Note that some packages from the [SciML](https://sciml.ai/) ecosystem provide a 
 using ForwardDiff
 using ImplicitDifferentiation
 using LinearAlgebra
-using NLsolve
+import NonlinearSolve as NLS
 using Optim
 using Test  #src
 using Zygote
@@ -126,22 +126,23 @@ To make verification easy, we solve the following system:
 ```math
 c(x, y) = y \odot y - x = 0
 ```
-In this case, the optimization problem boils down to the componentwise square root function, but we implement it using a black box solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl).
+In this case, the optimization problem boils down to the componentwise square root function, but we implement it using a black box solver from [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
 =#
 
-function forward_nlsolve(x, method)
-    F!(storage, y) = (storage .= y .^ 2 .- x)
+function forward_nlsolve(x)
+    F!(storage, y, x) = (storage .= y .^ 2 .- x)
     initial_y = similar(x)
     initial_y .= 1
-    result = nlsolve(F!, initial_y; method)
-    y = result.zero
+    prob = NLS.NonlinearProblem(F!, initial_y, x; abstol=1e-10, reltol=1e-10)
+    sol = NLS.solve(prob)
+    y = sol.u
     z = nothing
     return y, z
 end;
 
 #-
 
-function conditions_nlsolve(x, y, _z, _method)
+function conditions_nlsolve(x, y, _z)
     c = y .^ 2 .- x
     return c
 end;
@@ -152,27 +153,27 @@ implicit_nlsolve = ImplicitFunction(forward_nlsolve, conditions_nlsolve)
 
 #-
 
-first(implicit_nlsolve(x, :newton)) .^ 2
-@test first(implicit_nlsolve(x, :newton)) .^ 2 ≈ x  #src
+first(implicit_nlsolve(x)) .^ 2
+@test first(implicit_nlsolve(x)) .^ 2 ≈ x  #src
 
 # Forward mode autodiff
 
-ForwardDiff.jacobian(_x -> first(implicit_nlsolve(_x, :newton)), x)
-@test ForwardDiff.jacobian(_x -> first(implicit_nlsolve(_x, :newton)), x) ≈ J  #src
+ForwardDiff.jacobian(_x -> first(implicit_nlsolve(_x)), x)
+@test ForwardDiff.jacobian(_x -> first(implicit_nlsolve(_x)), x) ≈ J  #src
 
 #-
 
-ForwardDiff.jacobian(_x -> first(forward_nlsolve(_x, :newton)), x)
+ForwardDiff.jacobian(_x -> first(forward_nlsolve(_x)), x)
 
 # Reverse mode autodiff
 
-Zygote.jacobian(_x -> first(implicit_nlsolve(_x, :newton)), x)[1]
-@test Zygote.jacobian(_x -> first(implicit_nlsolve(_x, :newton)), x)[1] ≈ J  #src
+Zygote.jacobian(_x -> first(implicit_nlsolve(_x)), x)[1]
+@test Zygote.jacobian(_x -> first(implicit_nlsolve(_x)), x)[1] ≈ J  #src
 
 #-
 
 try
-    Zygote.jacobian(_x -> first(forward_nlsolve(_x, :newton)), x)[1]
+    Zygote.jacobian(_x -> first(forward_nlsolve(_x)), x)[1]
 catch e
     e
 end
