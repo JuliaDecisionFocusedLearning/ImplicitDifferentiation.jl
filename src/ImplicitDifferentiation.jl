@@ -30,7 +30,7 @@ include("execution.jl")
 include("callable.jl")
 
 export MatrixRepresentation, OperatorRepresentation
-export IterativeLinearSolver, IterativeLeastSquaresSolver, DirectLinearSolver
+export AbstractSolver, IterativeLinearSolver, IterativeLeastSquaresSolver, DirectLinearSolver
 export ImplicitFunction
 
 end
