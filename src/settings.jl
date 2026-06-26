@@ -12,7 +12,7 @@ The only requirement on any concrete subtype `MySolver` is that it should be cal
     (s::MySolver)(A, Aᵀ, x0, b)
 
 This method should solve the linear system `Ax = b`, possibly using the transpose `Aᵀ` or starting from an initial point `x0`.
-Depending on the [`AbstractRepresentation`](@ref) chosen for the `ImplicitFunction`, the arguments `A` and `Aᵀ` might be either matrix-like or functional objects.
+Depending on the representation chosen for the `ImplicitFunction`, the arguments `A` and `Aᵀ` might be either matrix-like or functional objects.
 
 # Implementations
 
