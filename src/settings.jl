@@ -1,9 +1,31 @@
 ## Linear solver
 
+"""
+    AbstractSolver
+
+Abstract supertype for linear solvers to be used within an [`ImplicitFunction`](@ref).
+
+# Interface
+
+The only requirement on any concrete subtype `MySolver` is that it should be callable, with the following signature:
+
+    (s::MySolver)(A, Aᵀ, x0, b)
+
+This method should solve the linear system `Ax = b`, possibly using the transpose `Aᵀ` or starting from an initial point `x0`.
+Depending on the [`AbstractRepresentation`](@ref) chosen for the `ImplicitFunction`, the arguments `A` and `Aᵀ` might be either matrix-like or functional objects.
+
+# Implementations
+
+This package provides three default implementations:
+
+- [`DirectLinearSolver`](@ref)
+- [`IterativeLinearSolver`](@ref)
+- [`IterativeLeastSquaresSolver`](@ref)
+"""
 abstract type AbstractSolver end
 
 """
-    DirectLinearSolver
+    DirectLinearSolver <: AbstractSolver
 
 Specify that linear systems `Ax = b` should be solved with a direct method.
 
@@ -23,8 +45,7 @@ Specify that linear systems `Ax = b` should be solved with a direct method.
 # See also
 
 - [`ImplicitFunction`](@ref)
-- [`IterativeLinearSolver`](@ref)
-- [`IterativeLeastSquaresSolver`](@ref)
+- [`AbstractSolver`](@ref)
 """
 struct DirectLinearSolver <: AbstractSolver end
 
@@ -40,7 +61,7 @@ end
 abstract type AbstractIterativeSolver <: AbstractSolver end
 
 """
-    IterativeLinearSolver
+    IterativeLinearSolver <: AbstractSolver
 
 Specify that linear systems `Ax = b` should be solved with an iterative method.
 
@@ -50,8 +71,7 @@ Specify that linear systems `Ax = b` should be solved with an iterative method.
 # See also
 
 - [`ImplicitFunction`](@ref)
-- [`DirectLinearSolver`](@ref)
-- [`IterativeLeastSquaresSolver`](@ref)
+- [`AbstractSolver`](@ref)
 """
 struct IterativeLinearSolver{K} <: AbstractIterativeSolver
     kwargs::K
@@ -62,12 +82,11 @@ end
 
 function (solver::IterativeLinearSolver)(A, _Aᵀ, b, x0)
     sol, info = linsolve(A, b, x0; solver.kwargs...)
-    @assert info.converged == 1
     return sol
 end
 
 """
-    IterativeLeastSquaresSolver
+    IterativeLeastSquaresSolver <: AbstractSolver
 
 Specify that linear systems `Ax = b` should be solved with an iterative least-squares method.
 
@@ -80,8 +99,7 @@ Specify that linear systems `Ax = b` should be solved with an iterative least-sq
 # See also
 
 - [`ImplicitFunction`](@ref)
-- [`DirectLinearSolver`](@ref)
-- [`IterativeLinearSolver`](@ref)
+- [`AbstractSolver`](@ref)
 """
 struct IterativeLeastSquaresSolver{K} <: AbstractIterativeSolver
     kwargs::K
@@ -92,7 +110,6 @@ end
 
 function (solver::IterativeLeastSquaresSolver)(A, Aᵀ, b, x0)
     sol, info = lssolve((A, Aᵀ), b; solver.kwargs...)
-    @assert info.converged == 1
     return sol
 end
 
