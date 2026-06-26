@@ -21,6 +21,7 @@ ImplicitFunction
 ```@docs
 MatrixRepresentation
 OperatorRepresentation
+AbstractSolver
 IterativeLinearSolver
 IterativeLeastSquaresSolver
 DirectLinearSolver
