@@ -14,9 +14,17 @@ using ImplicitDifferentiation:
 
 import .EnzymeRules: AugmentedReturn
 
-const AnyDuplicated{T} = Union{Duplicated{T}, BatchDuplicated{T}, DuplicatedNoNeed{T}, BatchDuplicatedNoNeed{T}}
+const AnyDuplicated{T} = Union{
+    Duplicated{T},BatchDuplicated{T},DuplicatedNoNeed{T},BatchDuplicatedNoNeed{T}
+}
 
-function EnzymeRules.forward(config, implicit::Const{<:ImplicitFunction}, ::Type{<:AnyDuplicated}, x::AnyDuplicated, args::Vararg{<:Const})
+function EnzymeRules.forward(
+    config,
+    implicit::Const{<:ImplicitFunction},
+    ::Type{<:AnyDuplicated},
+    x::AnyDuplicated,
+    args::Vararg{<:Const},
+)
     implicit = implicit.val
 
     dx = x.dval
@@ -32,13 +40,13 @@ function EnzymeRules.forward(config, implicit::Const{<:ImplicitFunction}, ::Type
     c = conditions(x, y, z, args...)
 
     y0 = zero(y)
-    forward_backend = AutoEnzyme(mode = Forward)
-    reverse_backend = AutoEnzyme(mode = Reverse)
+    forward_backend = AutoEnzyme(; mode=Forward)
+    reverse_backend = AutoEnzyme(; mode=Reverse)
 
-    A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend = forward_backend)
-    B = build_B(implicit, prep, x, y, z, c, args...; suggested_backend = forward_backend)
+    A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
+    B = build_B(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
     Aᵀ = if linear_solver isa IterativeLeastSquaresSolver
-        build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend = reverse_backend)
+        build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
     else
         nothing
     end
@@ -68,12 +76,18 @@ function EnzymeRules.forward(config, implicit::Const{<:ImplicitFunction}, ::Type
         else
             # TODO: We need to heal the type instability from the linear solver here
             # df::NTuple{EnzymeRules.width(config), Tuple{typeof(y0), Nothing}}
-            return df::NTuple{EnzymeRules.width(config), Tuple{Vector{Float64}, Nothing}}
+            return df::NTuple{EnzymeRules.width(config),Tuple{Vector{Float64},Nothing}}
         end
     end
 end
 
-function EnzymeRules.augmented_primal(config, implicit::Const{<:ImplicitFunction}, RT::Type{<:AnyDuplicated}, x::AnyDuplicated, args::Vararg{<:Const})
+function EnzymeRules.augmented_primal(
+    config,
+    implicit::Const{<:ImplicitFunction},
+    RT::Type{<:AnyDuplicated},
+    x::AnyDuplicated,
+    args::Vararg{<:Const},
+)
     @assert EnzymeRules.width(config) == 1
     implicit = implicit.val
 
@@ -89,13 +103,13 @@ function EnzymeRules.augmented_primal(config, implicit::Const{<:ImplicitFunction
     c = conditions(x, y, z, args...)
     c0 = zero(c)
 
-    forward_backend = AutoEnzyme(mode = Forward)
-    reverse_backend = AutoEnzyme(mode = Reverse)
+    forward_backend = AutoEnzyme(; mode=Forward)
+    reverse_backend = AutoEnzyme(; mode=Reverse)
 
-    Aᵀ = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend = reverse_backend)
-    Bᵀ = build_Bᵀ(implicit, prep, x, y, z, c, args...; suggested_backend = reverse_backend)
+    Aᵀ = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
+    Bᵀ = build_Bᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
     if linear_solver isa IterativeLeastSquaresSolver
-        A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend = forward_backend)
+        A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
     else
         A = nothing
     end
@@ -120,7 +134,9 @@ function EnzymeRules.augmented_primal(config, implicit::Const{<:ImplicitFunction
     return AR(primal, shadow, tape)
 end
 
-function EnzymeRules.reverse(_, ::Const{<:ImplicitFunction}, ::Type, tape, x::AnyDuplicated, ::Vararg{<:Const})
+function EnzymeRules.reverse(
+    _, ::Const{<:ImplicitFunction}, ::Type, tape, x::AnyDuplicated, ::Vararg{<:Const}
+)
     dx = x.dval
     (; Aᵀ, Bᵀ, A, linear_solver, dy, c0) = tape
 

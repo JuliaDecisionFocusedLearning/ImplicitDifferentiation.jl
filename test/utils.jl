@@ -203,7 +203,12 @@ end
 
 function test_implicit(
     scen::Scenario,
-    outer_backends=[AutoForwardDiff(), AutoZygote()];
+    outer_backends=[
+        AutoForwardDiff(),
+        AutoZygote(),
+        AutoEnzyme(; mode=Enzyme.Forward),
+        AutoEnzyme(; mode=Enzyme.Reverse),
+    ];
     type_stability::Bool=false,
 )
     return @testset "$scen" begin
