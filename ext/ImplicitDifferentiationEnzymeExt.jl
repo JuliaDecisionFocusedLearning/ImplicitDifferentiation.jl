@@ -23,8 +23,8 @@ function EnzymeRules.forward(
     implicit::Const{<:ImplicitFunction},
     ::Type{<:AnyDuplicated},
     x::AnyDuplicated,
-    args::Vararg{<:Const},
-)
+    args::Vararg{Const,N},
+) where {N}
     implicit = implicit.val
 
     dx = x.dval
@@ -58,7 +58,7 @@ function EnzymeRules.forward(
     return if EnzymeRules.width(config) == 1
         dc = B(dx)
         dy = linear_solver(A, Aᵀ, -dc, y0)::typeof(y0)
-        dz = nothing
+        dz = Enzyme.make_zero(z)
 
         if EnzymeRules.needs_primal(config)
             return Duplicated((y, z), (dy, dz))
@@ -72,7 +72,7 @@ function EnzymeRules.forward(
         end
 
         df = ntuple(Val(EnzymeRules.width(config))) do i
-            return (dy[i]::typeof(y0), nothing)
+            return (dy[i]::typeof(y0), dz::typeof(z))
         end
 
         if EnzymeRules.needs_primal(config)
@@ -80,7 +80,7 @@ function EnzymeRules.forward(
         else
             # TODO: We need to heal the type instability from the linear solver here
             # df::NTuple{EnzymeRules.width(config), Tuple{typeof(y0), Nothing}}
-            return df::NTuple{EnzymeRules.width(config),Tuple{Vector{Float64},Nothing}}
+            return df::NTuple{EnzymeRules.width(config),Tuple{typeof(y0),typeof(z)}}
         end
     end
 end
@@ -90,8 +90,8 @@ function EnzymeRules.augmented_primal(
     implicit::Const{<:ImplicitFunction},
     RT::Type{<:AnyDuplicated},
     x::AnyDuplicated,
-    args::Vararg{<:Const},
-)
+    args::Vararg{Const,N},
+) where {N}
     @assert EnzymeRules.width(config) == 1
     implicit = implicit.val
 
@@ -139,8 +139,8 @@ function EnzymeRules.augmented_primal(
 end
 
 function EnzymeRules.reverse(
-    _, ::Const{<:ImplicitFunction}, ::Type, tape, x::AnyDuplicated, ::Vararg{<:Const}
-)
+    _, ::Const{<:ImplicitFunction}, ::Type, tape, x::AnyDuplicated, ::Vararg{Const,N}
+) where {N}
     dx = x.dval
     (; Aᵀ, Bᵀ, A, linear_solver, dy, c0) = tape
 
