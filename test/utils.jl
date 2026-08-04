@@ -65,11 +65,13 @@ function add_arg_mult(scen::Scenario, a=3)
         return scen.conditions(x, y ./ a, z)
     end
     implicit_kwargs_with_arg_mult = NamedTuple(
-        Dict(k => if k == :input_example
-            (only(v), a)
-        else
-            v
-        end for (k, v) in pairs(scen.implicit_kwargs))
+        Dict(
+            k => if k == :input_example
+                (only(v), a)
+            else
+                v
+            end for (k, v) in pairs(scen.implicit_kwargs)
+        )
     )
 
     return Scenario(;
@@ -207,8 +209,14 @@ function test_implicit(
     outer_backends=[
         AutoForwardDiff(),
         AutoZygote(),
-        AutoEnzyme(; mode=Enzyme.Forward),
-        AutoEnzyme(; mode=Enzyme.Reverse),
+        AutoEnzyme(;
+            mode=Enzyme.set_runtime_activity(Enzyme.Forward),
+            function_annotation=Enzyme.Const
+        ),
+        AutoEnzyme(;
+            mode=Enzyme.set_runtime_activity(Enzyme.Reverse),
+            function_annotation=Enzyme.Const
+        ),
     ];
     type_stability::Bool=false,
 )
