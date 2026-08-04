@@ -2,7 +2,8 @@ module ImplicitDifferentiationEnzymeExt
 
 using ADTypes: AutoEnzyme
 using EnzymeCore
-import EnzymeCore: EnzymeRules
+using EnzymeCore: make_zero
+using EnzymeCore.EnzymeRules: EnzymeRules, AugmentedReturn, augmented_rule_return_type, needs_primal, width
 using ImplicitDifferentiation:
     ImplicitFunction,
     ImplicitFunctionPreparation,
@@ -12,7 +13,6 @@ using ImplicitDifferentiation:
     build_B,
     build_Bᵀ
 
-import .EnzymeRules: AugmentedReturn
 
 const AnyDuplicated{T} = Union{
     Duplicated{T},BatchDuplicated{T},DuplicatedNoNeed{T},BatchDuplicatedNoNeed{T}
@@ -41,10 +41,10 @@ function EnzymeRules.forward(
 
     y0 = zero(y)
     forward_backend = AutoEnzyme(;
-        mode=Enzyme.set_runtime_activity(Forward), function_annotation=Enzyme.Const
+        mode=set_runtime_activity(Forward), function_annotation=Const
     )
     reverse_backend = AutoEnzyme(;
-        mode=Enzyme.set_runtime_activity(Reverse), function_annotation=Enzyme.Const
+        mode=set_runtime_activity(Reverse), function_annotation=Const
     )
 
     A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
@@ -55,12 +55,12 @@ function EnzymeRules.forward(
         nothing
     end
 
-    return if EnzymeRules.width(config) == 1
+    return if width(config) == 1
         dc = B(dx)
         dy = linear_solver(A, Aᵀ, -dc, y0)::typeof(y0)
-        dz = Enzyme.make_zero(z)
+        dz = make_zero(z)
 
-        if EnzymeRules.needs_primal(config)
+        if needs_primal(config)
             return Duplicated((y, z), (dy, dz))
         else
             return dy, dz
@@ -71,16 +71,15 @@ function EnzymeRules.forward(
             return linear_solver(A, Aᵀ, -dₖc, y0)
         end
 
-        df = ntuple(Val(EnzymeRules.width(config))) do i
+        df = ntuple(Val(width(config))) do i
             return (dy[i]::typeof(y0), dz::typeof(z))
         end
 
-        if EnzymeRules.needs_primal(config)
+        if needs_primal(config)
             return BatchDuplicated((y, z), df)
         else
             # TODO: We need to heal the type instability from the linear solver here
-            # df::NTuple{EnzymeRules.width(config), Tuple{typeof(y0), Nothing}}
-            return df::NTuple{EnzymeRules.width(config),Tuple{typeof(y0),typeof(z)}}
+            return df::NTuple{width(config),Tuple{typeof(y0),typeof(z)}}
         end
     end
 end
@@ -124,16 +123,16 @@ function EnzymeRules.augmented_primal(
         primal = nothing
     end
 
-    dy = EnzymeCore.make_zero(y)
-    if EnzymeRules.needs_shadow(config)
-        shadow = (dy, EnzymeCore.make_zero(z))
+    dy = make_zero(y)
+    if needs_shadow(config)
+        shadow = (dy, make_zero(z))
     else
         shadow = nothing
     end
 
     tape = (; Aᵀ, Bᵀ, A, linear_solver, dy, c0)
 
-    AR = EnzymeRules.augmented_rule_return_type(config, RT)
+    AR = augmented_rule_return_type(config, RT)
 
     return AR(primal, shadow, tape)
 end
