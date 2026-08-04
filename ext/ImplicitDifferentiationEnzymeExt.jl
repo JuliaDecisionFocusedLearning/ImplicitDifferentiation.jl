@@ -40,8 +40,12 @@ function EnzymeRules.forward(
     c = conditions(x, y, z, args...)
 
     y0 = zero(y)
-    forward_backend = AutoEnzyme(; mode=Forward)
-    reverse_backend = AutoEnzyme(; mode=Reverse)
+    forward_backend = AutoEnzyme(;
+        mode=Enzyme.set_runtime_activity(Forward), function_annotation=Enzyme.Const
+    )
+    reverse_backend = AutoEnzyme(;
+        mode=Enzyme.set_runtime_activity(Reverse), function_annotation=Enzyme.Const
+    )
 
     A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
     B = build_B(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
@@ -53,7 +57,7 @@ function EnzymeRules.forward(
 
     return if EnzymeRules.width(config) == 1
         dc = B(dx)
-        dy = linear_solver(A, Aᵀ, dc, y0)::typeof(y0)
+        dy = linear_solver(A, Aᵀ, -dc, y0)::typeof(y0)
         dz = nothing
 
         if EnzymeRules.needs_primal(config)
