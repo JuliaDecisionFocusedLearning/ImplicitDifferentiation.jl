@@ -2,7 +2,7 @@ module ImplicitDifferentiationEnzymeExt
 
 using ADTypes: AutoEnzyme
 using EnzymeCore
-using EnzymeCore: make_zero
+using EnzymeCore: make_zero, set_runtime_activity
 using EnzymeCore.EnzymeRules: EnzymeRules, AugmentedReturn, augmented_rule_return_type, needs_primal, width
 using ImplicitDifferentiation:
     ImplicitFunction,
