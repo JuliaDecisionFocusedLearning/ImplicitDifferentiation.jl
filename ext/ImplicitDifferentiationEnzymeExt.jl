@@ -3,7 +3,8 @@ module ImplicitDifferentiationEnzymeExt
 using ADTypes: AutoEnzyme
 using EnzymeCore
 using EnzymeCore: make_zero, set_runtime_activity
-using EnzymeCore.EnzymeRules: EnzymeRules, AugmentedReturn, augmented_rule_return_type, needs_primal, width
+using EnzymeCore.EnzymeRules:
+    EnzymeRules, AugmentedReturn, augmented_rule_return_type, needs_primal, width
 using ImplicitDifferentiation:
     ImplicitFunction,
     ImplicitFunctionPreparation,
@@ -12,7 +13,6 @@ using ImplicitDifferentiation:
     build_Aᵀ,
     build_B,
     build_Bᵀ
-
 
 const AnyDuplicated{T} = Union{
     Duplicated{T},BatchDuplicated{T},DuplicatedNoNeed{T},BatchDuplicatedNoNeed{T}
@@ -40,6 +40,8 @@ function EnzymeRules.forward(
     c = conditions(x, y, z, args...)
 
     y0 = zero(y)
+    dz = make_zero(z)::typeof(z)
+
     forward_backend = AutoEnzyme(;
         mode=set_runtime_activity(Forward), function_annotation=Const
     )
@@ -58,7 +60,6 @@ function EnzymeRules.forward(
     return if width(config) == 1
         dc = B(dx)
         dy = linear_solver(A, Aᵀ, -dc, y0)::typeof(y0)
-        dz = make_zero(z)
 
         if needs_primal(config)
             return Duplicated((y, z), (dy, dz))
@@ -68,11 +69,11 @@ function EnzymeRules.forward(
     else
         dc = map(B, dx)
         dy = map(dc) do dₖc
-            return linear_solver(A, Aᵀ, -dₖc, y0)
+            return linear_solver(A, Aᵀ, -dₖc, y0)::typeof(y0)
         end
 
         df = ntuple(Val(width(config))) do i
-            return (dy[i]::typeof(y0), dz::typeof(z))
+            return (dy[i], dz)
         end
 
         if needs_primal(config)
