@@ -43,7 +43,7 @@ function EnzymeRules.forward(
     dz = make_zero(z)::typeof(z)
 
     forward_backend = AutoEnzyme(;
-        mode=set_runtime_activity(Forward), function_annotation=Const
+        mode=set_runtime_activity(Forward, config), function_annotation=Const
     )
     reverse_backend = AutoEnzyme(;
         mode=set_runtime_activity(Reverse), function_annotation=Const
@@ -93,6 +93,7 @@ function EnzymeRules.augmented_primal(
     args::Vararg{Const,N},
 ) where {N}
     @assert EnzymeRules.width(config) == 1
+    # TODO: to support reverse vector mode, allocate a shadow of the right width.
     implicit = implicit.val
 
     x = x.val
@@ -139,7 +140,7 @@ function EnzymeRules.augmented_primal(
 end
 
 function EnzymeRules.reverse(
-    _, ::Const{<:ImplicitFunction}, ::Type, tape, x::AnyDuplicated, ::Vararg{Const,N}
+    config, ::Const{<:ImplicitFunction}, ::Type, tape, x::AnyDuplicated, ::Vararg{Const,N}
 ) where {N}
     dx = x.dval
     (; Aᵀ, Bᵀ, A, linear_solver, dy, c0) = tape
@@ -150,4 +151,4 @@ function EnzymeRules.reverse(
     return (nothing, nothing)
 end
 
-end # modul
+end # module
