@@ -15,7 +15,7 @@ using ImplicitDifferentiation:
     build_Bᵀ
 
 const AnyDuplicated{T} = Union{
-    Duplicated{T},BatchDuplicated{T},DuplicatedNoNeed{T},BatchDuplicatedNoNeed{T},
+    Duplicated{T},BatchDuplicated{T},DuplicatedNoNeed{T},BatchDuplicatedNoNeed{T}
 }
 
 function EnzymeRules.forward(
@@ -72,7 +72,9 @@ function EnzymeRules.forward(
             return linear_solver(A, Aᵀ, -dₖc, y0)::typeof(y0)
         end
 
-        df = ntuple(Val(width(config))) do i
+        df = ntuple(
+            Val(width(config))
+        ) do i
             return (dy[i], dz)
         end::NTuple{width(config),Tuple{typeof(y0),typeof(z)}}
 
