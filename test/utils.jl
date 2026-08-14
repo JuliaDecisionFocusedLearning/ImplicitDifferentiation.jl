@@ -199,10 +199,15 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
             )
             # Enzyme forward-mode Jacobians are silently wrong here due to a bug in
             # DifferentiationInterface's batched Enzyme forward jacobian(), reproduced
-            # independently of ImplicitDifferentiation (see upstream issue).
+            # independently of ImplicitDifferentiation (see upstream issue). It only bites
+            # when the A/B Jacobians are themselves built with Enzyme forward mode (i.e. no
+            # override `backends` was passed) and the output has more than one component
+            # (no batching, no bug).
             broken =
                 outer_backend isa AutoEnzyme &&
-                nameof(typeof(outer_backend.mode)) === :ForwardMode
+                nameof(typeof(outer_backend.mode)) === :ForwardMode &&
+                isnothing(get(scen.implicit_kwargs, :backends, nothing)) &&
+                size(jac_true, 1) > 1
             @test jac ≈ jac_true broken = broken
         end
     end
