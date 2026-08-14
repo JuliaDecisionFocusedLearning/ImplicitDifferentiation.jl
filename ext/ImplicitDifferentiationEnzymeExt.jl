@@ -91,7 +91,7 @@ function EnzymeRules.forward(
     args::Vararg{Const,N},
 ) where {N}
     y, z, dy, dz = _forward_single(config, implicit, x, args)
-    return Duplicated((y, z), (dy, dz))
+    return Duplicated((y, z), (dy, dz))::Duplicated{Tuple{typeof(y),typeof(z)}}
 end
 
 function EnzymeRules.forward(
@@ -102,7 +102,7 @@ function EnzymeRules.forward(
     args::Vararg{Const,N},
 ) where {N}
     y, z, dy, dz = _forward_single(config, implicit, x, args)
-    return (dy, dz)
+    return (dy, dz)::Tuple{typeof(y),typeof(z)}
 end
 
 function EnzymeRules.forward(
@@ -113,7 +113,7 @@ function EnzymeRules.forward(
     args::Vararg{Const,N},
 ) where {W,N}
     y, z, df = _forward_batch(config, implicit, x, args, Val(W))
-    return BatchDuplicated((y, z), df)
+    return BatchDuplicated((y, z), df)::BatchDuplicated{Tuple{typeof(y),typeof(z)},W}
 end
 
 function EnzymeRules.forward(
@@ -124,16 +124,10 @@ function EnzymeRules.forward(
     args::Vararg{Const,N},
 ) where {W,N}
     y, z, df = _forward_batch(config, implicit, x, args, Val(W))
-    return df
+    return df::NTuple{W,Tuple{typeof(y),typeof(z)}}
 end
 
-function EnzymeRules.augmented_primal(
-    config,
-    implicit::Const{<:ImplicitFunction},
-    RT::Type{<:AnyDuplicated},
-    x::AnyDuplicated,
-    args::Vararg{Const,N},
-) where {N}
+function _augmented_primal_setup(implicit::Const{<:ImplicitFunction}, x, args)
     implicit = implicit.val
 
     x = x.val
@@ -151,48 +145,86 @@ function EnzymeRules.augmented_primal(
 
     Aᵀ = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
     Bᵀ = build_Bᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
-    if linear_solver isa IterativeLeastSquaresSolver
-        A = build_A(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
+    A = if linear_solver isa IterativeLeastSquaresSolver
+        build_A(implicit, prep, x, y, z, c, args...; suggested_backend=forward_backend)
     else
-        A = nothing
+        nothing
     end
 
-    if needs_primal(config)
-        primal = (y, z)
-    else
-        primal = nothing
-    end
+    return (; y, z, Aᵀ, Bᵀ, A, linear_solver, c0)
+end
 
-    W = width(config)
-    dy = W == 1 ? make_zero(y) : ntuple(_ -> make_zero(y), Val(W))
-    dz = W == 1 ? make_zero(z) : ntuple(_ -> make_zero(z), Val(W))
-    if needs_shadow(config)
-        shadow = W == 1 ? (dy, dz) : ntuple(i -> (dy[i], dz[i]), Val(W))
-    else
-        shadow = nothing
-    end
+# As with `forward` above, dispatching on the width via the config type instead of
+# branching at runtime on `width(config)` avoids handing Enzyme a non-concrete shadow type.
+function EnzymeRules.augmented_primal(
+    config::EnzymeRules.RevConfigWidth{1},
+    implicit::Const{<:ImplicitFunction},
+    RT::Type{<:AnyDuplicated},
+    x::AnyDuplicated,
+    args::Vararg{Const,N},
+) where {N}
+    (; y, z, Aᵀ, Bᵀ, A, linear_solver, c0) = _augmented_primal_setup(implicit, x, args)
 
+    primal = needs_primal(config) ? (y, z) : nothing
+    dy = make_zero(y)
+    dz = make_zero(z)
+    shadow = needs_shadow(config) ? (dy, dz) : nothing
     tape = (; Aᵀ, Bᵀ, A, linear_solver, dy, c0)
 
     AR = augmented_rule_return_type(config, RT)
+    return AR(primal, shadow, tape)
+end
 
+function EnzymeRules.augmented_primal(
+    config::EnzymeRules.RevConfigWidth{W},
+    implicit::Const{<:ImplicitFunction},
+    RT::Type{<:AnyDuplicated},
+    x::AnyDuplicated,
+    args::Vararg{Const,N},
+) where {W,N}
+    (; y, z, Aᵀ, Bᵀ, A, linear_solver, c0) = _augmented_primal_setup(implicit, x, args)
+
+    primal = needs_primal(config) ? (y, z) : nothing
+    dy = ntuple(_ -> make_zero(y), Val(W))
+    dz = ntuple(_ -> make_zero(z), Val(W))
+    shadow = needs_shadow(config) ? ntuple(i -> (dy[i], dz[i]), Val(W)) : nothing
+    tape = (; Aᵀ, Bᵀ, A, linear_solver, dy, c0)
+
+    AR = augmented_rule_return_type(config, RT)
     return AR(primal, shadow, tape)
 end
 
 function EnzymeRules.reverse(
-    config, ::Const{<:ImplicitFunction}, ::Type, tape, x::AnyDuplicated, ::Vararg{Const,N}
+    ::EnzymeRules.RevConfigWidth{1},
+    ::Const{<:ImplicitFunction},
+    ::Type,
+    tape,
+    x::AnyDuplicated,
+    ::Vararg{Const,N},
 ) where {N}
     dx = x.dval
     (; Aᵀ, Bᵀ, A, linear_solver, dy, c0) = tape
 
-    if width(config) == 1
-        dc = linear_solver(Aᵀ, A, -dy, c0)
-        dx .+= Bᵀ(dc)
-    else
-        for i in eachindex(dy)
-            dc = linear_solver(Aᵀ, A, -dy[i], c0)
-            dx[i] .+= Bᵀ(dc)
-        end
+    dc = linear_solver(Aᵀ, A, -dy, c0)
+    dx .+= Bᵀ(dc)
+
+    return (nothing, ntuple(_ -> nothing, Val(N))...)
+end
+
+function EnzymeRules.reverse(
+    ::EnzymeRules.RevConfigWidth{W},
+    ::Const{<:ImplicitFunction},
+    ::Type,
+    tape,
+    x::AnyDuplicated,
+    ::Vararg{Const,N},
+) where {W,N}
+    dx = x.dval
+    (; Aᵀ, Bᵀ, A, linear_solver, dy, c0) = tape
+
+    for i in eachindex(dy)
+        dc = linear_solver(Aᵀ, A, -dy[i], c0)
+        dx[i] .+= Bᵀ(dc)
     end
 
     return (nothing, ntuple(_ -> nothing, Val(N))...)
