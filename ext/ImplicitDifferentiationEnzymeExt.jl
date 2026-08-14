@@ -12,7 +12,7 @@ using EnzymeCore:
     make_zero,
     set_runtime_activity
 using EnzymeCore.EnzymeRules:
-    EnzymeRules, augmented_rule_return_type, needs_primal, needs_shadow, width
+    EnzymeRules, augmented_rule_return_type, needs_primal, needs_shadow
 using ImplicitDifferentiation:
     ImplicitFunction,
     ImplicitFunctionPreparation,

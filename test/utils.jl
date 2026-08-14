@@ -45,7 +45,7 @@ function identity_break_autodiff(x::AbstractArray{R}) where {R}
         throw(copy(x))
     catch y
         y  # presumably break Enzyme
-    end
+    end::typeof(x)
     return result
 end
 
