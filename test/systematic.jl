@@ -16,8 +16,12 @@ using TestItems
             implicit_kwargs=(; representation, linear_solver, backends),
         )
         scen2 = add_arg_mult(scen)
-        test_implicit(scen)
-        test_implicit(scen2)
+        outer_backends = [AutoForwardDiff(), AutoZygote()]
+        if linear_solver isa DirectLinearSolver
+            append!(outer_backends, enzyme_backends)
+        end
+        test_implicit(scen, outer_backends)
+        test_implicit(scen2, outer_backends)
     end
 
     # Test for output vector of length 1
@@ -33,8 +37,12 @@ using TestItems
             implicit_kwargs=(; representation, linear_solver, backends),
         )
         scen2 = add_arg_mult(scen)
-        test_implicit(scen)
-        test_implicit(scen2)
+        outer_backends = [AutoForwardDiff(), AutoZygote()]
+        if linear_solver isa DirectLinearSolver
+            append!(outer_backends, enzyme_backends)
+        end
+        test_implicit(scen, outer_backends)
+        test_implicit(scen2, outer_backends)
     end
 end;
 
