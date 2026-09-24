@@ -8,6 +8,7 @@ To differentiate through an `ImplicitFunction`, the following backends are suppo
 | :--------------------------------------------------------------------- | :----------- | :----------- |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
 | [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | no           | yes          |
+| [Mooncake.jl](https://github.com/chalk-lab/Mooncake.jl)                | yes          | yes          |
 | [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | soon         | soon         |
 
 By default, the conditions are differentiated using the same "outer" backend that is trying to differentiate the `ImplicitFunction`.

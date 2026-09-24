@@ -76,3 +76,26 @@ end;
     test_implicit(scen)
     test_implicit(scen2)
 end;
+
+@testitem "Mooncake other inputs" setup = [TestUtils] begin
+    using ADTypes, LinearAlgebra, .TestUtils
+    using .TestUtils: NonDifferentiable
+    import DifferentiationInterface as DI
+    x = float.(1:3)
+    a = float.(4:6)
+    explicit(x, a) = sqrt.(x .* a)
+    conditions(x, y, z, a) = y .^ 2 .- x .* a
+    implicit = ImplicitFunction(NonDifferentiable((x, a) -> (explicit(x, a), nothing)), conditions)
+    function captured(a)
+        solver = NonDifferentiable(x -> (explicit(x, a), nothing))
+        return ImplicitFunction(solver, (x, y, z) -> y .^ 2 .- x .* a)
+    end
+    jac_a = DI.jacobian(a -> explicit(x, a), AutoForwardDiff(), a)
+    jac_x = DI.jacobian(x -> explicit(x, 2.0), AutoForwardDiff(), x)
+    @testset "$backend" for backend in
+                            [AutoMooncakeForward(; config=nothing), AutoMooncake(; config=nothing)]
+        @test DI.jacobian(a -> first(implicit(x, a)), backend, a) ≈ jac_a
+        @test DI.jacobian(a -> first(captured(a)(x)), backend, a) ≈ jac_a
+        @test DI.jacobian(x -> first(implicit(x, 2.0)), backend, x) ≈ jac_x
+    end
+end;
