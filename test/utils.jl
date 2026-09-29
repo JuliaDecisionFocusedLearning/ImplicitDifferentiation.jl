@@ -11,6 +11,7 @@ using JET
 using LinearAlgebra
 using Random: rand!
 using Test
+using Mooncake: Mooncake
 using Zygote: Zygote, ZygoteRuleConfig
 
 @kwdef struct Scenario{S,C,X,A,K,Xp,Ap}
@@ -184,7 +185,7 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
     )
 
     @testset "Jacobian - $outer_backend" begin
-        if outer_backend isa AutoForwardDiff
+        if outer_backend isa Union{AutoForwardDiff,AutoMooncake,AutoMooncakeForward}
             @testset "Prepared" begin
                 jac = DI.jacobian(
                     x -> first(implicit(prep, x, scen.args...)), outer_backend, scen.x
@@ -203,7 +204,12 @@ end
 
 function test_implicit(
     scen::Scenario,
-    outer_backends=[AutoForwardDiff(), AutoZygote()];
+    outer_backends=[
+        AutoForwardDiff(),
+        AutoZygote(),
+        AutoMooncake(; config=nothing),
+        AutoMooncakeForward(; config=nothing),
+    ];
     type_stability::Bool=false,
 )
     return @testset "$scen" begin
