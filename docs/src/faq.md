@@ -8,10 +8,15 @@ To differentiate through an `ImplicitFunction`, the following backends are suppo
 | :--------------------------------------------------------------------- | :----------- | :----------- |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
 | [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | no           | yes          |
-| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | soon         | soon         |
+| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | yes          | yes          |
 
 By default, the conditions are differentiated using the same "outer" backend that is trying to differentiate the `ImplicitFunction`.
 However, this can be switched to any other "inner" backend compatible with [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) (i.e. a subtype of `ADTypes.AbstractADType`).
+
+!!! warning
+    With Enzyme.jl, the conditions are differentiated with [runtime activity](https://enzyme.mit.edu/julia/stable/faq/#faq-runtime-activity) enabled.
+    Due to an Enzyme.jl bug, forward mode can then return wrong derivatives when a constant array is copied into the conditions (e.g. with `vcat(x, ...)`).
+    If this happens, specify another inner backend through the `backends` keyword.
 
 ## Input and output types
 

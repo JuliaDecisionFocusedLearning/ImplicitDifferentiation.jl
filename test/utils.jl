@@ -4,7 +4,9 @@ using ChainRulesCore
 using ChainRulesTestUtils
 using ComponentArrays
 import DifferentiationInterface as DI
-using Enzyme: Enzyme
+using Enzyme:
+    Enzyme, BatchDuplicated, BatchDuplicatedNoNeed, Const, Duplicated, DuplicatedNoNeed
+using EnzymeTestUtils: EnzymeTestUtils
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction, prepare_implicit
@@ -22,6 +24,7 @@ using Zygote: Zygote, ZygoteRuleConfig
     implicit_kwargs::K = (;)
     x_prep::Xp = zero(x)
     args_prep::Ap = map(zero, args)
+    enzyme_vcat_bug::Bool = conditions === default_conditions
 end
 
 function Base.show(io::IO, scen::Scenario)
@@ -80,6 +83,7 @@ function add_arg_mult(scen::Scenario, a=3)
         implicit_kwargs=implicit_kwargs_with_arg_mult,
         x_prep=scen.x_prep,
         args_prep=(zero(a),),
+        enzyme_vcat_bug=scen.enzyme_vcat_bug,
     )
 end
 
@@ -173,6 +177,58 @@ function test_implicit_rrule(scen::Scenario; type_stability::Bool)
     end
 end
 
+# Enzyme forward mode with runtime activity silently returns wrong derivatives when a
+# constant array is copied into the output (e.g. by `vcat` in `default_conditions`).
+# This bites the inner differentiation of the conditions whenever it relies on Enzyme
+# forward mode (no override `backends`): always for an outer forward mode, only with
+# the least-squares solver (which also needs `A`) for an outer reverse mode.
+function enzyme_broken(scen::Scenario, mode::Symbol)
+    inner_forward =
+        mode == :forward ||
+        get(scen.implicit_kwargs, :linear_solver, nothing) isa
+        ID.IterativeLeastSquaresSolver
+    return scen.enzyme_vcat_bug &&
+           inner_forward &&
+           isnothing(get(scen.implicit_kwargs, :backends, nothing))
+end
+
+function test_implicit_enzyme(scen::Scenario; atol=1e-6, rtol=1e-6)
+    implicit = ImplicitFunction(
+        NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
+    )
+    # the solver is not differentiable, so these only pass if our rules are used
+    return @testset "EnzymeRules" begin
+        if !enzyme_broken(scen, :forward)
+            @testset "Forward" begin
+                for Tret in (Const, Duplicated, DuplicatedNoNeed)
+                    EnzymeTestUtils.test_forward(
+                        implicit, Tret, (scen.x, Duplicated), scen.args...; atol, rtol
+                    )
+                end
+                for Tret in (Const, BatchDuplicated, BatchDuplicatedNoNeed)
+                    EnzymeTestUtils.test_forward(
+                        implicit, Tret, (scen.x, BatchDuplicated), scen.args...; atol, rtol
+                    )
+                end
+            end
+        end
+        if !enzyme_broken(scen, :reverse)
+            @testset "Reverse" begin
+                for Tret in (Const, Duplicated)
+                    EnzymeTestUtils.test_reverse(
+                        implicit, Tret, (scen.x, Duplicated), scen.args...; atol, rtol
+                    )
+                end
+                for Tret in (Const, BatchDuplicated)
+                    EnzymeTestUtils.test_reverse(
+                        implicit, Tret, (scen.x, BatchDuplicated), scen.args...; atol, rtol
+                    )
+                end
+            end
+        end
+    end
+end
+
 function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
@@ -197,17 +253,10 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
             jac = DI.jacobian(
                 first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
             )
-            # Enzyme forward-mode Jacobians are silently wrong here due to a bug in
-            # DifferentiationInterface's batched Enzyme forward jacobian(), reproduced
-            # independently of ImplicitDifferentiation (see upstream issue). It only bites
-            # when the A/B Jacobians are themselves built with Enzyme forward mode (i.e. no
-            # override `backends` was passed) and the output has more than one component
-            # (no batching, no bug).
             broken =
-                outer_backend isa AutoEnzyme &&
-                nameof(typeof(outer_backend.mode)) === :ForwardMode &&
-                isnothing(get(scen.implicit_kwargs, :backends, nothing)) &&
-                size(jac_true, 1) > 1
+                outer_backend isa AutoEnzyme && enzyme_broken(
+                    scen, outer_backend.mode isa Enzyme.ForwardMode ? :forward : :reverse
+                )
             @test jac ≈ jac_true broken = broken
         end
     end
@@ -224,13 +273,16 @@ const enzyme_backends = [
 
 function test_implicit(
     scen::Scenario,
-    outer_backends=[AutoForwardDiff(), AutoZygote()];
+    outer_backends=[AutoForwardDiff(), AutoZygote(), enzyme_backends...];
     type_stability::Bool=false,
 )
     return @testset "$scen" begin
         test_implicit_call(scen)
         test_implicit_duals(scen; type_stability)
         test_implicit_rrule(scen; type_stability)
+        if any(Base.Fix2(isa, AutoEnzyme), outer_backends)
+            test_implicit_enzyme(scen)
+        end
         for outer_backend in outer_backends
             test_implicit_jacobian(scen, outer_backend)
         end

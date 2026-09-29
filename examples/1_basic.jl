@@ -140,7 +140,7 @@ function forward_nlsolve(x)
     F!(storage, y, x) = (storage .= y .^ 2 .- x)
     initial_y = similar(x)
     initial_y .= 1
-    prob = NLS.NonlinearProblem(F!, initial_y, x; abstol=1.0e-10, reltol=1.0e-10)
+    prob = NLS.NonlinearProblem(F!, initial_y, x; abstol=1e-10, reltol=1e-10)
     sol = NLS.solve(prob)
     y = sol.u
     z = nothing
