@@ -45,13 +45,15 @@ const REVERSE_BACKEND = AutoMooncake(; config=nothing)
 }
 
 ## Conversions between Mooncake tangents and arrays shaped like the primal
+# Mooncake converts through a buffer of the primal's own type (e.g. `SubArray`), which
+# `deepcopy` keeps. The result goes to `zero(x)`, the type the operators are prepared for.
 
 function tangent_to_array(x::AbstractArray, t)
-    if t isa typeof(x)
+    if t isa AbstractArray
         return t
     else
-        dest = FriendlyTangentCache{AsPrimal}(copy(x))
-        return tangent_to_friendly!!(dest, x, t, IdDict{Any,Any}())
+        dest = FriendlyTangentCache{AsPrimal}(deepcopy(x))
+        return copyto!(zero(x), tangent_to_friendly!!(dest, x, t, IdDict{Any,Any}()))
     end
 end
 
@@ -59,7 +61,7 @@ function array_to_tangent(x::AbstractArray, a::AbstractArray)
     if a isa tangent_type(typeof(x))
         return a
     else
-        return primal_to_tangent!!(zero_tangent(x), a)
+        return primal_to_tangent!!(zero_tangent(x), copyto!(deepcopy(x), a))
     end
 end
 
@@ -161,7 +163,7 @@ function (pb::ImplicitPullback)(dout)
     end
     dy = tangent_to_array(y, tangent(fy, ry))
     dc = linear_solver(Aᵀ, A, -dy, zero(c))
-    tx = array_to_tangent(x, copyto!(similar(x), Bᵀ(dc)))
+    tx = array_to_tangent(x, copyto!(similar(x), tangent_to_array(x, Bᵀ(dc))))
     increment!!(fx, fdata(tx))
     if has_other_tangents(implicit, args)
         f = ConditionsAt(x, y, z)

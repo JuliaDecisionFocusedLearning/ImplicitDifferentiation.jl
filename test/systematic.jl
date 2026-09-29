@@ -92,6 +92,14 @@ end;
         solver = NonDifferentiable(x -> (explicit(x, a), nothing))
         return ImplicitFunction(solver, (x, y, z) -> y .^ 2 .- x .* a)
     end
+    implicit_scalar_z = ImplicitFunction(
+        NonDifferentiable((x, a) -> (explicit(x, a), 0.0)), conditions
+    )
+    implicit_forwarddiff = ImplicitFunction(
+        NonDifferentiable((x, a) -> (explicit(x, a), nothing)),
+        conditions;
+        backends=(; x=AutoForwardDiff(), y=AutoForwardDiff()),
+    )
     jac_a = DI.jacobian(a -> explicit(x, a), AutoForwardDiff(), a)
     jac_x = DI.jacobian(x -> explicit(x, 2.0), AutoForwardDiff(), x)
     @testset "$backend" for backend in [
@@ -100,5 +108,14 @@ end;
         @test DI.jacobian(a -> first(implicit(x, a)), backend, a) ≈ jac_a
         @test DI.jacobian(a -> first(captured(a)(x)), backend, a) ≈ jac_a
         @test DI.jacobian(x -> first(implicit(x, 2.0)), backend, x) ≈ jac_x
+        # a `z` with nonzero rdata
+        @test DI.jacobian(x -> first(implicit_scalar_z(x, 2.0)), backend, x) ≈ jac_x
+        # an `x` whose Mooncake tangent is not an array
+        @test DI.jacobian(x -> first(implicit_forwarddiff(view(x, :), 2.0)), backend, x) ≈
+            jac_x
+        if backend isa AutoMooncake
+            # DI's Mooncake forward mode rejects an array tangent for a `SubArray`
+            @test DI.jacobian(x -> first(implicit(view(x, :), 2.0)), backend, x) ≈ jac_x
+        end
     end
 end;
