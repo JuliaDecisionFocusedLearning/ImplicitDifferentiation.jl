@@ -103,9 +103,7 @@ function Mooncake.frule!!(
     return implicit_frule(implicit, primal(prep), x, args...)
 end
 
-function implicit_frule(
-    implicit_dual::Dual, prep, x::Dual, args::Vararg{Dual,N}
-) where {N}
+function implicit_frule(implicit_dual::Dual, prep, x::Dual, args::Vararg{Dual,N}) where {N}
     implicit = primal(implicit_dual)
     (; conditions, linear_solver) = implicit
     x0 = primal(x)
