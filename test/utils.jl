@@ -24,7 +24,7 @@ using Zygote: Zygote, ZygoteRuleConfig
     implicit_kwargs::K = (;)
     x_prep::Xp = zero(x)
     args_prep::Ap = map(zero, args)
-    enzyme_vcat_bug::Bool = conditions === default_conditions
+    enzyme_vcat_bug::Bool = conditions === default_conditions && x isa AbstractVector
 end
 
 function Base.show(io::IO, scen::Scenario)
@@ -178,7 +178,7 @@ function test_implicit_rrule(scen::Scenario; type_stability::Bool)
 end
 
 # Enzyme forward mode with runtime activity silently returns wrong derivatives when a
-# constant array is copied into the output (e.g. by `vcat` in `default_conditions`).
+# constant vector is copied into the output (e.g. by `vcat` in `default_conditions`).
 # This bites the inner differentiation of the conditions whenever it relies on Enzyme
 # forward mode (no override `backends`): always for an outer forward mode, only with
 # the least-squares solver (which also needs `A`) for an outer reverse mode.
