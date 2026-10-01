@@ -250,14 +250,15 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
             end
         end
         @testset "Unprepared" begin
-            jac = DI.jacobian(
-                first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
-            )
             broken =
                 outer_backend isa AutoEnzyme && enzyme_broken(
                     scen, outer_backend.mode isa Enzyme.ForwardMode ? :forward : :reverse
                 )
-            @test jac ≈ jac_true broken = broken
+            # the Enzyme bug can also throw (depending on the version), so the jacobian
+            # must be computed inside `@test` for `broken` to catch it
+            @test DI.jacobian(
+                first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
+            ) ≈ jac_true broken = broken
         end
     end
 end
