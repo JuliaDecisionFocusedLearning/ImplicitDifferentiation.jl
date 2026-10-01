@@ -11,11 +11,13 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [weakdeps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [extensions]
 ImplicitDifferentiationChainRulesCoreExt = "ChainRulesCore"
+ImplicitDifferentiationEnzymeExt = "EnzymeCore"
 ImplicitDifferentiationForwardDiffExt = "ForwardDiff"
 ImplicitDifferentiationZygoteExt = "Zygote"
 
@@ -23,6 +25,7 @@ ImplicitDifferentiationZygoteExt = "Zygote"
 ADTypes = "1.9.0"
 ChainRulesCore = "1.25.0"
 DifferentiationInterface = "0.6.1,0.7"
+EnzymeCore = "0.8"
 ForwardDiff = "0.10.36, 1"
 KrylovKit = "0.10.0"
 LinearAlgebra = "1"

@@ -2,7 +2,7 @@ using TestItemRunner
 
 @testmodule TestUtils begin
     include("utils.jl")
-    export Scenario, test_implicit, add_arg_mult
+    export Scenario, test_implicit, test_implicit_enzyme, add_arg_mult
     export default_solver, default_conditions
 end
 

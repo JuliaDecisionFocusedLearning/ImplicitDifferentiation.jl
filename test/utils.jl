@@ -4,6 +4,9 @@ using ChainRulesCore
 using ChainRulesTestUtils
 using ComponentArrays
 import DifferentiationInterface as DI
+using Enzyme:
+    Enzyme, BatchDuplicated, BatchDuplicatedNoNeed, Const, Duplicated, DuplicatedNoNeed
+using EnzymeTestUtils: EnzymeTestUtils
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction, prepare_implicit
@@ -21,6 +24,7 @@ using Zygote: Zygote, ZygoteRuleConfig
     implicit_kwargs::K = (;)
     x_prep::Xp = zero(x)
     args_prep::Ap = map(zero, args)
+    enzyme_vcat_bug::Bool = conditions === default_conditions && x isa AbstractVector
 end
 
 function Base.show(io::IO, scen::Scenario)
@@ -44,7 +48,7 @@ function identity_break_autodiff(x::AbstractArray{R}) where {R}
         throw(copy(x))
     catch y
         y  # presumably break Enzyme
-    end
+    end::typeof(x)
     return result
 end
 
@@ -79,6 +83,7 @@ function add_arg_mult(scen::Scenario, a=3)
         implicit_kwargs=implicit_kwargs_with_arg_mult,
         x_prep=scen.x_prep,
         args_prep=(zero(a),),
+        enzyme_vcat_bug=scen.enzyme_vcat_bug,
     )
 end
 
@@ -89,7 +94,7 @@ function test_implicit_call(scen::Scenario)
     y, z = implicit(scen.x, scen.args...)
     y_true, z_true = scen.solver(scen.x, scen.args...)
 
-    @testset "Call" begin
+    return @testset "Call" begin
         @test y ≈ y_true
         @test z == z_true
     end
@@ -116,7 +121,7 @@ function test_implicit_duals(scen::Scenario; type_stability::Bool)
         map(DI.Constant, scen.args)...,
     )[1]
 
-    @testset "Duals" begin
+    return @testset "Duals" begin
         @testset "Prepared" begin
             y_and_dy, z = implicit(prep, x_and_dx, scen.args...)
             T = tag(y_and_dy)
@@ -158,7 +163,7 @@ function test_implicit_rrule(scen::Scenario; type_stability::Bool)
         first ∘ scen.solver, AutoZygote(), scen.x, (dy,), map(DI.Constant, scen.args)...
     )[1]
 
-    @testset "ChainRule" begin
+    return @testset "ChainRule" begin
         (y, z), pb = rrule_via_ad(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
         dimpl, dx = pb((dy, dz))
         @test y ≈ y_true
@@ -168,6 +173,58 @@ function test_implicit_rrule(scen::Scenario; type_stability::Bool)
         if type_stability
             @inferred rrule_via_ad(ZygoteRuleConfig(), implicit, scen.x, scen.args...)
             @inferred pb((dy, dz))
+        end
+    end
+end
+
+# Enzyme forward mode with runtime activity silently returns wrong derivatives when a
+# constant vector is copied into the output (e.g. by `vcat` in `default_conditions`).
+# This bites the inner differentiation of the conditions whenever it relies on Enzyme
+# forward mode (no override `backends`): always for an outer forward mode, only with
+# the least-squares solver (which also needs `A`) for an outer reverse mode.
+function enzyme_broken(scen::Scenario, mode::Symbol)
+    inner_forward =
+        mode == :forward ||
+        get(scen.implicit_kwargs, :linear_solver, nothing) isa
+        ID.IterativeLeastSquaresSolver
+    return scen.enzyme_vcat_bug &&
+           inner_forward &&
+           isnothing(get(scen.implicit_kwargs, :backends, nothing))
+end
+
+function test_implicit_enzyme(scen::Scenario; atol=1e-6, rtol=1e-6)
+    implicit = ImplicitFunction(
+        NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
+    )
+    # the solver is not differentiable, so these only pass if our rules are used
+    return @testset "EnzymeRules" begin
+        if !enzyme_broken(scen, :forward)
+            @testset "Forward" begin
+                for Tret in (Const, Duplicated, DuplicatedNoNeed)
+                    EnzymeTestUtils.test_forward(
+                        implicit, Tret, (scen.x, Duplicated), scen.args...; atol, rtol
+                    )
+                end
+                for Tret in (Const, BatchDuplicated, BatchDuplicatedNoNeed)
+                    EnzymeTestUtils.test_forward(
+                        implicit, Tret, (scen.x, BatchDuplicated), scen.args...; atol, rtol
+                    )
+                end
+            end
+        end
+        if !enzyme_broken(scen, :reverse)
+            @testset "Reverse" begin
+                for Tret in (Const, Duplicated)
+                    EnzymeTestUtils.test_reverse(
+                        implicit, Tret, (scen.x, Duplicated), scen.args...; atol, rtol
+                    )
+                end
+                for Tret in (Const, BatchDuplicated)
+                    EnzymeTestUtils.test_reverse(
+                        implicit, Tret, (scen.x, BatchDuplicated), scen.args...; atol, rtol
+                    )
+                end
+            end
         end
     end
 end
@@ -183,7 +240,7 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
         first ∘ scen.solver, outer_backend, scen.x, map(DI.Constant, scen.args)...
     )
 
-    @testset "Jacobian - $outer_backend" begin
+    return @testset "Jacobian - $outer_backend" begin
         if outer_backend isa AutoForwardDiff
             @testset "Prepared" begin
                 jac = DI.jacobian(
@@ -193,23 +250,40 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
             end
         end
         @testset "Unprepared" begin
-            jac = DI.jacobian(
+            broken =
+                outer_backend isa AutoEnzyme && enzyme_broken(
+                    scen, outer_backend.mode isa Enzyme.ForwardMode ? :forward : :reverse
+                )
+            # the Enzyme bug can also throw (depending on the version), so the jacobian
+            # must be computed inside `@test` for `broken` to catch it
+            @test DI.jacobian(
                 first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
-            )
-            @test jac ≈ jac_true
+            ) ≈ jac_true broken = broken
         end
     end
 end
 
+const enzyme_backends = [
+    AutoEnzyme(;
+        mode=Enzyme.set_runtime_activity(Enzyme.Forward), function_annotation=Enzyme.Const
+    ),
+    AutoEnzyme(;
+        mode=Enzyme.set_runtime_activity(Enzyme.Reverse), function_annotation=Enzyme.Const
+    ),
+]
+
 function test_implicit(
     scen::Scenario,
-    outer_backends=[AutoForwardDiff(), AutoZygote()];
+    outer_backends=[AutoForwardDiff(), AutoZygote(), enzyme_backends...];
     type_stability::Bool=false,
 )
     return @testset "$scen" begin
         test_implicit_call(scen)
         test_implicit_duals(scen; type_stability)
         test_implicit_rrule(scen; type_stability)
+        if any(Base.Fix2(isa, AutoEnzyme), outer_backends)
+            test_implicit_enzyme(scen)
+        end
         for outer_backend in outer_backends
             test_implicit_jacobian(scen, outer_backend)
         end

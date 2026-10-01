@@ -31,10 +31,10 @@ function (implicit::ImplicitFunction)(
     dX = ntuple(k -> partials.(x_and_dx, k), Val(N))
     dC = map(B, dX)
     dY = map(dC) do dₖc
-        linear_solver(A, Aᵀ, -dₖc, y0)
+        return linear_solver(A, Aᵀ, -dₖc, y0)
     end
     y_and_dy = map(y, LinearIndices(y)) do yi, i
-        Dual{T}(yi, Partials(ntuple(k -> dY[k][i], Val(N))))
+        return Dual{T}(yi, Partials(ntuple(k -> dY[k][i], Val(N))))
     end
 
     return y_and_dy, z
