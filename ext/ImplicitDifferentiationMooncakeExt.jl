@@ -57,11 +57,24 @@ function tangent_to_array(x::AbstractArray, t)
     end
 end
 
+# Zeroing the whole storage keeps the parent entries outside a view, which hold primal
+# values, from becoming tangent entries.
+function zero_storage!(a::AbstractArray)
+    p = parent(a)
+    if p === a
+        return fill!(a, zero(eltype(a)))
+    else
+        return zero_storage!(p)
+    end
+end
+
 function array_to_tangent(x::AbstractArray, a::AbstractArray)
     if a isa tangent_type(typeof(x))
         return a
     else
-        return primal_to_tangent!!(zero_tangent(x), copyto!(deepcopy(x), a))
+        buffer = deepcopy(x)
+        zero_storage!(buffer)
+        return primal_to_tangent!!(zero_tangent(x), copyto!(buffer, a))
     end
 end
 

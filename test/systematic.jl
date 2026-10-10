@@ -119,3 +119,17 @@ end;
         end
     end
 end;
+
+@testitem "Mooncake view of part of its parent" setup = [TestUtils] begin
+    using ADTypes, .TestUtils
+    using .TestUtils: NonDifferentiable
+    import DifferentiationInterface as DI
+    implicit = ImplicitFunction(
+        NonDifferentiable(x -> (sqrt.(x), nothing)), (x, y, z) -> y .^ 2 .- x
+    )
+    p = [1.0, 2.0, 3.0]
+    jac = DI.jacobian(p -> sqrt.(view(p, 1:2)), AutoForwardDiff(), p)
+    # the entries of `p` outside the view must get zero derivative
+    @test DI.jacobian(p -> first(implicit(view(p, 1:2))), AutoMooncake(; config=nothing), p) ≈
+        jac
+end;
