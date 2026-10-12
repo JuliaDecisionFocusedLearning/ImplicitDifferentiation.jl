@@ -16,7 +16,7 @@ import NonlinearSolve as NLS
 using Optim
 using Test  #src
 using Zygote
-using Enzyme
+using Enzyme  #src
 
 #=
 In all three cases, we will use the square root as our forward mapping, but expressed in three different ways.
@@ -87,12 +87,7 @@ first(implicit_optim(x, LBFGS())) .^ 2
 
 ForwardDiff.jacobian(_x -> first(implicit_optim(_x, LBFGS())), x)
 @test ForwardDiff.jacobian(_x -> first(implicit_optim(_x, LBFGS())), x) ≈ J  #src
-
-only(Enzyme.jacobian(Forward, _x -> first(implicit_optim(_x, LBFGS())), x))
-only(Enzyme.jacobian(Reverse, _x -> first(implicit_optim(_x, LBFGS())), x))
-
-# Fails due to mismatched activity.
-# Enzyme.jacobian(Forward, _x -> first(forward_optim(_x, LBFGS())), x)
+@test only(Enzyme.jacobian(Forward, _x -> first(implicit_optim(_x, LBFGS())), x)) ≈ J  #src
 
 #=
 In this instance, we could use ForwardDiff.jl directly on the solver:
@@ -104,6 +99,7 @@ ForwardDiff.jacobian(_x -> first(forward_optim(_x, LBFGS())), x)
 
 Zygote.jacobian(_x -> first(implicit_optim(_x, LBFGS())), x)[1]
 @test Zygote.jacobian(_x -> first(implicit_optim(_x, LBFGS())), x)[1] ≈ J  #src
+@test only(Enzyme.jacobian(Reverse, _x -> first(implicit_optim(_x, LBFGS())), x)) ≈ J  #src
 
 #=
 In this instance, we cannot use Zygote.jl directly on the solver (due to unsupported `try/catch` statements).

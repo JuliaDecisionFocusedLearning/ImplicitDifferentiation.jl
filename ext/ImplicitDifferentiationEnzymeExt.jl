@@ -10,8 +10,9 @@ using EnzymeCore:
     Forward,
     Reverse,
     make_zero,
-    set_runtime_activity
-using EnzymeCore.EnzymeRules: EnzymeRules, FwdConfig, RevConfig, overwritten
+    set_runtime_activity,
+    set_strong_zero
+using EnzymeCore.EnzymeRules: EnzymeRules, FwdConfig, RevConfig, overwritten, strong_zero
 using ImplicitDifferentiation:
     ImplicitFunction,
     ImplicitFunctionPreparation,
@@ -36,17 +37,26 @@ end
 tangents(x::Union{Duplicated,DuplicatedNoNeed}) = (x.dval,)
 tangents(x::Union{BatchDuplicated,BatchDuplicatedNoNeed}) = x.dval
 
-# Runtime activity is always enabled for the inner differentiation of the conditions,
-# because the `Constant` contexts of DifferentiationInterface often require it.
-const INNER_BACKENDS = (
-    AutoEnzyme(; mode=set_runtime_activity(Forward), function_annotation=Const),
-    AutoEnzyme(; mode=set_runtime_activity(Reverse), function_annotation=Const),
-)
+# The inner backends differentiating the conditions inherit the strong zero setting of the
+# outer config (a type parameter, so the result is inferrable). Runtime activity is always
+# enabled, because the `Constant` contexts of DifferentiationInterface often require it:
+# without it, even outer modes without runtime activity would fail.
+function inner_backends(config::Union{FwdConfig,RevConfig})
+    sz = strong_zero(config)
+    forward_mode = set_runtime_activity(sz ? set_strong_zero(Forward) : Forward)
+    reverse_mode = set_runtime_activity(sz ? set_strong_zero(Reverse) : Reverse)
+    return (
+        AutoEnzyme(; mode=forward_mode, function_annotation=Const),
+        AutoEnzyme(; mode=reverse_mode, function_annotation=Const),
+    )
+end
 
 ## Forward
 
 # The expected return type is given by `EnzymeRules.forward_rule_return_type`. Dispatching
 # on the config type parameters rather than branching at runtime keeps it concrete.
+# These parameters are documented in the docstring of `FwdConfig`: they are
+# `FwdConfig{NeedsPrimal,NeedsShadow,Width,RuntimeActivity,StrongZero}`.
 function forward_return(::FwdConfig{true,true,1}, primal, shadows)
     return Duplicated(primal, only(shadows))
 end
@@ -56,13 +66,25 @@ forward_return(::FwdConfig{false,true}, primal, shadows) = shadows
 forward_return(::FwdConfig{true,false}, primal, shadows) = primal
 forward_return(::FwdConfig{false,false}, primal, shadows) = nothing
 
+# One zero shadow of the output `(y, z)` per batch direction.
+zero_shadows(y, z, ::Val{W}) where {W} = ntuple(_ -> (make_zero(y), make_zero(z)), Val(W))
+
 forward_shadows(::FwdConfig{<:Any,false}, implicit, x, y, z, args) = nothing
 
-function forward_shadows(config::FwdConfig{<:Any,true}, implicit, x, y, z, args)
+# Enzyme may call the rule with a constant `x` (e.g. when the output is unused).
+function forward_shadows(
+    ::FwdConfig{<:Any,true,W}, implicit, x::Const, y, z, args
+) where {W}
+    return zero_shadows(y, z, Val(W))
+end
+
+function forward_shadows(
+    config::FwdConfig{<:Any,true}, implicit, x::AnyDuplicated, y, z, args
+)
     (; conditions, linear_solver) = implicit
     c = conditions(x.val, y, z, args...)
     y0 = zero(y)
-    forward_backend, reverse_backend = INNER_BACKENDS
+    forward_backend, reverse_backend = inner_backends(config)
     prep = ImplicitFunctionPreparation(eltype(x.val))
     A = build_A(implicit, prep, x.val, y, z, c, args...; suggested_backend=forward_backend)
     B = build_B(implicit, prep, x.val, y, z, c, args...; suggested_backend=forward_backend)
@@ -81,7 +103,7 @@ function EnzymeRules.forward(
     config::FwdConfig,
     implicit::Const{<:ImplicitFunction},
     ::Type{<:Union{Const,AnyDuplicated}},
-    x::AnyDuplicated,
+    x::Union{Const,AnyDuplicated},
     args::Vararg{Const,N},
 ) where {N}
     implicit = implicit.val
@@ -97,7 +119,7 @@ function EnzymeRules.augmented_primal(
     config::RevConfig,
     implicit::Const{<:ImplicitFunction},
     ::Type{<:Union{Const,AnyDuplicated}},
-    x::AnyDuplicated,
+    x::Union{Const,AnyDuplicated},
     args::Vararg{Const,N},
 ) where {N}
     implicit = implicit.val
@@ -112,24 +134,33 @@ function augmented_shadow_and_tape(::RevConfig{<:Any,false}, implicit, x, y, z, 
     return nothing, nothing
 end
 
+# With a constant `x`, there is nothing to pull back.
 function augmented_shadow_and_tape(
-    config::RevConfig{<:Any,true,W}, implicit, x, y, z, args
+    config::RevConfig{<:Any,true,W}, implicit, x::Const, y, z, args
 ) where {W}
-    shadows = ntuple(_ -> (make_zero(y), make_zero(z)), Val(W))
+    return batch_shadow(config, zero_shadows(y, z, Val(W))), nothing
+end
+
+# Type parameters of `RevConfig`, as documented in its docstring:
+# `RevConfig{NeedsPrimal,NeedsShadow,Width,Overwritten,RuntimeActivity,StrongZero}`.
+function augmented_shadow_and_tape(
+    config::RevConfig{<:Any,true,W}, implicit, x::AnyDuplicated, y, z, args
+) where {W}
+    shadows = zero_shadows(y, z, Val(W))
     # the pullback captures `x` and `y`, which may be mutated before the reverse pass
     x_tape = overwritten(config)[2] ? copy(x.val) : x.val
-    pullback = build_pullback(implicit, x_tape, copy(y), z, args)
+    pullback = build_pullback(config, implicit, x_tape, copy(y), z, args)
     return batch_shadow(config, shadows), (; pullback, shadows)
 end
 
 batch_shadow(::RevConfig{<:Any,<:Any,1}, shadows) = only(shadows)
 batch_shadow(::RevConfig, shadows) = shadows
 
-function build_pullback(implicit, x, y, z, args)
+function build_pullback(config, implicit, x, y, z, args)
     (; conditions, linear_solver) = implicit
     c = conditions(x, y, z, args...)
     c0 = zero(c)
-    forward_backend, reverse_backend = INNER_BACKENDS
+    forward_backend, reverse_backend = inner_backends(config)
     prep = ImplicitFunctionPreparation(eltype(x))
     Aᵀ = build_Aᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
     Bᵀ = build_Bᵀ(implicit, prep, x, y, z, c, args...; suggested_backend=reverse_backend)
@@ -146,11 +177,13 @@ function EnzymeRules.reverse(
     ::Const{<:ImplicitFunction},
     ::Type{<:Union{Const,AnyDuplicated}},
     tape,
-    x::AnyDuplicated,
+    x::Union{Const,AnyDuplicated},
     ::Vararg{Const,N},
 ) where {N}
     if !isnothing(tape)
         (; pullback, shadows) = tape
+        # the byproduct `z` is treated as a constant, so its shadow `dₖz` is ignored
+        # (unlike ChainRules, Enzyme has no way to mark it as not implemented)
         foreach(tangents(x), shadows) do dₖx, (dₖy, _)
             dₖx .+= pullback(dₖy)
             # the output shadow has been consumed, reset it to zero

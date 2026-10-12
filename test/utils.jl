@@ -5,7 +5,13 @@ using ChainRulesTestUtils
 using ComponentArrays
 import DifferentiationInterface as DI
 using Enzyme:
-    Enzyme, BatchDuplicated, BatchDuplicatedNoNeed, Const, Duplicated, DuplicatedNoNeed
+    Enzyme,
+    EnzymeRules,
+    BatchDuplicated,
+    BatchDuplicatedNoNeed,
+    Const,
+    Duplicated,
+    DuplicatedNoNeed
 using EnzymeTestUtils: EnzymeTestUtils
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
@@ -24,7 +30,6 @@ using Zygote: Zygote, ZygoteRuleConfig
     implicit_kwargs::K = (;)
     x_prep::Xp = zero(x)
     args_prep::Ap = map(zero, args)
-    enzyme_vcat_bug::Bool = conditions === default_conditions && x isa AbstractVector
 end
 
 function Base.show(io::IO, scen::Scenario)
@@ -44,12 +49,20 @@ end
 function identity_break_autodiff(x::AbstractArray{R}) where {R}
     float(first(x))  # break ForwardDiff
     (Vector{R}(undef, 1))[1] = first(x)  # break Zygote
-    result = try
-        throw(copy(x))
-    catch y
-        y  # presumably break Enzyme
-    end::typeof(x)
-    return result
+    return copy(x)
+end
+
+# break Enzyme
+function EnzymeRules.forward(
+    ::EnzymeRules.FwdConfig, ::Const{typeof(identity_break_autodiff)}, ::Type, x
+)
+    return error("`identity_break_autodiff` is not differentiable with Enzyme")
+end
+
+function EnzymeRules.augmented_primal(
+    ::EnzymeRules.RevConfig, ::Const{typeof(identity_break_autodiff)}, ::Type, x
+)
+    return error("`identity_break_autodiff` is not differentiable with Enzyme")
 end
 
 struct NonDifferentiable{S}
@@ -83,7 +96,6 @@ function add_arg_mult(scen::Scenario, a=3)
         implicit_kwargs=implicit_kwargs_with_arg_mult,
         x_prep=scen.x_prep,
         args_prep=(zero(a),),
-        enzyme_vcat_bug=scen.enzyme_vcat_bug,
     )
 end
 
@@ -177,53 +189,46 @@ function test_implicit_rrule(scen::Scenario; type_stability::Bool)
     end
 end
 
-# Enzyme forward mode with runtime activity silently returns wrong derivatives when a
-# constant vector is copied into the output (e.g. by `vcat` in `default_conditions`).
-# This bites the inner differentiation of the conditions whenever it relies on Enzyme
-# forward mode (no override `backends`): always for an outer forward mode, only with
-# the least-squares solver (which also needs `A`) for an outer reverse mode.
-function enzyme_broken(scen::Scenario, mode::Symbol)
-    inner_forward =
-        mode == :forward ||
-        get(scen.implicit_kwargs, :linear_solver, nothing) isa
-        ID.IterativeLeastSquaresSolver
-    return scen.enzyme_vcat_bug &&
-           inner_forward &&
-           isnothing(get(scen.implicit_kwargs, :backends, nothing))
-end
-
 function test_implicit_enzyme(scen::Scenario; atol=1e-6, rtol=1e-6)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
     )
     # the solver is not differentiable, so these only pass if our rules are used
+    # only `Const` positional arguments beyond `x` are supported
+    args = map(a -> (a, Const), scen.args)
     return @testset "EnzymeRules" begin
-        if !enzyme_broken(scen, :forward)
-            @testset "Forward" begin
-                for Tret in (Const, Duplicated, DuplicatedNoNeed)
-                    EnzymeTestUtils.test_forward(
-                        implicit, Tret, (scen.x, Duplicated), scen.args...; atol, rtol
-                    )
-                end
-                for Tret in (Const, BatchDuplicated, BatchDuplicatedNoNeed)
-                    EnzymeTestUtils.test_forward(
-                        implicit, Tret, (scen.x, BatchDuplicated), scen.args...; atol, rtol
-                    )
-                end
+        @testset "Constant input" begin
+            for Tret in (Const, Duplicated, BatchDuplicated)
+                EnzymeTestUtils.test_forward(
+                    implicit, Tret, (scen.x, Const), args...; atol, rtol
+                )
+                EnzymeTestUtils.test_reverse(
+                    implicit, Tret, (scen.x, Const), args...; atol, rtol
+                )
             end
         end
-        if !enzyme_broken(scen, :reverse)
-            @testset "Reverse" begin
-                for Tret in (Const, Duplicated)
-                    EnzymeTestUtils.test_reverse(
-                        implicit, Tret, (scen.x, Duplicated), scen.args...; atol, rtol
-                    )
-                end
-                for Tret in (Const, BatchDuplicated)
-                    EnzymeTestUtils.test_reverse(
-                        implicit, Tret, (scen.x, BatchDuplicated), scen.args...; atol, rtol
-                    )
-                end
+        @testset "Forward" begin
+            for Tret in (Const, Duplicated, DuplicatedNoNeed)
+                EnzymeTestUtils.test_forward(
+                    implicit, Tret, (scen.x, Duplicated), args...; atol, rtol
+                )
+            end
+            for Tret in (Const, BatchDuplicated, BatchDuplicatedNoNeed)
+                EnzymeTestUtils.test_forward(
+                    implicit, Tret, (scen.x, BatchDuplicated), args...; atol, rtol
+                )
+            end
+        end
+        @testset "Reverse" begin
+            for Tret in (Const, Duplicated)
+                EnzymeTestUtils.test_reverse(
+                    implicit, Tret, (scen.x, Duplicated), args...; atol, rtol
+                )
+            end
+            for Tret in (Const, BatchDuplicated)
+                EnzymeTestUtils.test_reverse(
+                    implicit, Tret, (scen.x, BatchDuplicated), args...; atol, rtol
+                )
             end
         end
     end
@@ -250,15 +255,10 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
             end
         end
         @testset "Unprepared" begin
-            broken =
-                outer_backend isa AutoEnzyme && enzyme_broken(
-                    scen, outer_backend.mode isa Enzyme.ForwardMode ? :forward : :reverse
-                )
-            # the Enzyme bug can also throw (depending on the version), so the jacobian
-            # must be computed inside `@test` for `broken` to catch it
-            @test DI.jacobian(
+            jac = DI.jacobian(
                 first ∘ implicit, outer_backend, scen.x, map(DI.Constant, scen.args)...
-            ) ≈ jac_true broken = broken
+            )
+            @test jac ≈ jac_true
         end
     end
 end
@@ -281,9 +281,7 @@ function test_implicit(
         test_implicit_call(scen)
         test_implicit_duals(scen; type_stability)
         test_implicit_rrule(scen; type_stability)
-        if any(Base.Fix2(isa, AutoEnzyme), outer_backends)
-            test_implicit_enzyme(scen)
-        end
+        test_implicit_enzyme(scen)
         for outer_backend in outer_backends
             test_implicit_jacobian(scen, outer_backend)
         end

@@ -14,9 +14,11 @@ By default, the conditions are differentiated using the same "outer" backend tha
 However, this can be switched to any other "inner" backend compatible with [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) (i.e. a subtype of `ADTypes.AbstractADType`).
 
 !!! warning
-    With Enzyme.jl, the conditions are differentiated with [runtime activity](https://enzyme.mit.edu/julia/stable/faq/#faq-runtime-activity) enabled.
-    Due to an Enzyme.jl bug, forward mode can then return wrong derivatives when a constant array is copied into the conditions (e.g. with `vcat(x, ...)`).
-    If this happens, specify another inner backend through the `backends` keyword.
+    The Enzyme.jl rules have the following limitations:
+    - The input `x` and output `y` must be mutable arrays (annotated as `Duplicated`): StaticArrays.jl is not supported.
+    - Positional arguments beyond `x` must be annotated as `Const`.
+    - In reverse mode, the byproduct `z` must not contain immutable differentiable values (e.g. `z::Float64`), and its tangent is ignored.
+    - When the inner backend is Enzyme.jl, the conditions are differentiated with [runtime activity](https://enzyme.mit.edu/julia/stable/faq/#faq-runtime-activity) enabled.
 
 ## Input and output types
 
