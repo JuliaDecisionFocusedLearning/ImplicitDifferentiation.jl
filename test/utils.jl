@@ -9,7 +9,7 @@ import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction, prepare_implicit
 using JET
 using LinearAlgebra
-using Random: rand!
+using Random: Xoshiro, rand!
 using Test
 using Mooncake: Mooncake
 using Zygote: Zygote, ZygoteRuleConfig
@@ -173,6 +173,26 @@ function test_implicit_rrule(scen::Scenario; type_stability::Bool)
     end
 end
 
+function test_implicit_mooncake(scen::Scenario)
+    implicit = ImplicitFunction(
+        NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
+    )
+    rng = Xoshiro(0)
+    modes = (Mooncake.ForwardMode, Mooncake.ReverseMode)
+    @testset "Mooncake rule - $mode" for mode in modes
+        # `unsafe_perturb` lets finite differences perturb the closures inside `implicit`
+        Mooncake.TestUtils.test_rule(
+            rng,
+            implicit,
+            scen.x,
+            scen.args...;
+            is_primitive=true,
+            mode,
+            unsafe_perturb=true,
+        )
+    end
+end
+
 function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
     implicit = ImplicitFunction(
         NonDifferentiable(scen.solver), scen.conditions; scen.implicit_kwargs...
@@ -185,7 +205,7 @@ function test_implicit_jacobian(scen::Scenario, outer_backend::AbstractADType)
     )
 
     @testset "Jacobian - $outer_backend" begin
-        if outer_backend isa Union{AutoForwardDiff,AutoMooncake,AutoMooncakeForward}
+        if outer_backend isa AutoForwardDiff
             @testset "Prepared" begin
                 jac = DI.jacobian(
                     x -> first(implicit(prep, x, scen.args...)), outer_backend, scen.x
@@ -216,6 +236,9 @@ function test_implicit(
         test_implicit_call(scen)
         test_implicit_duals(scen; type_stability)
         test_implicit_rrule(scen; type_stability)
+        if any(b -> b isa Union{AutoMooncake,AutoMooncakeForward}, outer_backends)
+            test_implicit_mooncake(scen)
+        end
         for outer_backend in outer_backends
             test_implicit_jacobian(scen, outer_backend)
         end

@@ -11,6 +11,8 @@ To differentiate through an `ImplicitFunction`, the following backends are suppo
 | [Mooncake.jl](https://github.com/chalk-lab/Mooncake.jl)                | yes          | yes          |
 | [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | soon         | soon         |
 
+The Mooncake.jl rules require `x` to be an `Array` of floating-point numbers.
+
 By default, the conditions are differentiated using the same "outer" backend that is trying to differentiate the `ImplicitFunction`.
 However, this can be switched to any other "inner" backend compatible with [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) (i.e. a subtype of `ADTypes.AbstractADType`).
 

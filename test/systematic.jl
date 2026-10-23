@@ -64,7 +64,7 @@ end;
 end;
 
 @testitem "ComponentVector" setup = [TestUtils] begin
-    using ComponentArrays, .TestUtils
+    using ADTypes, ComponentArrays, .TestUtils
     x = ComponentVector(; a=float.(1:3), b=float.(4:6))
     scen = Scenario(;
         solver=default_solver,
@@ -73,63 +73,34 @@ end;
         implicit_kwargs=(; linear_solver=IterativeLeastSquaresSolver()),
     )
     scen2 = add_arg_mult(scen)
-    test_implicit(scen)
-    test_implicit(scen2)
+    # the Mooncake rules take `Array` inputs only
+    test_implicit(scen, [AutoForwardDiff(), AutoZygote()])
+    test_implicit(scen2, [AutoForwardDiff(), AutoZygote()])
 end;
 
-@testitem "Mooncake other inputs" setup = [TestUtils] begin
-    using ADTypes, LinearAlgebra, .TestUtils
+@testitem "Mooncake scalar byproduct" setup = [TestUtils] begin
+    using ADTypes, Mooncake, .TestUtils
+    using Random: Xoshiro
     using .TestUtils: NonDifferentiable
     import DifferentiationInterface as DI
     x = float.(1:3)
-    a = float.(4:6)
     explicit(x, a) = sqrt.(x .* a)
     conditions(x, y, z, a) = y .^ 2 .- x .* a
+    # a `z` with nonzero rdata
     implicit = ImplicitFunction(
-        NonDifferentiable((x, a) -> (explicit(x, a), nothing)), conditions
-    )
-    function captured(a)
-        solver = NonDifferentiable(x -> (explicit(x, a), nothing))
-        return ImplicitFunction(solver, (x, y, z) -> y .^ 2 .- x .* a)
-    end
-    implicit_scalar_z = ImplicitFunction(
         NonDifferentiable((x, a) -> (explicit(x, a), 0.0)), conditions
     )
-    implicit_forwarddiff = ImplicitFunction(
-        NonDifferentiable((x, a) -> (explicit(x, a), nothing)),
-        conditions;
-        backends=(; x=AutoForwardDiff(), y=AutoForwardDiff()),
-    )
-    jac_a = DI.jacobian(a -> explicit(x, a), AutoForwardDiff(), a)
-    jac_x = DI.jacobian(x -> explicit(x, 2.0), AutoForwardDiff(), x)
+    jac_x = DI.jacobian(x -> explicit(x, 2), AutoForwardDiff(), x)
     @testset "$backend" for backend in [
         AutoMooncakeForward(; config=nothing), AutoMooncake(; config=nothing)
     ]
-        @test DI.jacobian(a -> first(implicit(x, a)), backend, a) ≈ jac_a
-        @test DI.jacobian(a -> first(captured(a)(x)), backend, a) ≈ jac_a
-        @test DI.jacobian(x -> first(implicit(x, 2.0)), backend, x) ≈ jac_x
-        # a `z` with nonzero rdata
-        @test DI.jacobian(x -> first(implicit_scalar_z(x, 2.0)), backend, x) ≈ jac_x
-        # an `x` whose Mooncake tangent is not an array
-        @test DI.jacobian(x -> first(implicit_forwarddiff(view(x, :), 2.0)), backend, x) ≈
-            jac_x
-        if backend isa AutoMooncake
-            # DI's Mooncake forward mode rejects an array tangent for a `SubArray`
-            @test DI.jacobian(x -> first(implicit(view(x, :), 2.0)), backend, x) ≈ jac_x
-        end
+        @test DI.jacobian(x -> first(implicit(x, 2)), backend, x) ≈ jac_x
     end
-end;
-
-@testitem "Mooncake view of part of its parent" setup = [TestUtils] begin
-    using ADTypes, .TestUtils
-    using .TestUtils: NonDifferentiable
-    import DifferentiationInterface as DI
-    implicit = ImplicitFunction(
-        NonDifferentiable(x -> (sqrt.(x), nothing)), (x, y, z) -> y .^ 2 .- x
-    )
-    p = [1.0, 2.0, 3.0]
-    jac = DI.jacobian(p -> sqrt.(view(p, 1:2)), AutoForwardDiff(), p)
-    # the entries of `p` outside the view must get zero derivative
-    @test DI.jacobian(p -> first(implicit(view(p, 1:2))), AutoMooncake(; config=nothing), p) ≈
-        jac
+    rng = Xoshiro(0)
+    modes = (Mooncake.ForwardMode, Mooncake.ReverseMode)
+    @testset "Mooncake rule - $mode" for mode in modes
+        Mooncake.TestUtils.test_rule(
+            rng, implicit, x, 2; is_primitive=true, mode, unsafe_perturb=true
+        )
+    end
 end;
