@@ -6,7 +6,6 @@ We explain the basics of our package on a simple function that is not amenable t
 
 using ForwardDiff
 using ImplicitDifferentiation
-using JET  #src
 using LinearAlgebra
 using Test  #src
 using Zygote

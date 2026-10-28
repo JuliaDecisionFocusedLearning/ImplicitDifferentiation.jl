@@ -58,3 +58,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
         run: julia --project=docs/ docs/make.jl
+
+  jet:
+    name: JET
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - name: Run JET.test_package
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.activate(; temp=true)
+          Pkg.develop(; path=".")
+          Pkg.add(["JET", "ForwardDiff", "Zygote"])
+          using JET, ImplicitDifferentiation
+          using ForwardDiff: ForwardDiff
+          using Zygote: Zygote
+          JET.test_package(ImplicitDifferentiation; target_modules=(ImplicitDifferentiation,))

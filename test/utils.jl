@@ -7,7 +7,6 @@ import DifferentiationInterface as DI
 using ForwardDiff: ForwardDiff
 import ImplicitDifferentiation as ID
 using ImplicitDifferentiation: ImplicitFunction, prepare_implicit
-using JET
 using LinearAlgebra
 using Random: rand!
 using Test
