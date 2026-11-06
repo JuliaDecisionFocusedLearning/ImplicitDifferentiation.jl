@@ -8,10 +8,18 @@ To differentiate through an `ImplicitFunction`, the following backends are suppo
 | :--------------------------------------------------------------------- | :----------- | :----------- |
 | [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)          | yes          | -            |
 | [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl)-compatible | no           | yes          |
-| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | soon         | soon         |
+| [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl)                     | yes          | yes          |
 
 By default, the conditions are differentiated using the same "outer" backend that is trying to differentiate the `ImplicitFunction`.
 However, this can be switched to any other "inner" backend compatible with [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl) (i.e. a subtype of `ADTypes.AbstractADType`).
+
+!!! warning
+    The Enzyme.jl rules have the following limitations:
+    - The input `x` and output `y` must be mutable arrays (annotated as `Duplicated`): StaticArrays.jl is not supported.
+    - Positional arguments beyond `x` must be annotated as `Const`.
+    - The byproduct `z` is treated as a constant: its tangent is ignored.
+    - The byproduct `z` should not contain immutable differentiable values (e.g. `z::Float64`): Enzyme.jl may then fail or even crash, especially in reverse mode with type-unstable code. Wrap such values in an array instead.
+    - When the inner backend is Enzyme.jl, the conditions are differentiated with [runtime activity](https://enzyme.mit.edu/julia/stable/faq/#faq-runtime-activity) enabled.
 
 ## Input and output types
 
