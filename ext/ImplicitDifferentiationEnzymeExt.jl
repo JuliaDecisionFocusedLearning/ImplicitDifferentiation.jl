@@ -147,9 +147,12 @@ function augmented_shadow_and_tape(
     config::RevConfig{<:Any,true,W}, implicit, x::AnyDuplicated, y, z, args
 ) where {W}
     shadows = zero_shadows(y, z, Val(W))
-    # the pullback captures `x` and `y`, which may be mutated before the reverse pass
-    x_tape = overwritten(config)[2] ? copy(x.val) : x.val
-    pullback = build_pullback(config, implicit, x_tape, copy(y), z, args)
+    # the pullback captures `x`, `y` and `args`, which may be mutated before the reverse pass
+    # (`overwritten(config)` starts with the function itself, then `x`, then `args`)
+    ow = overwritten(config)
+    x_tape = ow[2] ? copy(x.val) : x.val
+    args_tape = ntuple(i -> ow[i + 2] ? deepcopy(args[i]) : args[i], Val(length(args)))
+    pullback = build_pullback(config, implicit, x_tape, copy(y), z, args_tape)
     return batch_shadow(config, shadows), (; pullback, shadows)
 end
 
