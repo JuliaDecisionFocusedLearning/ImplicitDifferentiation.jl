@@ -51,20 +51,37 @@ function inner_backends(config::Union{FwdConfig,RevConfig})
     )
 end
 
+# Enzyme checks the return type of the rules against the primal type `T` it inferred for the
+# call, which is given by the return activity `RA` as `eltype(RA)`. When the solver is not
+# type-stable, `T` is abstract (e.g. `Tuple{Any,Nothing}`) and the values computed inside
+# the rule may be inferred differently, so we annotate them with `T` explicitly.
+# Going through a `Ref{T}` makes the inferred type exactly `T`, as Enzyme requires.
+as_type(::Type{T}, x) where {T} = Ref{T}(x)[]
+
+as_types(::Type{T}, xs::NTuple{W}) where {T,W} = ntuple(i -> as_type(T, xs[i]), Val(W))
+
 ## Forward
 
 # The expected return type is given by `EnzymeRules.forward_rule_return_type`. Dispatching
 # on the config type parameters rather than branching at runtime keeps it concrete.
 # These parameters are documented in the docstring of `FwdConfig`: they are
 # `FwdConfig{NeedsPrimal,NeedsShadow,Width,RuntimeActivity,StrongZero}`.
-function forward_return(::FwdConfig{true,true,1}, primal, shadows)
-    return Duplicated(primal, only(shadows))
+function forward_return(::FwdConfig{true,true,1}, ::Type{T}, primal, shadows) where {T}
+    return Duplicated{T}(primal, only(shadows))
 end
-forward_return(::FwdConfig{true,true}, primal, shadows) = BatchDuplicated(primal, shadows)
-forward_return(::FwdConfig{false,true,1}, primal, shadows) = only(shadows)
-forward_return(::FwdConfig{false,true}, primal, shadows) = shadows
-forward_return(::FwdConfig{true,false}, primal, shadows) = primal
-forward_return(::FwdConfig{false,false}, primal, shadows) = nothing
+function forward_return(::FwdConfig{true,true,W}, ::Type{T}, primal, shadows) where {T,W}
+    return BatchDuplicated{T,W}(primal, shadows)
+end
+function forward_return(::FwdConfig{false,true,1}, ::Type{T}, primal, shadows) where {T}
+    return as_type(T, only(shadows))
+end
+function forward_return(::FwdConfig{false,true}, ::Type{T}, primal, shadows) where {T}
+    return as_types(T, shadows)
+end
+function forward_return(::FwdConfig{true,false}, ::Type{T}, primal, shadows) where {T}
+    return as_type(T, primal)
+end
+forward_return(::FwdConfig{false,false}, ::Type, primal, shadows) = nothing
 
 # One zero shadow of the output `(y, z)` per batch direction.
 zero_shadows(y, z, ::Val{W}) where {W} = ntuple(_ -> (make_zero(y), make_zero(z)), Val(W))
@@ -102,15 +119,15 @@ end
 function EnzymeRules.forward(
     config::FwdConfig,
     implicit::Const{<:ImplicitFunction},
-    ::Type{<:Union{Const,AnyDuplicated}},
+    ::Type{RA},
     x::Union{Const,AnyDuplicated},
     args::Vararg{Const,N},
-) where {N}
+) where {RA<:Union{Const,AnyDuplicated},N}
     implicit = implicit.val
     args = map(a -> a.val, args)
     y, z = implicit(x.val, args...)
     shadows = forward_shadows(config, implicit, x, y, z, args)
-    return forward_return(config, (y, z), shadows)
+    return forward_return(config, eltype(RA), (y, z), shadows)
 end
 
 ## Reverse
@@ -118,16 +135,16 @@ end
 function EnzymeRules.augmented_primal(
     config::RevConfig,
     implicit::Const{<:ImplicitFunction},
-    ::Type{<:Union{Const,AnyDuplicated}},
+    ::Type{RA},
     x::Union{Const,AnyDuplicated},
     args::Vararg{Const,N},
-) where {N}
+) where {RA<:Union{Const,AnyDuplicated},N}
     implicit = implicit.val
     args = map(a -> a.val, args)
     y, z = implicit(x.val, args...)
     primal = EnzymeRules.needs_primal(config) ? (y, z) : nothing
     shadow, tape = augmented_shadow_and_tape(config, implicit, x, y, z, args)
-    return EnzymeRules.AugmentedReturn(primal, shadow, tape)
+    return augmented_return(config, eltype(RA), primal, shadow, tape)
 end
 
 function augmented_shadow_and_tape(::RevConfig{<:Any,false}, implicit, x, y, z, args)
@@ -158,6 +175,15 @@ end
 
 batch_shadow(::RevConfig{<:Any,<:Any,1}, shadows) = only(shadows)
 batch_shadow(::RevConfig, shadows) = shadows
+
+# The expected return type is given by `EnzymeRules.augmented_rule_return_type`.
+function augmented_return(
+    config::RevConfig{P,S,W}, ::Type{T}, primal, shadow, tape
+) where {P,S,W,T}
+    PT = P ? T : Nothing
+    ST = S ? (W == 1 ? T : NTuple{W,T}) : Nothing
+    return EnzymeRules.AugmentedReturn{PT,ST}(primal, shadow, tape)
+end
 
 function build_pullback(config, implicit, x, y, z, args)
     (; conditions, linear_solver) = implicit
