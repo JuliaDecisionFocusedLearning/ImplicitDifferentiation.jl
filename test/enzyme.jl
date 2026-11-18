@@ -69,7 +69,7 @@ end
         @test collect(g) ≈ g_true
     end
     # batched modes are not tested: Enzyme itself crashes (LLVM assertion) on batched
-    # custom rules whose primal return type is not inferred
+    # custom rules whose primal return type is not inferred (EnzymeAD/Enzyme.jl#4092)
     @testset "EnzymeTestUtils" begin
         for Tret in (Const, Duplicated, DuplicatedNoNeed)
             test_forward(implicit, Tret, (x, Duplicated), (a, Const))
