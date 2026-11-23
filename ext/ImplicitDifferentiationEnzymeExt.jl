@@ -60,6 +60,20 @@ as_type(::Type{T}, x) where {T} = Ref{T}(x)[]
 
 as_types(::Type{T}, xs::NTuple{W}) where {T,W} = ntuple(i -> as_type(T, xs[i]), Val(W))
 
+# Batched rules whose primal type `T` is not concrete make Enzyme fail during compilation,
+# and even crash the Julia process in forward mode (EnzymeAD/Enzyme.jl#4092). We throw an
+# error instead. Since `W` and `T` are type parameters, the check is resolved at compile time.
+function check_batched_type_stability(::Val{W}, ::Type{T}) where {W,T}
+    if W > 1 && !isconcretetype(T)
+        throw(
+            ArgumentError(
+                "Batched Enzyme modes (width $W > 1) require a type-stable solver, but the output type of the `ImplicitFunction` is inferred as `$T`. Make the solver type-stable or differentiate with a width of 1. See https://github.com/EnzymeAD/Enzyme.jl/issues/4092.",
+            ),
+        )
+    end
+    return nothing
+end
+
 ## Forward
 
 # The expected return type is given by `EnzymeRules.forward_rule_return_type`. Dispatching
@@ -123,6 +137,7 @@ function EnzymeRules.forward(
     x::Union{Const,AnyDuplicated},
     args::Vararg{Const,N},
 ) where {RA<:Union{Const,AnyDuplicated},N}
+    check_batched_type_stability(Val(EnzymeRules.width(config)), eltype(RA))
     implicit = implicit.val
     args = map(a -> a.val, args)
     y, z = implicit(x.val, args...)
@@ -139,6 +154,7 @@ function EnzymeRules.augmented_primal(
     x::Union{Const,AnyDuplicated},
     args::Vararg{Const,N},
 ) where {RA<:Union{Const,AnyDuplicated},N}
+    check_batched_type_stability(Val(EnzymeRules.width(config)), eltype(RA))
     implicit = implicit.val
     args = map(a -> a.val, args)
     y, z = implicit(x.val, args...)

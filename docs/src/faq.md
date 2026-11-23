@@ -21,7 +21,7 @@ However, this can be switched to any other "inner" backend compatible with [Diff
     - The byproduct `z` should not contain immutable differentiable values (e.g. `z::Float64`): Enzyme.jl may then fail or even crash, especially in reverse mode with type-unstable code. Wrap such values in an array instead.
     - When the inner backend is Enzyme.jl, the conditions are differentiated with [runtime activity](https://enzyme.mit.edu/julia/stable/faq/#faq-runtime-activity) enabled.
     - The `ImplicitFunction` itself must be annotated as `Const`, which is the case when it is a global constant or an argument annotated as such. If it is built inside the function being differentiated and stores arrays (e.g. inside its `conditions`), Enzyme.jl may annotate it as `Duplicated` and the rules will not apply: build it outside the differentiated code instead.
-    - The solver should be type-stable. Type-unstable solvers are supported, except with batched modes (`BatchDuplicated`), on which Enzyme.jl may crash (see [Enzyme.jl#4092](https://github.com/EnzymeAD/Enzyme.jl/issues/4092)).
+    - The solver should be type-stable. Type-unstable solvers are supported, except with batched modes (`BatchDuplicated`, e.g. for Jacobians computed with DifferentiationInterface.jl), which throw an error until [Enzyme.jl#4092](https://github.com/EnzymeAD/Enzyme.jl/issues/4092) is fixed.
 
 ## Input and output types
 
